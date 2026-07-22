@@ -108,3 +108,5 @@ Everything configurable lives at the top of `app.js`:
 Data by [TVMaze](https://www.tvmaze.com/) and [TMDB](https://www.themoviedb.org/). This
 product uses the TMDB API but is not endorsed or certified by TMDB. Not affiliated with any
 network or platform.
+
+Built with the help of [Claude](https://claude.ai/code).

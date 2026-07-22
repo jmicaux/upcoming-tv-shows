@@ -160,7 +160,8 @@ body {
 
 /* Watchlist view hides month navigation and filters. */
 body[data-view="watchlist"] .month-nav,
-body[data-view="watchlist"] .filters { display: none; }
+body[data-view="watchlist"] .filters,
+body[data-view="watchlist"] .progress { display: none; }
 
 .month-label {
   min-width: 9.5rem;

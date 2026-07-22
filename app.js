@@ -840,4 +840,5 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal
 /* ---------- Boot ---------- */
 document.body.setAttribute("data-view", "month");
 updateViewButton();
+renderNetworkList(); // show the network list + pre-selection immediately (from the seed)
 loadMonth();

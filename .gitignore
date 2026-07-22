@@ -1,6 +1,9 @@
 # Local secrets — real TMDB key lives here, never commit it
 config.js
 
+# Stray preferences export at the repo root — the kept copy lives in presets/
+/lineup-preferences.json
+
 # OS / editor cruft
 .DS_Store
 Thumbs.db

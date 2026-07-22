@@ -1,7 +1,7 @@
 {
   "app": "lineup",
   "version": 1,
-  "exportedAt": "2026-07-22T21:37:55.522Z",
+  "exportedAt": "2026-07-22T22:34:26.122Z",
   "theme": "dark",
   "followedNetworks": [
     "AMC+",
@@ -11,7 +11,6 @@
     "ARTE",
     "Canal+",
     "Disney+",
-    "FOX",
     "FX",
     "HBO",
     "HBO Max",
@@ -19,7 +18,8 @@
     "Max",
     "Netflix",
     "Paramount+",
-    "Showtime"
+    "Showtime",
+    "Prime Video"
   ],
   "favorites": {
     "538": {
@@ -40,6 +40,40 @@
       },
       "summary": "<p><b>Futurama</b> follows pizza guy Philip J. Fry, who reawakens in 31st century New New York after a cryonics lab accident. Now part of the Planet Express delivery crew, Fry travels to the farthest reaches of the universe with his robot buddy Bender and cyclopsian love interest Leela, discovering freaky mutants, intergalactic conspiracies and other strange stuff.</p>",
       "premiered": "1999-03-28"
+    },
+    "6736": {
+      "id": 6736,
+      "name": "Golden Globe Awards",
+      "genres": [],
+      "channel": {
+        "name": "CBS",
+        "streaming": false
+      },
+      "image": {
+        "medium": "https://static.tvmaze.com/uploads/images/medium_portrait/605/1514551.jpg",
+        "original": "https://static.tvmaze.com/uploads/images/original_untouched/605/1514551.jpg"
+      },
+      "summary": "<p>The <b>Golden Globe Awards</b> are accolades bestowed for excellence in both American and international film and television. It is an annual award ceremony held since 1944 to honor artists and professionals and their work.</p>",
+      "premiered": "1944-01-20"
+    },
+    "33352": {
+      "id": 33352,
+      "name": "The Lord of the Rings: The Rings of Power",
+      "genres": [
+        "Drama",
+        "Adventure",
+        "Fantasy"
+      ],
+      "channel": {
+        "name": "Prime Video",
+        "streaming": true
+      },
+      "image": {
+        "medium": "https://static.tvmaze.com/uploads/images/medium_portrait/538/1346107.jpg",
+        "original": "https://static.tvmaze.com/uploads/images/original_untouched/538/1346107.jpg"
+      },
+      "summary": "<p>Set thousands of years before the events of The Lord of the Rings, this epic drama follows an ensemble cast of characters, both familiar and new, as they confront the long-feared re-emergence of evil to Middle-earth.</p>",
+      "premiered": "2022-09-02"
     },
     "38052": {
       "id": 38052,
@@ -97,6 +131,24 @@
       "summary": "<p>Hailed as one of the best sci-fi novels of the decade, <b>Dark Matter</b> is a story about the road not taken. The series follows Jason Dessen, a physicist, professor, and family man who – one night while walking home on the streets of Chicago – is abducted into an alternate version of his life. Wonder quickly turns to nightmare when he tries to return to his reality amid the multiverse of lives he could have lived. In this labyrinth of mind-bending realities, he embarks on a harrowing journey to get back to his true family and save them from the most terrifying, unbeatable foe imaginable: himself.</p>",
       "premiered": "2024-05-08"
     },
+    "64950": {
+      "id": 64950,
+      "name": "VisionQuest",
+      "genres": [
+        "Action",
+        "Science-Fiction"
+      ],
+      "channel": {
+        "name": "Disney+",
+        "streaming": true
+      },
+      "image": {
+        "medium": "https://static.tvmaze.com/uploads/images/medium_portrait/625/1562645.jpg",
+        "original": "https://static.tvmaze.com/uploads/images/original_untouched/625/1562645.jpg"
+      },
+      "summary": "<p>After the events of WandaVision, White Vision struggles to connect with the memories given to him as he lacks the emotions or feelings associated with them.</p>",
+      "premiered": "2026-10-14"
+    },
     "66811": {
       "id": 66811,
       "name": "Nocturne",
@@ -133,6 +185,25 @@
       },
       "summary": "<p><b>Doc</b> centers on the hard-charging, brilliant Dr. Amy Larsen, Chief of Internal and Family Medicine at Westside Hospital in Minneapolis. After a brain injury erases the last eight years of her life, Amy must navigate an unfamiliar world where she has no recollection of patients she's treated, colleagues she's crossed, the soulmate she divorced, the man she now loves and the tragedy that caused her to push everyone away. She can rely only on her estranged 17-year-old daughter, whom she remembers as a 9-year-old, and a handful of devoted friends, as she struggles to continue practicing medicine, despite having lost nearly a decade of knowledge and experience.</p>",
       "premiered": "2025-01-07"
+    },
+    "68193": {
+      "id": 68193,
+      "name": "The Shards",
+      "genres": [
+        "Drama",
+        "Crime",
+        "Thriller"
+      ],
+      "channel": {
+        "name": "FX",
+        "streaming": false
+      },
+      "image": {
+        "medium": "https://static.tvmaze.com/uploads/images/medium_portrait/631/1578917.jpg",
+        "original": "https://static.tvmaze.com/uploads/images/original_untouched/631/1578917.jpg"
+      },
+      "summary": "<p>Set against the vivid backdrop of 1980s Los Angeles, the series follows a group of privileged high school seniors at an elite prep school as they navigate identity, sex, jealousy, obsession and the dangers lurking beneath the surface of American adolescence.</p>",
+      "premiered": "2026-08-05"
     }
   }
 }

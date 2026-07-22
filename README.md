@@ -7,6 +7,10 @@ just static files (plus a free TMDB key for the French channels).
 
 ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
 
+**🔗 Live preview: [jmicaux.github.io/upcoming-tv-shows](https://jmicaux.github.io/upcoming-tv-shows/)**
+
+> The hosted preview covers US channels only — Canal+ / Arte need a local TMDB key (see below).
+
 ## Features
 
 - **Month view** with prev / next navigation and a "Today" shortcut.

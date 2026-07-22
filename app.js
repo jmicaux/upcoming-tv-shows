@@ -1,5 +1,8 @@
 "use strict";
 
+/* ---------- Version ---------- */
+const APP_VERSION = "1.0.0"; // single source of truth — bump on each release
+
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
 const CACHE_PREFIX = "tvmaze:sched:v3:"; // v3: US + streaming + selected FR channels
@@ -855,6 +858,9 @@ el.modal.querySelectorAll("[data-close]").forEach((n) => n.addEventListener("cli
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
 
 /* ---------- Boot ---------- */
+console.log(`Lineup v${APP_VERSION}`);
+const versionEl = document.getElementById("appVersion");
+if (versionEl) versionEl.textContent = `v${APP_VERSION}`;
 document.body.setAttribute("data-view", "month");
 updateViewButton();
 renderNetworkList(); // show the network list + pre-selection immediately (from the seed)

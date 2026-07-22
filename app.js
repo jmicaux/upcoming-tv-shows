@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.1.0"; // single source of truth — bump on each release
+const APP_VERSION = "1.2.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -333,7 +333,7 @@ async function loadMonth() {
   const days = monthDays(state.cursor);
   state.items = [];
   el.monthLabel.textContent = monthLabel(state.cursor);
-  el.grid.innerHTML = "";
+  if (state.view === "month") el.grid.innerHTML = ""; // keep the watchlist grid if we booted into it
   showProgress(0, days.length);
 
   let lastRender = 0;
@@ -493,6 +493,10 @@ function toggleFav(id, showObj) {
   updateViewButton();
   if (state.view === "watchlist") renderWatchlist();
   else render();
+}
+
+function routeView() {
+  return location.hash.replace(/^#/, "") === "watchlist" ? "watchlist" : "month";
 }
 
 function setView(v) {
@@ -874,8 +878,9 @@ el.genreFilter.addEventListener("change", (e) => { state.genre = e.target.value;
 el.premieresOnly.addEventListener("change", (e) => { state.premieresOnly = e.target.checked; render(); });
 
 el.viewBtn.addEventListener("click", () => {
-  setView(state.view === "watchlist" ? "month" : "watchlist");
+  location.hash = state.view === "watchlist" ? "" : "watchlist";
 });
+window.addEventListener("hashchange", () => setView(routeView()));
 
 el.exportBtn.addEventListener("click", exportPrefs);
 el.importBtn.addEventListener("click", importPrefs);
@@ -899,7 +904,9 @@ if (versionEl) {
   versionEl.title = "View changelog";
   versionEl.addEventListener("click", showChangelog);
 }
-document.body.setAttribute("data-view", "month");
+state.view = routeView(); // honor #watchlist in a bookmarked URL
+document.body.setAttribute("data-view", state.view);
 updateViewButton();
 renderNetworkList(); // show the network list + pre-selection immediately (from the seed)
+if (state.view === "watchlist") renderWatchlist();
 loadMonth();

@@ -3,6 +3,12 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.2.0 — 2026-07-23
+
+### Added
+- Bookmarkable Watchlist: the view is reflected in the URL (`#watchlist`), so you can
+  bookmark it and the browser's back/forward buttons work.
+
 ## 1.1.0 — 2026-07-23
 
 ### Added

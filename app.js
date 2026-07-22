@@ -34,6 +34,7 @@ const TMDB_NETWORKS = "285|1628"; // Canal+ (285) | ARTE (1628)
 const TMDB_IMG = "https://image.tmdb.org/t/p/w342";
 const TMDB_IMG_ORIG = "https://image.tmdb.org/t/p/original";
 const TMDB_CACHE_PREFIX = "tmdb:fr:v1:"; // keyed by YYYY-MM
+const FAV_KEY = "tv:favorites";
 
 /* ---------- State ---------- */
 const state = {
@@ -44,13 +45,22 @@ const state = {
   networkSearch: "",
   genre: "",
   premieresOnly: true,
+  view: "month",                    // "month" | "watchlist"
+  favorites: loadObject(FAV_KEY),   // { showId: trimmed show object }
+  nextEp: {},                       // showId -> { airdate, label } | null (watchlist cache)
 };
 
 function loadArray(key) {
   try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; }
 }
+function loadObject(key) {
+  try { return JSON.parse(localStorage.getItem(key)) || {}; } catch { return {}; }
+}
 function saveSet(key, set) {
   try { localStorage.setItem(key, JSON.stringify([...set])); } catch { /* ignore quota */ }
+}
+function saveFavorites() {
+  try { localStorage.setItem(FAV_KEY, JSON.stringify(state.favorites)); } catch { /* ignore quota */ }
 }
 
 /* ---------- DOM ---------- */
@@ -73,6 +83,7 @@ const el = {
   modal: document.getElementById("modal"),
   modalBody: document.getElementById("modalBody"),
   themeBtn: document.getElementById("themeBtn"),
+  viewBtn: document.getElementById("viewBtn"),
 };
 
 /* ---------- Theme ---------- */
@@ -425,22 +436,143 @@ function render() {
 
   el.grid.innerHTML = cards.map(cardHtml).join("");
   el.grid.querySelectorAll(".card").forEach((c) => {
-    c.addEventListener("click", () => openModal(c.dataset.showId, c.dataset.airdate));
+    const id = c.dataset.showId;
+    c.addEventListener("click", () => openModal(id, c.dataset.airdate));
+    c.querySelector(".fav-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleFav(id);
+    });
   });
 }
 
+/* ---------- Favorites & Watchlist ---------- */
+function toggleFav(id, showObj) {
+  if (state.favorites[id]) {
+    delete state.favorites[id];
+  } else {
+    const show = showObj || (state.items.find((x) => String(x.show.id) === String(id)) || {}).show;
+    if (!show) return;
+    state.favorites[id] = show;
+  }
+  saveFavorites();
+  updateViewButton();
+  if (state.view === "watchlist") renderWatchlist();
+  else render();
+}
+
+function setView(v) {
+  state.view = v;
+  document.body.setAttribute("data-view", v);
+  updateViewButton();
+  if (v === "watchlist") renderWatchlist();
+  else render();
+}
+
+function updateViewButton() {
+  const n = Object.keys(state.favorites).length;
+  el.viewBtn.innerHTML = state.view === "watchlist"
+    ? "‹ Browse"
+    : `★ Watchlist${n ? ` <span class="count">${n}</span>` : ""}`;
+}
+
+function renderWatchlist() {
+  el.resultCount.textContent = "";
+  const favs = Object.values(state.favorites).sort((a, b) => a.name.localeCompare(b.name));
+
+  if (favs.length === 0) {
+    el.grid.innerHTML = '<p class="empty">No favorites yet. Tap the ☆ on any show to add it to your watchlist.</p>';
+    return;
+  }
+
+  el.grid.innerHTML = favs.map(watchlistCardHtml).join("");
+  el.grid.querySelectorAll(".card").forEach((c) => {
+    const id = c.dataset.showId;
+    const show = state.favorites[id];
+    c.addEventListener("click", () => showModal(show, epContext(id)));
+    c.querySelector(".fav-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleFav(id);
+    });
+  });
+
+  favs.forEach(loadNextEpisode); // async enrichment of the "next episode" line
+}
+
+function watchlistCardHtml(show) {
+  const chan = show.channel ? show.channel.name : "—";
+  const streaming = show.channel && show.channel.streaming;
+  return `
+    <article class="card" data-show-id="${escapeAttr(String(show.id))}">
+      ${favBtnHtml(show.id)}
+      ${imageHtml(show)}
+      <div class="card-body">
+        <div class="card-date" data-next="${escapeAttr(String(show.id))}">${escapeHtml(nextEpLabel(state.nextEp[show.id]))}</div>
+        <h3 class="card-title">${escapeHtml(show.name)}</h3>
+        <div class="card-meta">${escapeHtml(chan)}${streaming ? ' <span class="tag-stream">streaming</span>' : ""}</div>
+      </div>
+    </article>`;
+}
+
+function nextEpLabel(ep) {
+  if (ep === undefined) return "…";
+  if (ep === null) return "No upcoming episode";
+  return `${formatDay(ep.airdate)} · ${ep.label}`;
+}
+
+function epContext(id) {
+  const ep = state.nextEp[id];
+  return ep ? { airdate: ep.airdate, season: ep.season, number: ep.number } : null;
+}
+
+async function loadNextEpisode(show) {
+  const id = show.id;
+  if (state.nextEp[id] !== undefined) { updateNextEpCell(id); return; }
+
+  let ep = null;
+  try {
+    if (String(id).startsWith("tmdb:")) {
+      if (TMDB_KEY) {
+        const d = await tmdb(`tv/${String(id).slice(5)}`);
+        const e = d.next_episode_to_air;
+        if (e) ep = { airdate: e.air_date, season: e.season_number, number: e.episode_number, label: `S${e.season_number}E${e.episode_number}` };
+      }
+    } else {
+      const d = await throttledJson(`${API}/shows/${id}?embed=nextepisode`);
+      const e = d._embedded && d._embedded.nextepisode;
+      if (e) ep = { airdate: e.airdate, season: e.season, number: e.number, label: `S${e.season}E${e.number}` };
+    }
+  } catch { ep = null; }
+
+  state.nextEp[id] = ep;
+  updateNextEpCell(id);
+}
+
+function updateNextEpCell(id) {
+  const cell = el.grid.querySelector(`.card-date[data-next="${CSS.escape(String(id))}"]`);
+  if (cell) cell.textContent = nextEpLabel(state.nextEp[id]);
+}
+
+function favBtnHtml(id) {
+  const on = state.favorites[id] ? "on" : "";
+  return `<button class="fav-btn ${on}" data-fav="${escapeAttr(String(id))}" title="Toggle favorite" aria-label="Toggle favorite">${on ? "★" : "☆"}</button>`;
+}
+
+function imageHtml(show) {
+  return show.image
+    ? `<img class="card-img" loading="lazy" src="${escapeAttr(show.image.medium)}" alt="${escapeAttr(show.name)}">`
+    : `<div class="card-no-img">${escapeHtml(show.name)}</div>`;
+}
+
 function cardHtml(it) {
-  const img = it.show.image
-    ? `<img class="card-img" loading="lazy" src="${escapeAttr(it.show.image.medium)}" alt="${escapeAttr(it.show.name)}">`
-    : `<div class="card-no-img">${escapeHtml(it.show.name)}</div>`;
   const chan = it.show.channel ? it.show.channel.name : "—";
   const streaming = it.show.channel && it.show.channel.streaming;
   const premiere = it.number === 1
     ? (it.season === 1 ? "Series premiere" : `Season ${it.season}`)
     : `S${it.season}E${it.number}`;
   return `
-    <article class="card" data-show-id="${it.show.id}" data-airdate="${escapeAttr(it.airdate)}">
-      ${img}
+    <article class="card" data-show-id="${escapeAttr(String(it.show.id))}" data-airdate="${escapeAttr(it.airdate)}">
+      ${favBtnHtml(it.show.id)}
+      ${imageHtml(it.show)}
       <div class="card-body">
         <div class="card-date">${formatDay(it.airdate)}</div>
         <h3 class="card-title">${escapeHtml(it.show.name)}</h3>
@@ -458,23 +590,41 @@ function formatDay(dateStr) {
 /* ---------- Modal ---------- */
 function openModal(showId, airdate) {
   const it = state.items.find((x) => String(x.show.id) === String(showId) && x.airdate === airdate);
-  if (!it) return;
-  const s = it.show;
+  if (it) showModal(it.show, { airdate: it.airdate, season: it.season, number: it.number });
+}
+
+function showModal(s, ep) {
   const img = s.image ? `<img src="${escapeAttr(s.image.original || s.image.medium)}" alt="">` : "";
   const genres = s.genres.length
     ? `<div class="modal-genres">${s.genres.map((g) => `<span class="badge">${escapeHtml(g)}</span>`).join(" ")}</div>`
     : "";
   const summary = s.summary || "<p>No summary available.</p>";
+
+  const sub = [s.channel ? s.channel.name + (s.channel.streaming ? " (streaming)" : "") : "—"];
+  if (ep && ep.airdate) sub.push(formatDay(ep.airdate));
+  if (ep && ep.season != null) sub.push(`S${ep.season}E${ep.number}`);
+
+  const favOn = state.favorites[s.id] ? "on" : "";
   el.modalBody.innerHTML = `
     <div class="modal-head">
       ${img}
       <div>
         <h2 class="modal-title">${escapeHtml(s.name)}</h2>
-        <p class="modal-sub">${escapeHtml(s.channel ? s.channel.name : "—")}${s.channel && s.channel.streaming ? " (streaming)" : ""} · ${formatDay(it.airdate)} · S${it.season}E${it.number}</p>
+        <p class="modal-sub">${escapeHtml(sub.join(" · "))}</p>
         ${genres}
+        <button class="modal-fav ${favOn}">${favOn ? "★ In watchlist" : "☆ Add to watchlist"}</button>
       </div>
     </div>
     <div class="modal-summary">${summary}</div>`;
+
+  const favBtn = el.modalBody.querySelector(".modal-fav");
+  favBtn.addEventListener("click", () => {
+    toggleFav(s.id, s);
+    const on = !!state.favorites[s.id];
+    favBtn.classList.toggle("on", on);
+    favBtn.textContent = on ? "★ In watchlist" : "☆ Add to watchlist";
+  });
+
   el.modal.hidden = false;
 }
 
@@ -517,8 +667,14 @@ document.addEventListener("click", () => { el.networkPanel.hidden = true; });
 el.genreFilter.addEventListener("change", (e) => { state.genre = e.target.value; render(); });
 el.premieresOnly.addEventListener("change", (e) => { state.premieresOnly = e.target.checked; render(); });
 
+el.viewBtn.addEventListener("click", () => {
+  setView(state.view === "watchlist" ? "month" : "watchlist");
+});
+
 el.modal.querySelectorAll("[data-close]").forEach((n) => n.addEventListener("click", closeModal));
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
 
 /* ---------- Boot ---------- */
+document.body.setAttribute("data-view", "month");
+updateViewButton();
 loadMonth();

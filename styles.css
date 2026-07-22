@@ -341,11 +341,16 @@ body[data-view="watchlist"] .progress { display: none; }
   z-index: 5;
   margin: 0;
   padding: 0.7rem 1.25rem;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   text-transform: capitalize;
   background: var(--bg);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 2px solid var(--accent);
+}
+
+@media (max-width: 560px) {
+  .month-heading { font-size: 1.4rem; }
 }
 
 .month-grid {

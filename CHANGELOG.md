@@ -3,6 +3,11 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.4.1 — 2026-07-23
+
+### Changed
+- More visible card date (accent-filled badge) and a larger, higher-contrast favorite star.
+
 ## 1.4.0 — 2026-07-23
 
 ### Changed

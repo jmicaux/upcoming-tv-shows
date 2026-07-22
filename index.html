@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lineup — Upcoming US Shows</title>
-  <meta name="description" content="Lineup lists upcoming US TV and streaming premieres month by month. Browse every network and platform, follow the ones you care about, and filter by genre.">
+  <title>Lineup — Upcoming TV Shows</title>
+  <meta name="description" content="Lineup lists upcoming TV and streaming premieres month by month. Browse networks and platforms — US plus Canal+ and Arte — follow the ones you care about, and filter by genre.">
   <meta name="robots" content="index, follow">
 
   <!-- Theme -->
@@ -15,12 +15,12 @@
   <!-- Social sharing (set og:url + og:image once you have a domain) -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Lineup">
-  <meta property="og:title" content="Lineup — Upcoming US Shows">
-  <meta property="og:description" content="Upcoming US TV and streaming premieres, month by month. Follow your networks and platforms, filter by genre.">
+  <meta property="og:title" content="Lineup — Upcoming TV Shows">
+  <meta property="og:description" content="Upcoming TV and streaming premieres, month by month. Follow your networks and platforms, filter by genre.">
   <meta property="og:locale" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Lineup — Upcoming US Shows">
-  <meta name="twitter:description" content="Upcoming US TV and streaming premieres, month by month.">
+  <meta name="twitter:title" content="Lineup — Upcoming TV Shows">
+  <meta name="twitter:description" content="Upcoming TV and streaming premieres, month by month.">
 
   <!-- Canonical: replace with the real URL once deployed -->
   <!-- <link rel="canonical" href="https://your-domain.example/"> -->
@@ -30,7 +30,7 @@
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "Lineup",
-    "description": "Upcoming US TV and streaming premieres, month by month.",
+    "description": "Upcoming TV and streaming premieres, month by month.",
     "applicationCategory": "EntertainmentApplication",
     "operatingSystem": "Any",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
@@ -41,10 +41,10 @@
 </head>
 <body>
   <noscript>
-    <p style="padding:1rem;text-align:center">Lineup needs JavaScript to load the upcoming US TV and streaming schedule from TVMaze.</p>
+    <p style="padding:1rem;text-align:center">Lineup needs JavaScript to load the upcoming TV and streaming schedule.</p>
   </noscript>
   <header class="topbar">
-    <h1 class="brand">Lineup <span class="brand-sub">Upcoming US Shows</span></h1>
+    <h1 class="brand">Lineup <span class="brand-sub">Upcoming TV Shows</span></h1>
     <nav class="month-nav">
       <button id="prevMonth" aria-label="Previous month">‹</button>
       <span id="monthLabel" class="month-label"></span>
@@ -92,6 +92,7 @@
     </article>
   </div>
 
+  <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

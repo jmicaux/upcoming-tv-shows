@@ -2,7 +2,7 @@
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
-const CACHE_PREFIX = "tvmaze:sched:v2:US:"; // v2: unified broadcast + streaming
+const CACHE_PREFIX = "tvmaze:sched:v3:"; // v3: US + streaming + selected FR channels
 const FUTURE_TTL_MS = 6 * 60 * 60 * 1000; // 6h for today/future days
 const REQUEST_GAP_MS = 400;               // throttle: stay under ~20 req / 10s
 const FOLLOW_KEY = "tv:followedNetworks";
@@ -20,10 +20,20 @@ const SEED_NETWORKS = [
   // Streaming (US-available)
   "Netflix", "Prime Video", "Hulu", "Disney+", "Max", "Apple TV+",
   "Peacock", "Paramount+", "AMC+", "Starz", "Shudder", "ESPN+",
+  // Selected French channels (sparse TVMaze coverage — see EXTRA_BROADCAST)
+  "Canal+", "ARTE",
 ];
 
 // Web/streaming platforms to keep from the (worldwide) web schedule.
 const STREAMING_ALLOWLIST = /^(Netflix|Prime Video|Amazon|Hulu|Disney\+|Max|HBO Max|Apple TV\+?|Peacock|Paramount\+|Starz|Showtime|AMC\+|Shudder|Acorn TV|BritBox|Crunchyroll|ESPN\+|Discovery\+|Tubi|Freevee|MGM\+|Hallmark\+|Fox Nation)$/i;
+
+// French channels come from TMDB (far better FR coverage than TVMaze).
+// Key is provided at runtime by config.js (git-ignored) — see config.example.js.
+const TMDB_KEY = (window.LINEUP_CONFIG && window.LINEUP_CONFIG.TMDB_KEY) || "";
+const TMDB_NETWORKS = "285|1628"; // Canal+ (285) | ARTE (1628)
+const TMDB_IMG = "https://image.tmdb.org/t/p/w342";
+const TMDB_IMG_ORIG = "https://image.tmdb.org/t/p/original";
+const TMDB_CACHE_PREFIX = "tmdb:fr:v1:"; // keyed by YYYY-MM
 
 /* ---------- State ---------- */
 const state = {
@@ -210,6 +220,84 @@ async function fetchDay(dateStr) {
   return { data, fromCache: false };
 }
 
+/* ---------- French channels via TMDB ---------- */
+const tmdb = (path) =>
+  fetch(`https://api.themoviedb.org/3/${path}${path.includes("?") ? "&" : "?"}api_key=${TMDB_KEY}`)
+    .then((r) => { if (!r.ok) throw new Error(`TMDB ${r.status}`); return r.json(); });
+
+function tmdbChannel(networks) {
+  return (networks || []).some((n) => n.id === 285) ? "Canal+" : "ARTE";
+}
+
+function makeFrItem(show, season, ep) {
+  return {
+    id: ep.id,
+    season,
+    number: ep.episode_number,
+    airdate: ep.air_date,
+    show: {
+      id: "tmdb:" + show.id,
+      name: show.name,
+      genres: (show.genres || []).map((g) => g.name),
+      channel: { name: tmdbChannel(show.networks), streaming: false },
+      image: show.poster_path
+        ? { medium: TMDB_IMG + show.poster_path, original: TMDB_IMG_ORIG + show.poster_path }
+        : null,
+      summary: show.overview ? `<p>${show.overview}</p>` : "",
+      premiered: show.first_air_date || null,
+    },
+  };
+}
+
+// One TMDB pass per month (Canal+ / ARTE episodes airing in the window).
+async function fetchFrMonth(firstOfMonth) {
+  if (!TMDB_KEY) return []; // no key configured → skip French channels
+  const gte = ymd(firstOfMonth);
+  const lastDay = ymd(new Date(firstOfMonth.getFullYear(), firstOfMonth.getMonth() + 1, 0));
+  const monthKey = gte.slice(0, 7);
+
+  const cached = readTmdbCache(monthKey, lastDay);
+  if (cached) return cached;
+
+  const items = [];
+  try {
+    const disc = await tmdb(
+      `discover/tv?with_networks=${TMDB_NETWORKS}&air_date.gte=${gte}&air_date.lte=${lastDay}&sort_by=popularity.desc`
+    );
+    for (const r of disc.results || []) {
+      const show = await tmdb(`tv/${r.id}`);
+      const marker = show.next_episode_to_air || show.last_episode_to_air;
+      if (!marker) continue;
+      let season;
+      try { season = await tmdb(`tv/${show.id}/season/${marker.season_number}`); }
+      catch { continue; }
+      (season.episodes || [])
+        .filter((e) => e.air_date && e.air_date >= gte && e.air_date <= lastDay)
+        .forEach((e) => items.push(makeFrItem(show, marker.season_number, e)));
+    }
+  } catch (err) {
+    console.error("TMDB FR:", err);
+  }
+
+  writeTmdbCache(monthKey, items);
+  return items;
+}
+
+function readTmdbCache(monthKey, lastDay) {
+  try {
+    const raw = localStorage.getItem(TMDB_CACHE_PREFIX + monthKey);
+    if (!raw) return null;
+    const entry = JSON.parse(raw);
+    if (lastDay >= ymd(new Date()) && Date.now() - entry.ts > FUTURE_TTL_MS) return null;
+    return entry.data;
+  } catch { return null; }
+}
+
+function writeTmdbCache(monthKey, data) {
+  try { localStorage.setItem(TMDB_CACHE_PREFIX + monthKey, JSON.stringify({ ts: Date.now(), data })); }
+  catch { /* ignore quota */ }
+}
+
 async function loadMonth() {
   const days = monthDays(state.cursor);
   const all = [];
@@ -226,6 +314,9 @@ async function loadMonth() {
     }
     showProgress(i + 1, days.length);
   }
+
+  showProgress(days.length, days.length, "Canal+ / ARTE…");
+  all.push(...(await fetchFrMonth(state.cursor)));
 
   state.items = all;
   hideProgress();

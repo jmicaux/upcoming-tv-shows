@@ -3,6 +3,13 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.4.0 — 2026-07-23
+
+### Changed
+- Watchlist now groups shows by the month of their next episode, using the same big
+  sticky month headings as the main feed (shows with no upcoming episode go last).
+- Larger, more prominent month headings across both views.
+
 ## 1.3.0 — 2026-07-23
 
 ### Changed

@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.3.0"; // single source of truth — bump on each release
+const APP_VERSION = "1.4.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -571,18 +571,46 @@ function updateViewButton() {
     : `★ Watchlist${n ? ` <span class="count">${n}</span>` : ""}`;
 }
 
-function renderWatchlist() {
+async function renderWatchlist() {
   el.resultCount.textContent = "";
-  const favs = Object.values(state.favorites).sort((a, b) => a.name.localeCompare(b.name));
+  const favs = Object.values(state.favorites);
 
   if (favs.length === 0) {
     el.grid.innerHTML = '<p class="empty">No favorites yet. Tap the ☆ on any show to add it to your watchlist.</p>';
     return;
   }
 
-  el.grid.innerHTML = `<div class="month-grid">${favs.map(watchlistCardHtml).join("")}</div>`;
+  // Group by the month of each show's next episode → need those dates first.
+  if (favs.some((s) => state.nextEp[s.id] === undefined)) {
+    el.grid.innerHTML = '<div class="sentinel">Loading your watchlist…</div>';
+  }
+  await Promise.all(favs.map(ensureNextEpisode));
+  if (state.view !== "watchlist") return; // user navigated away while loading
+
+  const groups = new Map(); // monthKey -> { label, sortKey, shows: [] }
+  for (const show of favs) {
+    const ep = state.nextEp[show.id];
+    const key = ep && ep.airdate ? ep.airdate.slice(0, 7) : "none";
+    if (!groups.has(key)) {
+      groups.set(key, ep && ep.airdate
+        ? { label: monthLabel(new Date(ep.airdate + "T00:00:00")), sortKey: key, shows: [] }
+        : { label: "No upcoming episode", sortKey: "9999-99", shows: [] });
+    }
+    groups.get(key).shows.push(show);
+  }
+
+  const ordered = [...groups.values()].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+  el.grid.innerHTML = ordered.map((g) => {
+    const cards = g.shows
+      .sort((a, b) => {
+        const ea = state.nextEp[a.id], eb = state.nextEp[b.id];
+        return ((ea && ea.airdate) || "9999").localeCompare((eb && eb.airdate) || "9999") ||
+          a.name.localeCompare(b.name);
+      })
+      .map(watchlistCardHtml).join("");
+    return `<section class="month-block"><h2 class="month-heading">${escapeHtml(g.label)}</h2><div class="month-grid">${cards}</div></section>`;
+  }).join("");
   wireCards(el.grid);
-  favs.forEach(loadNextEpisode); // async enrichment of the "next episode" line
 }
 
 function watchlistCardHtml(show) {
@@ -593,7 +621,7 @@ function watchlistCardHtml(show) {
       ${favBtnHtml(show.id)}
       ${imageHtml(show)}
       <div class="card-body">
-        <div class="card-date" data-next="${escapeAttr(String(show.id))}">${escapeHtml(nextEpLabel(state.nextEp[show.id]))}</div>
+        <div class="card-date">${escapeHtml(nextEpLabel(state.nextEp[show.id]))}</div>
         <h3 class="card-title">${escapeHtml(show.name)}</h3>
         <div class="card-meta">${escapeHtml(chan)}${streaming ? ' <span class="tag-stream">streaming</span>' : ""}</div>
       </div>
@@ -611,9 +639,9 @@ function epContext(id) {
   return ep ? { airdate: ep.airdate, season: ep.season, number: ep.number } : null;
 }
 
-async function loadNextEpisode(show) {
+async function ensureNextEpisode(show) {
   const id = show.id;
-  if (state.nextEp[id] !== undefined) { updateNextEpCell(id); return; }
+  if (state.nextEp[id] !== undefined) return state.nextEp[id];
 
   let ep = null;
   try {
@@ -631,12 +659,7 @@ async function loadNextEpisode(show) {
   } catch { ep = null; }
 
   state.nextEp[id] = ep;
-  updateNextEpCell(id);
-}
-
-function updateNextEpCell(id) {
-  const cell = el.grid.querySelector(`.card-date[data-next="${CSS.escape(String(id))}"]`);
-  if (cell) cell.textContent = nextEpLabel(state.nextEp[id]);
+  return ep;
 }
 
 function favBtnHtml(id) {

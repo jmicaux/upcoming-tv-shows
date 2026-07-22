@@ -4,7 +4,7 @@
 const API = "https://api.tvmaze.com";
 const CACHE_PREFIX = "tvmaze:sched:v3:"; // v3: US + streaming + selected FR channels
 const FUTURE_TTL_MS = 6 * 60 * 60 * 1000; // 6h for today/future days
-const REQUEST_GAP_MS = 400;               // throttle: stay under ~20 req / 10s
+const REQUEST_GAP_MS = 550;               // throttle: ~18 req / 10s, under TVMaze's ~20/10s
 const FOLLOW_KEY = "tv:followedNetworks";
 const KNOWN_KEY = "tv:knownNetworks";
 
@@ -18,9 +18,16 @@ const SEED_NETWORKS = [
   "TLC", "HGTV", "Food Network", "Discovery Channel", "National Geographic",
   "Lifetime", "Hallmark Channel", "Paramount Network", "BET", "truTV",
   // Streaming (US-available)
-  "Netflix", "Prime Video", "Hulu", "Disney+", "Max", "Apple TV+",
+  "Netflix", "Prime Video", "Hulu", "Disney+", "Max", "Apple TV",
   "Peacock", "Paramount+", "AMC+", "Starz", "Shudder", "ESPN+",
-  // Selected French channels (sparse TVMaze coverage — see EXTRA_BROADCAST)
+  // Selected French channels (sourced from TMDB)
+  "Canal+", "ARTE",
+];
+
+// Big networks pre-selected on the very first visit (until the user changes it).
+const DEFAULT_FOLLOWED = [
+  "HBO", "Max", "Showtime", "Starz", "FX", "AMC",
+  "Netflix", "Hulu", "Prime Video", "Disney+", "Apple TV", "Paramount+", "Peacock",
   "Canal+", "ARTE",
 ];
 
@@ -40,7 +47,7 @@ const FAV_KEY = "tv:favorites";
 const state = {
   cursor: startOfMonth(new Date()), // first day of the displayed month
   items: [],                        // trimmed schedule items for the month
-  followed: new Set(loadArray(FOLLOW_KEY)),          // networks the user picked; empty = show all
+  followed: new Set(loadFollowed()),                 // networks the user picked; empty = show all
   known: new Set([...SEED_NETWORKS, ...loadArray(KNOWN_KEY)]), // all pickable networks
   networkSearch: "",
   genre: "",
@@ -52,6 +59,11 @@ const state = {
 
 function loadArray(key) {
   try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; }
+}
+// First visit (no saved value) → curated defaults; afterwards respect the user's choice
+// (an explicit empty selection means "show all").
+function loadFollowed() {
+  return localStorage.getItem(FOLLOW_KEY) !== null ? loadArray(FOLLOW_KEY) : DEFAULT_FOLLOWED;
 }
 function loadObject(key) {
   try { return JSON.parse(localStorage.getItem(key)) || {}; } catch { return {}; }

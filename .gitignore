@@ -1,3 +1,6 @@
+# Local secrets — real TMDB key lives here, never commit it
+config.js
+
 # OS / editor cruft
 .DS_Store
 Thumbs.db

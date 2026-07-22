@@ -1,16 +1,18 @@
-# Lineup — Upcoming US Shows
+# Lineup — Upcoming TV Shows
 
-A lightweight web app that lists **upcoming US TV and streaming premieres, month by month**.
-Browse every US network and streaming platform, follow only the ones you care about,
-and filter by genre. No build step, no backend, no API key — just three static files.
+A lightweight web app that lists **upcoming TV and streaming premieres, month by month**.
+Browse US networks and streaming platforms, plus French channels **Canal+** and **Arte**,
+follow only the ones you care about, and filter by genre. No build step, no backend —
+just static files (plus a free TMDB key for the French channels).
 
-![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze-3b82f6)
+![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
 
 ## Features
 
 - **Month view** with prev / next navigation and a "Today" shortcut.
 - **Broadcast, cable and streaming** in one place — ABC, CBS, NBC, FOX, AMC, FX, HBO…
   plus Netflix, Prime Video, Hulu, Disney+, Max, Apple TV+, Peacock, Paramount+ and more.
+- **French channels** Canal+ and Arte, sourced from TMDB for reliable FR coverage.
 - **Pick-and-choose channels** — check the networks/platforms you follow; your selection
   is saved in the browser and applies across every month. No selection = show everything.
 - **Genre filter** and a **Premieres only** toggle (season & series premieres), all combinable.
@@ -32,27 +34,44 @@ python -m http.server 8000
 
 Any static server works (`npx serve`, VS Code Live Server, etc.).
 
+### Enabling the French channels (optional)
+
+Canal+ and Arte need a free [TMDB API key](https://www.themoviedb.org/settings/api):
+
+```bash
+cp config.example.js config.js   # then paste your key into config.js
+```
+
+`config.js` is git-ignored, so your key stays out of the repo. Without it, the app runs
+fine and simply omits the French channels.
+
 ## Project structure
 
 ```
 tv-us-upcoming/
-├── index.html   # markup: header, filters, grid, detail modal
-├── styles.css   # theming (dark/light via data-theme), responsive grid
-├── app.js       # data fetching, caching, filtering, rendering
+├── index.html          # markup: header, filters, grid, detail modal
+├── styles.css          # theming (dark/light via data-theme), responsive grid
+├── app.js              # data fetching, caching, filtering, rendering
+├── config.example.js   # template for your TMDB key
+├── config.js           # your real key (git-ignored, create from the example)
 └── README.md
 ```
 
 No dependencies, no package.json — everything runs in the browser.
 
-## Data source
+## Data sources
 
-Powered by the free [TVMaze API](https://www.tvmaze.com/api) (no key required):
+**US TV & streaming** — the free [TVMaze API](https://www.tvmaze.com/api) (no key required):
 
 - **Broadcast / cable** — `GET /schedule?country=US&date=YYYY-MM-DD` (items with a `network`).
 - **Streaming** — `GET /schedule/web?date=YYYY-MM-DD` (queried worldwide, because platforms
   like Netflix and Prime Video are global in TVMaze), filtered to a US-available allow-list.
 
 A month is built by aggregating one pair of calls per day, then grouping client-side.
+
+**French channels (Canal+, Arte)** — [TMDB](https://www.themoviedb.org/) `discover/tv`, whose
+FR coverage is far better than TVMaze's. One pass per month resolves each show's episodes that
+air in the window. **Requires a free TMDB API key** in `TMDB_KEY` (see below).
 
 ## Customization
 
@@ -62,8 +81,10 @@ Everything configurable lives at the top of `app.js`:
 | --- | --- |
 | `SEED_NETWORKS` | Channels shown in the picker before any month is browsed. |
 | `STREAMING_ALLOWLIST` | Regex of streaming platforms kept from the worldwide web schedule. |
+| `TMDB_KEY` | Your free TMDB API key (v3), required for the Canal+ / Arte data. |
+| `TMDB_NETWORKS` | Pipe-separated TMDB network IDs to pull (Canal+ = 285, ARTE = 1628). |
 | `FUTURE_TTL_MS` | Cache lifetime for today/future days (past days are cached permanently). |
-| `REQUEST_GAP_MS` | Delay between live API calls (throttle). |
+| `REQUEST_GAP_MS` | Delay between live TVMaze calls (throttle). |
 
 ## Limitations
 
@@ -72,14 +93,18 @@ Everything configurable lives at the top of `app.js`:
 - TVMaze streaming coverage is less complete than its broadcast/cable data.
 - Some daily news/talk shows use odd episode numbering; they're naturally excluded while
   "Premieres only" is on.
+- The TMDB key ships in client-side JS (no server), so it is publicly visible. Fine for a
+  personal deployment; a public one should proxy TMDB behind a small backend to hide the key.
 
 ## Roadmap ideas
 
 - Background prefetch of the adjacent month for instant navigation.
 - Text search across shows.
 - Favorites / watchlist.
-- Richer artwork and synopses via TMDB.
+- More non-US channels via TMDB network IDs.
 
 ## Credits
 
-Data by [TVMaze](https://www.tvmaze.com/). Not affiliated with any network or platform.
+Data by [TVMaze](https://www.tvmaze.com/) and [TMDB](https://www.themoviedb.org/). This
+product uses the TMDB API but is not endorsed or certified by TMDB. Not affiliated with any
+network or platform.

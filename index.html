@@ -37,7 +37,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=1.2.0">
+  <link rel="stylesheet" href="styles.css?v=1.3.0">
 </head>
 <body>
   <noscript>
@@ -45,12 +45,6 @@
   </noscript>
   <header class="topbar">
     <h1 class="brand">Lineup <span class="brand-sub">Upcoming TV Shows</span> <span class="brand-ver" id="appVersion"></span></h1>
-    <nav class="month-nav">
-      <button id="prevMonth" aria-label="Previous month">‹</button>
-      <span id="monthLabel" class="month-label"></span>
-      <button id="nextMonth" aria-label="Next month">›</button>
-      <button id="todayBtn" class="today-btn">Today</button>
-    </nav>
     <div class="actions">
       <button id="viewBtn" class="view-btn"></button>
       <button id="exportBtn" class="icon-btn" title="Export preferences" aria-label="Export preferences">⭳</button>
@@ -83,11 +77,6 @@
     <span id="resultCount" class="result-count"></span>
   </section>
 
-  <div id="progress" class="progress" hidden>
-    <div id="progressBar" class="progress-bar"></div>
-    <span id="progressText" class="progress-text"></span>
-  </div>
-
   <main id="grid" class="grid" aria-live="polite"></main>
 
   <div id="modal" class="modal" hidden>
@@ -99,6 +88,6 @@
   </div>
 
   <script src="config.js"></script>
-  <script src="app.js?v=1.2.0"></script>
+  <script src="app.js?v=1.3.0"></script>
 </body>
 </html>

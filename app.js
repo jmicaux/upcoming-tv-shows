@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.2.0"; // single source of truth — bump on each release
+const APP_VERSION = "1.3.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -48,8 +48,10 @@ const FAV_KEY = "tv:favorites";
 
 /* ---------- State ---------- */
 const state = {
-  cursor: startOfMonth(new Date()), // first day of the displayed month
-  items: [],                        // trimmed schedule items for the month
+  firstMonth: startOfMonth(new Date()), // first month shown (current month)
+  blocks: [],                       // [{ month: Date, items: [], el: HTMLElement }]
+  loading: false,                   // a month block is currently loading
+  reachedEnd: false,                // no further scheduling data upstream
   followed: new Set(loadFollowed()),                 // networks the user picked; empty = show all
   known: new Set([...SEED_NETWORKS, ...loadArray(KNOWN_KEY)]), // all pickable networks
   networkSearch: "",
@@ -81,7 +83,6 @@ function saveFavorites() {
 /* ---------- DOM ---------- */
 const el = {
   grid: document.getElementById("grid"),
-  monthLabel: document.getElementById("monthLabel"),
   networkBtn: document.getElementById("networkBtn"),
   networkBtnCount: document.getElementById("networkBtnCount"),
   networkPanel: document.getElementById("networkPanel"),
@@ -92,9 +93,6 @@ const el = {
   genreFilter: document.getElementById("genreFilter"),
   premieresOnly: document.getElementById("premieresOnly"),
   resultCount: document.getElementById("resultCount"),
-  progress: document.getElementById("progress"),
-  progressBar: document.getElementById("progressBar"),
-  progressText: document.getElementById("progressText"),
   modal: document.getElementById("modal"),
   modalBody: document.getElementById("modalBody"),
   themeBtn: document.getElementById("themeBtn"),
@@ -327,61 +325,63 @@ function writeTmdbCache(monthKey, data) {
   catch { /* ignore quota */ }
 }
 
-let loadSeq = 0;
-async function loadMonth() {
-  const seq = ++loadSeq; // guard against overlapping month navigations
-  const days = monthDays(state.cursor);
-  state.items = [];
-  el.monthLabel.textContent = monthLabel(state.cursor);
-  if (state.view === "month") el.grid.innerHTML = ""; // keep the watchlist grid if we booted into it
-  showProgress(0, days.length);
+const MAX_MONTHS = 24; // safety cap for the infinite scroll
 
+function monthAt(offset) {
+  return new Date(state.firstMonth.getFullYear(), state.firstMonth.getMonth() + offset, 1);
+}
+
+function allItems() {
+  return state.blocks.flatMap((b) => b.items);
+}
+
+// Load the next month's data, appending a block and rendering it progressively.
+async function loadNextMonth() {
+  if (state.loading || state.reachedEnd || state.blocks.length >= MAX_MONTHS) return;
+  state.loading = true;
+  setSentinel(`Loading ${monthLabel(monthAt(state.blocks.length))}…`);
+
+  const month = monthAt(state.blocks.length);
+  const block = { month, items: [], el: null };
+  state.blocks.push(block);
+  block.el = createBlockEl(block);
+
+  const days = monthDays(month);
   let lastRender = 0;
-  for (let i = 0; i < days.length; i++) {
-    let res;
+  for (const day of days) {
     try {
-      res = await fetchDay(days[i]);
+      const res = await fetchDay(day);
+      block.items.push(...res.data);
     } catch (err) {
-      if (seq !== loadSeq) return;
       console.error(err);
-      showProgress(i + 1, days.length, "network error, continuing…");
       continue;
     }
-    if (seq !== loadSeq) return; // a newer load started; drop this one
-    state.items.push(...res.data);
-    showProgress(i + 1, days.length);
-
-    // Progressive render: show what we have so far, throttled to limit reflow.
     const now = Date.now();
-    if (state.view === "month" && state.items.length && now - lastRender > 250) {
-      lastRender = now;
-      rebuildFilterOptions();
-      render();
-    }
+    if (now - lastRender > 250) { lastRender = now; rebuildFilterOptions(); renderBlock(block); }
   }
-
-  showProgress(days.length, days.length, "Canal+ / ARTE…");
-  const fr = await fetchFrMonth(state.cursor);
-  if (seq !== loadSeq) return;
-  state.items.push(...fr);
-
-  hideProgress();
+  block.items.push(...(await fetchFrMonth(month)));
   rebuildFilterOptions();
-  if (state.view === "month") render();
-}
+  renderBlock(block);
+  updateResultCount();
 
-/* ---------- Progress UI ---------- */
-function showProgress(done, total, note) {
-  el.progress.hidden = false;
-  el.progressBar.style.width = `${Math.round((done / total) * 100)}%`;
-  el.progressText.textContent = note || `Loading ${done}/${total} days…`;
+  state.loading = false;
+  if (block.items.length === 0) { state.reachedEnd = true; setSentinel("No further scheduling data."); return; }
+  setSentinel("");
+
+  // Auto-fill the viewport while the page is too short to scroll. Guard against
+  // restrictive filters (raw data but 0 visible cards) chaining through many months:
+  // only keep auto-loading past the first few months when the block actually rendered cards.
+  const visibleCount = dedupeSort(visibleItemsIn(block.items)).length;
+  const sentinelNear = sentinelEl.getBoundingClientRect().top < window.innerHeight + 200;
+  if (state.view === "month" && sentinelNear && (visibleCount > 0 || state.blocks.length < 3)) {
+    loadNextMonth();
+  }
 }
-function hideProgress() { el.progress.hidden = true; }
 
 /* ---------- Filtering ---------- */
-function visibleItems() {
+function visibleItemsIn(items) {
   const filtering = state.followed.size > 0;
-  return state.items.filter((it) => {
+  return items.filter((it) => {
     if (state.premieresOnly && it.number !== 1) return false;
     if (filtering && (!it.show.channel || !state.followed.has(it.show.channel.name))) return false;
     if (state.genre && !it.show.genres.includes(state.genre)) return false;
@@ -389,10 +389,24 @@ function visibleItems() {
   });
 }
 
+// Dedupe by show+airdate and sort chronologically.
+function dedupeSort(items) {
+  const seen = new Set();
+  const out = [];
+  for (const it of items) {
+    const key = `${it.show.id}:${it.airdate}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(it);
+  }
+  out.sort((a, b) => a.airdate.localeCompare(b.airdate) || a.show.name.localeCompare(b.show.name));
+  return out;
+}
+
 function rebuildFilterOptions() {
   const genres = new Set();
   let added = false;
-  for (const it of state.items) {
+  for (const it of allItems()) {
     if (it.show.channel && !state.known.has(it.show.channel.name)) {
       state.known.add(it.show.channel.name);
       added = true;
@@ -429,7 +443,7 @@ function toggleNetwork(name, on) {
   else state.followed.delete(name);
   saveSet(FOLLOW_KEY, state.followed);
   updateNetworkButton();
-  render();
+  renderAllBlocks();
 }
 
 function updateNetworkButton() {
@@ -446,33 +460,70 @@ function fillSelect(select, valueSet, current) {
   select.value = current && values.includes(current) ? current : "";
 }
 
-/* ---------- Render ---------- */
-function render() {
-  el.monthLabel.textContent = monthLabel(state.cursor);
-  const items = visibleItems();
+/* ---------- Render (month blocks + infinite scroll) ---------- */
+const sentinelEl = document.createElement("div");
+sentinelEl.className = "sentinel";
+const scrollObserver = new IntersectionObserver((entries) => {
+  if (entries[0].isIntersecting && state.view === "month" && !state.loading) loadNextMonth();
+}, { rootMargin: "600px" });
 
-  // One card per show+date (a show can premiere several seasons? rare — dedupe by show+airdate).
-  const seen = new Set();
-  const cards = [];
-  for (const it of items) {
-    const key = `${it.show.id}:${it.airdate}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    cards.push(it);
-  }
-  cards.sort((a, b) => a.airdate.localeCompare(b.airdate) || a.show.name.localeCompare(b.show.name));
+function setSentinel(text) { sentinelEl.textContent = text; }
 
-  el.resultCount.textContent = `${cards.length} result${cards.length !== 1 ? "s" : ""}`;
+// (Re)build the month view from state.blocks — used on boot and when returning from watchlist.
+function enterMonthView() {
+  el.grid.innerHTML = "";
+  el.grid.appendChild(sentinelEl);
+  for (const b of state.blocks) { b.el = createBlockEl(b); renderBlock(b); }
+  updateResultCount();
+  if (state.blocks.length === 0) loadNextMonth();
+}
 
+function createBlockEl(block) {
+  const sec = document.createElement("section");
+  sec.className = "month-block";
+  sec.innerHTML =
+    `<h2 class="month-heading">${escapeHtml(monthLabel(block.month))}</h2>` +
+    `<div class="month-grid"></div>` +
+    `<p class="month-empty" hidden>No shows match these filters this month.</p>`;
+  el.grid.insertBefore(sec, sentinelEl);
+  return sec;
+}
+
+function renderBlock(block) {
+  if (!block.el) return;
+  const grid = block.el.querySelector(".month-grid");
+  const emptyEl = block.el.querySelector(".month-empty");
+  const cards = dedupeSort(visibleItemsIn(block.items));
   if (cards.length === 0) {
-    el.grid.innerHTML = '<p class="empty">No shows match these filters this month.</p>';
-    return;
+    grid.innerHTML = "";
+    emptyEl.hidden = false;
+  } else {
+    emptyEl.hidden = true;
+    grid.innerHTML = cards.map(cardHtml).join("");
+    wireCards(grid);
   }
+}
 
-  el.grid.innerHTML = cards.map(cardHtml).join("");
-  el.grid.querySelectorAll(".card").forEach((c) => {
+function renderAllBlocks() {
+  for (const b of state.blocks) renderBlock(b);
+  updateResultCount();
+}
+
+function updateResultCount() {
+  let n = 0;
+  for (const b of state.blocks) n += dedupeSort(visibleItemsIn(b.items)).length;
+  el.resultCount.textContent = `${n} result${n !== 1 ? "s" : ""}`;
+}
+
+// Shared card wiring for month blocks and the watchlist grid.
+function wireCards(container) {
+  container.querySelectorAll(".card").forEach((c) => {
     const id = c.dataset.showId;
-    c.addEventListener("click", () => openModal(id, c.dataset.airdate));
+    const airdate = c.dataset.airdate;
+    c.addEventListener("click", () => {
+      if (airdate) openModal(id, airdate);
+      else showModal(state.favorites[id], epContext(id));
+    });
     c.querySelector(".fav-btn").addEventListener("click", (e) => {
       e.stopPropagation();
       toggleFav(id);
@@ -485,14 +536,19 @@ function toggleFav(id, showObj) {
   if (state.favorites[id]) {
     delete state.favorites[id];
   } else {
-    const show = showObj || (state.items.find((x) => String(x.show.id) === String(id)) || {}).show;
+    const show = showObj || (allItems().find((x) => String(x.show.id) === String(id)) || {}).show;
     if (!show) return;
     state.favorites[id] = show;
   }
   saveFavorites();
   updateViewButton();
-  if (state.view === "watchlist") renderWatchlist();
-  else render();
+  if (state.view === "watchlist") { renderWatchlist(); return; }
+  // Month view: update the star buttons in place (a show may appear in several months).
+  const on = !!state.favorites[id];
+  document.querySelectorAll(`.fav-btn[data-fav="${CSS.escape(String(id))}"]`).forEach((b) => {
+    b.classList.toggle("on", on);
+    b.textContent = on ? "★" : "☆";
+  });
 }
 
 function routeView() {
@@ -503,8 +559,9 @@ function setView(v) {
   state.view = v;
   document.body.setAttribute("data-view", v);
   updateViewButton();
+  window.scrollTo(0, 0);
   if (v === "watchlist") renderWatchlist();
-  else render();
+  else enterMonthView();
 }
 
 function updateViewButton() {
@@ -523,17 +580,8 @@ function renderWatchlist() {
     return;
   }
 
-  el.grid.innerHTML = favs.map(watchlistCardHtml).join("");
-  el.grid.querySelectorAll(".card").forEach((c) => {
-    const id = c.dataset.showId;
-    const show = state.favorites[id];
-    c.addEventListener("click", () => showModal(show, epContext(id)));
-    c.querySelector(".fav-btn").addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleFav(id);
-    });
-  });
-
+  el.grid.innerHTML = `<div class="month-grid">${favs.map(watchlistCardHtml).join("")}</div>`;
+  wireCards(el.grid);
   favs.forEach(loadNextEpisode); // async enrichment of the "next episode" line
 }
 
@@ -628,7 +676,7 @@ function formatDay(dateStr) {
 
 /* ---------- Modal ---------- */
 function openModal(showId, airdate) {
-  const it = state.items.find((x) => String(x.show.id) === String(showId) && x.airdate === airdate);
+  const it = allItems().find((x) => String(x.show.id) === String(showId) && x.airdate === airdate);
   if (it) showModal(it.show, { airdate: it.airdate, season: it.season, number: it.number });
 }
 
@@ -744,7 +792,7 @@ function applyPrefs(data) {
   updateViewButton();
   renderNetworkList();
   if (state.view === "watchlist") renderWatchlist();
-  else render();
+  else renderAllBlocks();
   toast("Preferences imported");
 }
 
@@ -848,18 +896,6 @@ function toast(msg) {
 }
 
 /* ---------- Events ---------- */
-document.getElementById("prevMonth").addEventListener("click", () => {
-  state.cursor = new Date(state.cursor.getFullYear(), state.cursor.getMonth() - 1, 1);
-  loadMonth();
-});
-document.getElementById("nextMonth").addEventListener("click", () => {
-  state.cursor = new Date(state.cursor.getFullYear(), state.cursor.getMonth() + 1, 1);
-  loadMonth();
-});
-document.getElementById("todayBtn").addEventListener("click", () => {
-  state.cursor = startOfMonth(new Date());
-  loadMonth();
-});
 el.networkBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   el.networkPanel.hidden = !el.networkPanel.hidden;
@@ -869,13 +905,13 @@ el.networkClear.addEventListener("click", () => {
   state.followed.clear();
   saveSet(FOLLOW_KEY, state.followed);
   renderNetworkList();
-  render();
+  renderAllBlocks();
 });
 el.networkPanel.addEventListener("click", (e) => e.stopPropagation());
 document.addEventListener("click", () => { el.networkPanel.hidden = true; });
 
-el.genreFilter.addEventListener("change", (e) => { state.genre = e.target.value; render(); });
-el.premieresOnly.addEventListener("change", (e) => { state.premieresOnly = e.target.checked; render(); });
+el.genreFilter.addEventListener("change", (e) => { state.genre = e.target.value; renderAllBlocks(); });
+el.premieresOnly.addEventListener("change", (e) => { state.premieresOnly = e.target.checked; renderAllBlocks(); });
 
 el.viewBtn.addEventListener("click", () => {
   location.hash = state.view === "watchlist" ? "" : "watchlist";
@@ -897,6 +933,14 @@ el.modal.querySelectorAll("[data-close]").forEach((n) => n.addEventListener("cli
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
 
 /* ---------- Boot ---------- */
+// Keep sticky month headings tucked right under the (sticky, wrap-variable) top bar.
+function syncTopbarHeight() {
+  const bar = document.querySelector(".topbar");
+  if (bar) document.documentElement.style.setProperty("--topbar-h", `${bar.offsetHeight}px`);
+}
+syncTopbarHeight();
+window.addEventListener("resize", syncTopbarHeight);
+
 console.log(`Lineup v${APP_VERSION}`);
 const versionEl = document.getElementById("appVersion");
 if (versionEl) {
@@ -908,5 +952,6 @@ state.view = routeView(); // honor #watchlist in a bookmarked URL
 document.body.setAttribute("data-view", state.view);
 updateViewButton();
 renderNetworkList(); // show the network list + pre-selection immediately (from the seed)
+scrollObserver.observe(sentinelEl);
 if (state.view === "watchlist") renderWatchlist();
-loadMonth();
+else enterMonthView();

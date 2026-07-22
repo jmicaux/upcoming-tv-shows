@@ -330,11 +330,39 @@ body[data-view="watchlist"] .progress { display: none; }
 
 .progress-text { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
 
-.grid {
+.grid { display: block; }
+
+.month-block { border-top: 1px solid var(--border); }
+.month-block:first-child { border-top: none; }
+
+.month-heading {
+  position: sticky;
+  top: var(--topbar-h, 0px);
+  z-index: 5;
+  margin: 0;
+  padding: 0.7rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.month-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 1.1rem;
   padding: 1.25rem;
+}
+
+.month-empty { padding: 0 1.25rem 1.5rem; color: var(--muted); font-size: 0.9rem; }
+
+.sentinel {
+  min-height: 2.5rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 1rem;
 }
 
 .card {

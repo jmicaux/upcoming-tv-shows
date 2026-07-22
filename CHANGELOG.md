@@ -3,6 +3,13 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.3.0 — 2026-07-23
+
+### Changed
+- Replaced the month carousel (prev/next/today) with a single continuous feed: the
+  current month shows first and the next months load lazily as you scroll, each under a
+  sticky month heading. Filters and favorites apply across all loaded months.
+
 ## 1.2.0 — 2026-07-23
 
 ### Added

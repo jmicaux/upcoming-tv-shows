@@ -324,30 +324,47 @@ function writeTmdbCache(monthKey, data) {
   catch { /* ignore quota */ }
 }
 
+let loadSeq = 0;
 async function loadMonth() {
+  const seq = ++loadSeq; // guard against overlapping month navigations
   const days = monthDays(state.cursor);
-  const all = [];
+  state.items = [];
+  el.monthLabel.textContent = monthLabel(state.cursor);
+  el.grid.innerHTML = "";
   showProgress(0, days.length);
 
+  let lastRender = 0;
   for (let i = 0; i < days.length; i++) {
+    let res;
     try {
-      const res = await fetchDay(days[i]);
-      all.push(...res.data);
+      res = await fetchDay(days[i]);
     } catch (err) {
+      if (seq !== loadSeq) return;
       console.error(err);
       showProgress(i + 1, days.length, "network error, continuing…");
       continue;
     }
+    if (seq !== loadSeq) return; // a newer load started; drop this one
+    state.items.push(...res.data);
     showProgress(i + 1, days.length);
+
+    // Progressive render: show what we have so far, throttled to limit reflow.
+    const now = Date.now();
+    if (state.view === "month" && state.items.length && now - lastRender > 250) {
+      lastRender = now;
+      rebuildFilterOptions();
+      render();
+    }
   }
 
   showProgress(days.length, days.length, "Canal+ / ARTE…");
-  all.push(...(await fetchFrMonth(state.cursor)));
+  const fr = await fetchFrMonth(state.cursor);
+  if (seq !== loadSeq) return;
+  state.items.push(...fr);
 
-  state.items = all;
   hideProgress();
   rebuildFilterOptions();
-  render();
+  if (state.view === "month") render();
 }
 
 /* ---------- Progress UI ---------- */

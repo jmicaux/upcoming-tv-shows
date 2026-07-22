@@ -5,7 +5,7 @@ Browse US networks and streaming platforms, plus French channels **Canal+** and 
 follow only the ones you care about, and filter by genre. No build step, no backend —
 just static files (plus a free TMDB key for the French channels).
 
-![version](https://img.shields.io/badge/version-1.2.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
+![version](https://img.shields.io/badge/version-1.3.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
 
 **🔗 Live preview: [jmicaux.github.io/upcoming-tv-shows](https://jmicaux.github.io/upcoming-tv-shows/)**
 
@@ -13,7 +13,8 @@ just static files (plus a free TMDB key for the French channels).
 
 ## Features
 
-- **Month view** with prev / next navigation and a "Today" shortcut.
+- **Continuous month feed** — starts on the current month and lazy-loads the next months as
+  you scroll (infinite scroll), with a sticky heading for each month.
 - **Broadcast, cable and streaming** in one place — ABC, CBS, NBC, FOX, AMC, FX, HBO…
   plus Netflix, Prime Video, Hulu, Disney+, Max, Apple TV+, Peacock, Paramount+ and more.
 - **French channels** Canal+ and Arte, sourced from TMDB for reliable FR coverage.

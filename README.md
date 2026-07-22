@@ -120,7 +120,16 @@ Everything configurable lives at the top of `app.js`:
 The app version is defined once as `APP_VERSION` at the top of `app.js` and shown next to
 the title (and logged to the console). Bump it on each release following
 [semver](https://semver.org/) — patch for fixes, minor for features, major for breaking
-changes — and update the badge above.
+changes.
+
+On every release, update the version in **three** places so browsers pick up fresh assets:
+
+1. `APP_VERSION` in `app.js`
+2. the `?v=` cache-busting query on `styles.css` / `app.js` in `index.html`
+3. the version badge above
+
+The `?v=` query forces browsers to re-download the CSS/JS after a deploy instead of serving
+a stale cached copy.
 
 ## Credits
 

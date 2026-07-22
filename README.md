@@ -17,6 +17,11 @@ just static files (plus a free TMDB key for the French channels).
   is saved in the browser and applies across every month. No selection = show everything.
 - **Genre filter** and a **Premieres only** toggle (season & series premieres), all combinable.
 - **Detail view** per show: poster, channel, air date, season/episode, genres, summary.
+- **Favorites & Watchlist** — star any show; a dedicated Watchlist view lists your
+  followed shows with their next upcoming episode.
+- **Export / import preferences** — save your favorites, followed channels and theme to a
+  JSON file and load them on another machine. Point it at a cloud-synced folder
+  (OneDrive/Dropbox/Drive) for cross-device sync without a backend.
 - **Dark / light theme** toggle that persists and overrides the OS preference.
 - **Local caching** so revisited months load instantly, with request throttling to stay
   within the TVMaze rate limit.
@@ -95,6 +100,9 @@ Everything configurable lives at the top of `app.js`:
   "Premieres only" is on.
 - The TMDB key ships in client-side JS (no server), so it is publicly visible. Fine for a
   personal deployment; a public one should proxy TMDB behind a small backend to hide the key.
+- Export/import uses the File System Access API on Chrome/Edge (over https/localhost) and
+  remembers the chosen file for one-click re-sync; other browsers fall back to a plain
+  download / file upload.
 
 ## Roadmap ideas
 

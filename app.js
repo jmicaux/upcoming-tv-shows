@@ -84,6 +84,9 @@ const el = {
   modalBody: document.getElementById("modalBody"),
   themeBtn: document.getElementById("themeBtn"),
   viewBtn: document.getElementById("viewBtn"),
+  exportBtn: document.getElementById("exportBtn"),
+  importBtn: document.getElementById("importBtn"),
+  importFile: document.getElementById("importFile"),
 };
 
 /* ---------- Theme ---------- */
@@ -637,6 +640,143 @@ function escapeHtml(str) {
 }
 function escapeAttr(str) { return escapeHtml(str); }
 
+/* ---------- Preferences export / import ---------- */
+const FS_SUPPORTED = "showSaveFilePicker" in window;
+
+function buildPrefs() {
+  return {
+    app: "lineup",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    theme: currentTheme,
+    followedNetworks: [...state.followed],
+    favorites: state.favorites,
+  };
+}
+
+function applyPrefs(data) {
+  if (!data || typeof data !== "object") return;
+  if (Array.isArray(data.followedNetworks)) {
+    state.followed = new Set(data.followedNetworks);
+    saveSet(FOLLOW_KEY, state.followed);
+    data.followedNetworks.forEach((n) => state.known.add(n));
+    saveSet(KNOWN_KEY, state.known);
+  }
+  if (data.favorites && typeof data.favorites === "object") {
+    state.favorites = data.favorites;
+    saveFavorites();
+  }
+  if (data.theme === "light" || data.theme === "dark") {
+    currentTheme = data.theme;
+    localStorage.setItem(THEME_KEY, currentTheme);
+    applyTheme(currentTheme);
+  }
+  updateViewButton();
+  renderNetworkList();
+  if (state.view === "watchlist") renderWatchlist();
+  else render();
+  toast("Preferences imported");
+}
+
+// Tiny IndexedDB kv to remember the chosen prefs file handle.
+function idbOpen() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open("lineup", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("kv");
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function idbGet(key) {
+  const db = await idbOpen();
+  return new Promise((res) => {
+    const t = db.transaction("kv").objectStore("kv").get(key);
+    t.onsuccess = () => res(t.result);
+    t.onerror = () => res(null);
+  });
+}
+async function idbSet(key, val) {
+  const db = await idbOpen();
+  return new Promise((res) => {
+    const t = db.transaction("kv", "readwrite").objectStore("kv").put(val, key);
+    t.oncomplete = () => res();
+    t.onerror = () => res();
+  });
+}
+
+async function ensurePermission(handle, write) {
+  const opts = { mode: write ? "readwrite" : "read" };
+  if ((await handle.queryPermission(opts)) === "granted") return true;
+  return (await handle.requestPermission(opts)) === "granted";
+}
+
+async function exportPrefs() {
+  const json = JSON.stringify(buildPrefs(), null, 2);
+  if (!FS_SUPPORTED) { downloadJson("lineup-preferences.json", json); return; }
+  try {
+    let handle = await idbGet("prefsHandle");
+    if (handle && !(await ensurePermission(handle, true))) handle = null;
+    if (!handle) {
+      handle = await window.showSaveFilePicker({
+        id: "lineup-prefs",
+        suggestedName: "lineup-preferences.json",
+        startIn: "documents",
+        types: [{ description: "JSON", accept: { "application/json": [".json"] } }],
+      });
+      await idbSet("prefsHandle", handle);
+    }
+    const w = await handle.createWritable();
+    await w.write(json);
+    await w.close();
+    toast("Preferences saved");
+  } catch (e) {
+    if (e.name !== "AbortError") console.error(e);
+  }
+}
+
+async function importPrefs() {
+  if (!FS_SUPPORTED) { el.importFile.click(); return; }
+  try {
+    let handle = await idbGet("prefsHandle");
+    if (handle && !(await ensurePermission(handle, false))) handle = null;
+    if (!handle) {
+      [handle] = await window.showOpenFilePicker({
+        id: "lineup-prefs",
+        startIn: "documents",
+        types: [{ description: "JSON", accept: { "application/json": [".json"] } }],
+      });
+      await idbSet("prefsHandle", handle);
+    }
+    const file = await handle.getFile();
+    applyPrefs(JSON.parse(await file.text()));
+  } catch (e) {
+    if (e.name !== "AbortError") console.error(e);
+  }
+}
+
+function downloadJson(name, text) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+let toastTimer;
+function toast(msg) {
+  let t = document.getElementById("toast");
+  if (!t) {
+    t = document.createElement("div");
+    t.id = "toast";
+    t.className = "toast";
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
 /* ---------- Events ---------- */
 document.getElementById("prevMonth").addEventListener("click", () => {
   state.cursor = new Date(state.cursor.getFullYear(), state.cursor.getMonth() - 1, 1);
@@ -669,6 +809,17 @@ el.premieresOnly.addEventListener("change", (e) => { state.premieresOnly = e.tar
 
 el.viewBtn.addEventListener("click", () => {
   setView(state.view === "watchlist" ? "month" : "watchlist");
+});
+
+el.exportBtn.addEventListener("click", exportPrefs);
+el.importBtn.addEventListener("click", importPrefs);
+el.importFile.addEventListener("change", async (e) => {
+  const f = e.target.files[0];
+  if (f) {
+    try { applyPrefs(JSON.parse(await f.text())); }
+    catch { toast("Invalid preferences file"); }
+  }
+  e.target.value = "";
 });
 
 el.modal.querySelectorAll("[data-close]").forEach((n) => n.addEventListener("click", closeModal));

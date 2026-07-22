@@ -109,6 +109,18 @@ body {
 
 .actions { display: flex; align-items: center; gap: 0.5rem; }
 
+.icon-btn {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.55rem;
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.icon-btn:hover { border-color: var(--accent); }
+
 .view-btn {
   background: var(--surface-2);
   color: var(--text);
@@ -426,6 +438,25 @@ body[data-view="watchlist"] .filters { display: none; }
 .modal-head img { width: 120px; border-radius: 8px; flex-shrink: 0; }
 .modal-title { margin: 0 0 0.3rem; }
 .modal-sub { color: var(--muted); font-size: 0.9rem; margin: 0 0 0.6rem; }
+.toast {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(1rem);
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 1rem;
+  font-size: 0.88rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 60;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
 .modal-summary { margin-top: 1rem; color: var(--text); font-size: 0.92rem; }
 .modal-summary p { margin: 0 0 0.6rem; }
 .modal-genres { margin-top: 0.6rem; }

@@ -64,6 +64,7 @@ tv-us-upcoming/
 ├── app.js              # data fetching, caching, filtering, rendering
 ├── config.example.js   # template for your TMDB key
 ├── config.js           # your real key (git-ignored, create from the example)
+├── presets/            # importable preferences snapshots (Export → Import)
 └── README.md
 ```
 

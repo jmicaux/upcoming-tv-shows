@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.0.0"; // single source of truth — bump on each release
+const APP_VERSION = "1.1.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -665,6 +665,40 @@ function showModal(s, ep) {
 
 function closeModal() { el.modal.hidden = true; }
 
+/* ---------- Changelog ---------- */
+// Minimal, safe Markdown → HTML for our own CHANGELOG.md (escape first, then format).
+function renderMarkdown(md) {
+  const inline = (s) => escapeHtml(s)
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  let html = "";
+  let inList = false;
+  const closeList = () => { if (inList) { html += "</ul>"; inList = false; } };
+  for (const raw of md.split("\n")) {
+    const line = raw.trimEnd();
+    if (/^###\s+/.test(line)) { closeList(); html += `<h4>${inline(line.replace(/^###\s+/, ""))}</h4>`; }
+    else if (/^##\s+/.test(line)) { closeList(); html += `<h3>${inline(line.replace(/^##\s+/, ""))}</h3>`; }
+    else if (/^#\s+/.test(line)) { closeList(); html += `<h2>${inline(line.replace(/^#\s+/, ""))}</h2>`; }
+    else if (/^[-*]\s+/.test(line)) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${inline(line.replace(/^[-*]\s+/, ""))}</li>`; }
+    else if (line === "") { closeList(); }
+    else { closeList(); html += `<p>${inline(line)}</p>`; }
+  }
+  closeList();
+  return html;
+}
+
+async function showChangelog() {
+  el.modalBody.innerHTML = '<div class="modal-summary">Loading…</div>';
+  el.modal.hidden = false;
+  try {
+    const res = await fetch(`CHANGELOG.md?v=${APP_VERSION}`);
+    if (!res.ok) throw new Error(res.status);
+    el.modalBody.innerHTML = `<div class="changelog">${renderMarkdown(await res.text())}</div>`;
+  } catch {
+    el.modalBody.innerHTML = '<div class="modal-summary">Changelog unavailable.</div>';
+  }
+}
+
 /* ---------- Escaping ---------- */
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) =>
@@ -860,7 +894,11 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal
 /* ---------- Boot ---------- */
 console.log(`Lineup v${APP_VERSION}`);
 const versionEl = document.getElementById("appVersion");
-if (versionEl) versionEl.textContent = `v${APP_VERSION}`;
+if (versionEl) {
+  versionEl.textContent = `v${APP_VERSION}`;
+  versionEl.title = "View changelog";
+  versionEl.addEventListener("click", showChangelog);
+}
 document.body.setAttribute("data-view", "month");
 updateViewButton();
 renderNetworkList(); // show the network list + pre-selection immediately (from the seed)

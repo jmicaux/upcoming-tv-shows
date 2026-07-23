@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.8.1"; // single source of truth — bump on each release
+const APP_VERSION = "1.9.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -835,6 +835,9 @@ function showModal(s, ep) {
 
   const favOn = state.favorites[s.id] ? "on" : "";
   const watch = watchLinkHtml(s.channel && s.channel.name, s.name, "modal-watch");
+  // epguides episode guide — path is the title with non-alphanumerics stripped
+  // (epguides runs on a case-insensitive server, so casing doesn't matter).
+  const guideUrl = `https://epguides.com/${s.name.replace(/[^A-Za-z0-9]/g, "")}/`;
   el.modalBody.innerHTML = `
     <div class="modal-head">
       ${img}
@@ -845,6 +848,7 @@ function showModal(s, ep) {
         <div class="modal-actions">
           ${watch}
           <button class="modal-fav ${favOn}" aria-pressed="${!!favOn}">${favOn ? "★ In watchlist" : "☆ Add to watchlist"}</button>
+          <a class="modal-epguides" href="${escapeAttr(guideUrl)}" target="_blank" rel="noopener">Episode guide ↗</a>
         </div>
       </div>
     </div>

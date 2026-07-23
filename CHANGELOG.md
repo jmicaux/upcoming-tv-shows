@@ -3,6 +3,13 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.19.0 — 2026-07-23
+
+### Added
+- Past (already-aired) days in the current month are now visually marked: their cards are
+  dimmed and the date badge is muted (grey) instead of the accent red, so it's clear at a
+  glance what's still upcoming.
+
 ## 1.18.3 — 2026-07-23
 
 ### Added

@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.18.3"; // single source of truth — bump on each release
+const APP_VERSION = "1.19.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -987,11 +987,12 @@ function chanMetaHtml(channel) {
 
 function cardHtml(it) {
   const chan = it.show.channel ? it.show.channel.name : "—";
+  const past = isPastDate(it.airdate);
   const premiere = it.number === 1
     ? (it.season === 1 ? "Series premiere" : `Season ${it.season}`)
     : `S${it.season}E${it.number}`;
   return `
-    <article class="card" role="button" tabindex="0" aria-label="${escapeAttr(`${it.show.name} — ${formatDay(it.airdate)}, ${chan}. View details`)}" data-show-id="${escapeAttr(String(it.show.id))}" data-airdate="${escapeAttr(it.airdate)}">
+    <article class="card${past ? " past" : ""}" role="button" tabindex="0" aria-label="${escapeAttr(`${it.show.name} — ${formatDay(it.airdate)}${past ? " (aired)" : ""}, ${chan}. View details`)}" data-show-id="${escapeAttr(String(it.show.id))}" data-airdate="${escapeAttr(it.airdate)}">
       ${favBtnHtml(it.show.id)}
       ${imageHtml(it.show)}
       <div class="card-body">

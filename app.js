@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.12.0"; // single source of truth — bump on each release
+const APP_VERSION = "1.13.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -64,6 +64,8 @@ const state = {
   favorites: loadObject(FAV_KEY),   // { showId: trimmed show object }
   watchOverrides: loadObject(OVERRIDES_KEY), // { sourceChannel: providerChannel }
   navCard: null,                    // current card element for modal prev/next
+  searching: false,                 // showing catalog search results (vs the month feed)
+  searchShows: {},                  // id -> trimmed show, from the TVMaze catalog search
   nextEp: {},                       // showId -> { airdate, label } | null (watchlist cache)
 };
 
@@ -352,6 +354,12 @@ function allItems() {
   return state.blocks.flatMap((b) => b.items);
 }
 
+// Resolve a show object by id from any source (favorites, search results, or the feed).
+function showFor(id) {
+  return state.favorites[id] || state.searchShows[id] ||
+    ((allItems().find((x) => String(x.show.id) === String(id)) || {}).show);
+}
+
 // Load the next month's data, appending a block and rendering it progressively.
 async function loadNextMonth() {
   if (state.loading || state.reachedEnd || state.blocks.length >= MAX_MONTHS) return;
@@ -402,6 +410,91 @@ async function loadNextMonth() {
   }
 }
 
+/* ---------- Catalog search (TVMaze /search/shows) ---------- */
+// Debounced title search across the whole TVMaze catalog — finds shows even when they
+// have no upcoming premiere in the loaded feed (e.g. ended shows), with a status label.
+let searchTimer;
+function onSearchInput(value) {
+  state.search = value.trim();
+  el.searchClear.hidden = !value;
+  clearTimeout(searchTimer);
+  if (state.search.length >= 2) searchTimer = setTimeout(runCatalogSearch, 350);
+  else exitSearch();
+}
+
+function trimSearchShow(s) {
+  const chan = s.network || s.webChannel;
+  return {
+    id: s.id,
+    name: s.name,
+    genres: s.genres || [],
+    channel: chan ? { name: chan.name, streaming: !s.network && !!s.webChannel } : null,
+    image: s.image ? { medium: s.image.medium, original: s.image.original } : null,
+    summary: s.summary || "",
+    premiered: s.premiered || null,
+    status: s.status || "",
+  };
+}
+
+async function runCatalogSearch() {
+  if (state.view !== "month") return;
+  const q = state.search;
+  state.searching = true;
+  el.grid.innerHTML = '<div class="sentinel">Searching…</div>';
+  el.resultCount.textContent = "";
+  let results = [];
+  try { results = await throttledJson(`${API}/search/shows?q=${encodeURIComponent(q)}`); }
+  catch (e) { console.error(e); }
+  if (state.search !== q || !state.searching) return; // superseded by newer input
+  const shows = results.map((r) => trimSearchShow(r.show));
+  state.searchShows = {};
+  shows.forEach((s) => { state.searchShows[s.id] = s; });
+  renderSearchResults(shows, q);
+}
+
+function renderSearchResults(shows, q) {
+  el.resultCount.textContent = `${shows.length} result${shows.length !== 1 ? "s" : ""}`;
+  if (!shows.length) {
+    el.grid.innerHTML = `<p class="empty">No shows found for “${escapeHtml(q)}”.</p>`;
+    return;
+  }
+  el.grid.innerHTML =
+    `<section class="month-block"><h2 class="month-heading">Search results</h2>` +
+    `<div class="month-grid">${shows.map(searchCardHtml).join("")}</div></section>`;
+  wireCards(el.grid);
+}
+
+function exitSearch() {
+  if (!state.searching) return;
+  state.searching = false;
+  state.searchShows = {};
+  enterMonthView();
+}
+
+function statusLabel(show) {
+  return ({
+    "Running": "Running",
+    "Ended": "Ended",
+    "To Be Determined": "TBD",
+    "In Development": "In development",
+  })[show.status] || show.status || "—";
+}
+
+function searchCardHtml(show) {
+  const chan = show.channel ? show.channel.name : "—";
+  return `
+    <article class="card" role="button" tabindex="0" aria-label="${escapeAttr(`${show.name}, ${chan}. View details`)}" data-show-id="${escapeAttr(String(show.id))}">
+      ${favBtnHtml(show.id)}
+      ${imageHtml(show)}
+      <div class="card-body">
+        <div class="card-status">${escapeHtml(statusLabel(show))}</div>
+        <h3 class="card-title">${escapeHtml(show.name)}</h3>
+        <div class="card-meta">${chanMetaHtml(show.channel)}</div>
+        ${watchLinkHtml(show.channel && show.channel.name, show.name, "card-watch", true)}
+      </div>
+    </article>`;
+}
+
 /* ---------- Filtering ---------- */
 function visibleItemsIn(items) {
   const filtering = state.followed.size > 0;
@@ -409,7 +502,6 @@ function visibleItemsIn(items) {
     if (state.premieresOnly && it.number !== 1) return false;
     if (filtering && (!it.show.channel || !state.followed.has(it.show.channel.name))) return false;
     if (state.genre && !it.show.genres.includes(state.genre)) return false;
-    if (state.search && !it.show.name.toLowerCase().includes(state.search)) return false;
     return true;
   });
 }
@@ -500,7 +592,7 @@ function fillSelect(select, valueSet, current) {
 const sentinelEl = document.createElement("div");
 sentinelEl.className = "sentinel";
 const scrollObserver = new IntersectionObserver((entries) => {
-  if (entries[0].isIntersecting && state.view === "month" && !state.loading) loadNextMonth();
+  if (entries[0].isIntersecting && state.view === "month" && !state.loading && !state.searching) loadNextMonth();
 }, { rootMargin: "600px" });
 
 function setSentinel(text) { sentinelEl.textContent = text; }
@@ -578,7 +670,7 @@ function toggleFav(id, showObj) {
   if (state.favorites[id]) {
     delete state.favorites[id];
   } else {
-    const show = showObj || (allItems().find((x) => String(x.show.id) === String(id)) || {}).show;
+    const show = showObj || showFor(id);
     if (!show) return;
     state.favorites[id] = show;
   }
@@ -634,6 +726,14 @@ function dropNetworkHash() {
 }
 
 function setView(v) {
+  // A catalog search belongs to the feed only — reset it when changing views.
+  if (state.searching || state.search) {
+    state.searching = false;
+    state.searchShows = {};
+    state.search = "";
+    el.searchInput.value = "";
+    el.searchClear.hidden = true;
+  }
   state.view = v;
   document.body.setAttribute("data-view", v);
   updateViewButton();
@@ -873,7 +973,7 @@ function openFromCard(c) {
   const id = c.dataset.showId;
   const airdate = c.dataset.airdate;
   if (airdate) openModal(id, airdate);
-  else showModal(state.favorites[id], epContext(id));
+  else showModal(showFor(id), epContext(id));
   updateModalNav();
 }
 
@@ -912,6 +1012,7 @@ function openModal(showId, airdate) {
 }
 
 function showModal(s, ep) {
+  if (!s) return;
   const img = s.image ? `<img src="${escapeAttr(s.image.original || s.image.medium)}" alt="">` : "";
   const genres = s.genres.length
     ? `<div class="modal-genres">${s.genres.map((g) => `<span class="badge">${escapeHtml(g)}</span>`).join(" ")}</div>`
@@ -920,6 +1021,7 @@ function showModal(s, ep) {
 
   const sub = [s.channel ? s.channel.name + (s.channel.streaming ? " (streaming)" : "") : "—"];
   if (ep && ep.airdate) sub.push(formatDay(ep.airdate));
+  else if (s.status) sub.push(s.status);
   if (ep && ep.season != null) sub.push(`S${ep.season}E${ep.number}`);
 
   const favOn = state.favorites[s.id] ? "on" : "";
@@ -1247,11 +1349,7 @@ document.addEventListener("click", () => setNetworkPanel(false));
 
 el.genreFilter.addEventListener("change", (e) => { state.genre = e.target.value; renderAllBlocks(); });
 el.premieresOnly.addEventListener("change", (e) => { state.premieresOnly = e.target.checked; renderAllBlocks(); });
-el.searchInput.addEventListener("input", (e) => {
-  state.search = e.target.value.trim().toLowerCase();
-  el.searchClear.hidden = !e.target.value;
-  renderAllBlocks();
-});
+el.searchInput.addEventListener("input", (e) => onSearchInput(e.target.value));
 el.searchClear.addEventListener("click", () => { clearSearch(); el.searchInput.focus(); });
 el.resetFilters.addEventListener("click", resetFilters);
 
@@ -1266,7 +1364,8 @@ function clearSearch() {
   el.searchInput.value = "";
   state.search = "";
   el.searchClear.hidden = true;
-  renderAllBlocks();
+  clearTimeout(searchTimer);
+  exitSearch();
 }
 el.searchToggle.addEventListener("click", () => {
   const open = el.search.classList.toggle("open");

@@ -3,6 +3,14 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.13.0 — 2026-07-23
+
+### Changed
+- Search now queries the whole TVMaze catalog (debounced) instead of only the loaded feed,
+  so it finds any show — including ones with no upcoming premiere. Results show a status
+  label (Running / Ended / TBD…) and open the same detail modal. Clearing the search
+  returns to the month feed.
+
 ## 1.12.0 — 2026-07-23
 
 ### Added

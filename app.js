@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.4.1"; // single source of truth — bump on each release
+const APP_VERSION = "1.5.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -55,6 +55,7 @@ const state = {
   followed: new Set(loadFollowed()),                 // networks the user picked; empty = show all
   known: new Set([...SEED_NETWORKS, ...loadArray(KNOWN_KEY)]), // all pickable networks
   networkSearch: "",
+  search: "",                       // free-text title search (lowercased)
   genre: "",
   premieresOnly: true,
   view: "month",                    // "month" | "watchlist"
@@ -92,6 +93,8 @@ const el = {
   networkDropdown: document.getElementById("networkDropdown"),
   genreFilter: document.getElementById("genreFilter"),
   premieresOnly: document.getElementById("premieresOnly"),
+  searchInput: document.getElementById("searchInput"),
+  resetFilters: document.getElementById("resetFilters"),
   resultCount: document.getElementById("resultCount"),
   modal: document.getElementById("modal"),
   modalBody: document.getElementById("modalBody"),
@@ -385,6 +388,7 @@ function visibleItemsIn(items) {
     if (state.premieresOnly && it.number !== 1) return false;
     if (filtering && (!it.show.channel || !state.followed.has(it.show.channel.name))) return false;
     if (state.genre && !it.show.genres.includes(state.genre)) return false;
+    if (state.search && !it.show.name.toLowerCase().includes(state.search)) return false;
     return true;
   });
 }
@@ -528,6 +532,8 @@ function wireCards(container) {
       e.stopPropagation();
       toggleFav(id);
     });
+    const watch = c.querySelector(".card-watch");
+    if (watch) watch.addEventListener("click", (e) => e.stopPropagation());
   });
 }
 
@@ -624,6 +630,7 @@ function watchlistCardHtml(show) {
         <div class="card-date">${escapeHtml(nextEpLabel(state.nextEp[show.id]))}</div>
         <h3 class="card-title">${escapeHtml(show.name)}</h3>
         <div class="card-meta">${escapeHtml(chan)}${streaming ? ' <span class="tag-stream">streaming</span>' : ""}</div>
+        ${watchLinkHtml(show.channel && show.channel.name, show.name, "card-watch")}
       </div>
     </article>`;
 }
@@ -673,6 +680,35 @@ function imageHtml(show) {
     : `<div class="card-no-img">${escapeHtml(show.name)}</div>`;
 }
 
+// "Watch on <platform>" deep links. Known providers jump straight to their
+// in-app search; anything else falls back to JustWatch, which resolves where a
+// title streams per region.
+const WATCH_PROVIDERS = {
+  "Netflix": (q) => `https://www.netflix.com/search?q=${q}`,
+  "Prime Video": (q) => `https://www.amazon.com/s?k=${q}&i=instant-video`,
+  "Hulu": (q) => `https://www.hulu.com/search?q=${q}`,
+  "Disney+": (q) => `https://www.disneyplus.com/search?q=${q}`,
+  "Max": (q) => `https://play.max.com/search?q=${q}`,
+  "HBO": (q) => `https://play.max.com/search?q=${q}`,
+  "Apple TV": (q) => `https://tv.apple.com/search?term=${q}`,
+  "Peacock": (q) => `https://www.peacocktv.com/search?q=${q}`,
+  "Paramount+": (q) => `https://www.paramountplus.com/search/${q}/`,
+  "Showtime": (q) => `https://www.paramountplus.com/search/${q}/`,
+  "Canal+": (q) => `https://www.canalplus.com/recherche?q=${q}`,
+  "ARTE": (q) => `https://www.arte.tv/fr/search/?q=${q}`,
+};
+
+function watchUrl(channelName, title) {
+  const q = encodeURIComponent(title);
+  const provider = channelName && WATCH_PROVIDERS[channelName];
+  return provider ? provider(q) : `https://www.justwatch.com/us/search?q=${q}`;
+}
+
+function watchLinkHtml(channelName, title, cls) {
+  const label = channelName ? `Watch on ${escapeHtml(channelName)}` : "Where to watch";
+  return `<a class="${cls}" href="${escapeAttr(watchUrl(channelName, title))}" target="_blank" rel="noopener">▸ ${label}</a>`;
+}
+
 function cardHtml(it) {
   const chan = it.show.channel ? it.show.channel.name : "—";
   const streaming = it.show.channel && it.show.channel.streaming;
@@ -688,6 +724,7 @@ function cardHtml(it) {
         <h3 class="card-title">${escapeHtml(it.show.name)}</h3>
         <div class="card-meta">${escapeHtml(chan)}${streaming ? ' <span class="tag-stream">streaming</span>' : ""}</div>
         <span class="badge">${escapeHtml(premiere)}</span>
+        ${watchLinkHtml(it.show.channel && it.show.channel.name, it.show.name, "card-watch")}
       </div>
     </article>`;
 }
@@ -715,6 +752,7 @@ function showModal(s, ep) {
   if (ep && ep.season != null) sub.push(`S${ep.season}E${ep.number}`);
 
   const favOn = state.favorites[s.id] ? "on" : "";
+  const watch = watchLinkHtml(s.channel && s.channel.name, s.name, "modal-watch");
   el.modalBody.innerHTML = `
     <div class="modal-head">
       ${img}
@@ -722,7 +760,10 @@ function showModal(s, ep) {
         <h2 class="modal-title">${escapeHtml(s.name)}</h2>
         <p class="modal-sub">${escapeHtml(sub.join(" · "))}</p>
         ${genres}
-        <button class="modal-fav ${favOn}">${favOn ? "★ In watchlist" : "☆ Add to watchlist"}</button>
+        <div class="modal-actions">
+          ${watch}
+          <button class="modal-fav ${favOn}">${favOn ? "★ In watchlist" : "☆ Add to watchlist"}</button>
+        </div>
       </div>
     </div>
     <div class="modal-summary">${summary}</div>`;
@@ -935,6 +976,20 @@ document.addEventListener("click", () => { el.networkPanel.hidden = true; });
 
 el.genreFilter.addEventListener("change", (e) => { state.genre = e.target.value; renderAllBlocks(); });
 el.premieresOnly.addEventListener("change", (e) => { state.premieresOnly = e.target.checked; renderAllBlocks(); });
+el.searchInput.addEventListener("input", (e) => { state.search = e.target.value.trim().toLowerCase(); renderAllBlocks(); });
+el.resetFilters.addEventListener("click", resetFilters);
+
+// Reset the transient feed filters (search, genre, premieres) to their defaults.
+// Network selection has its own "Show all" control in the dropdown and is left intact.
+function resetFilters() {
+  state.search = "";
+  state.genre = "";
+  state.premieresOnly = true;
+  el.searchInput.value = "";
+  el.genreFilter.value = "";
+  el.premieresOnly.checked = true;
+  renderAllBlocks();
+}
 
 el.viewBtn.addEventListener("click", () => {
   location.hash = state.view === "watchlist" ? "" : "watchlist";

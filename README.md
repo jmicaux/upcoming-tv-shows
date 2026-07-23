@@ -5,7 +5,7 @@ Browse US networks and streaming platforms, plus French channels **Canal+** and 
 follow only the ones you care about, and filter by genre. No build step, no backend —
 just static files (plus a free TMDB key for the French channels).
 
-![version](https://img.shields.io/badge/version-1.4.1-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
+![version](https://img.shields.io/badge/version-1.5.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
 
 **🔗 Live preview: [jmicaux.github.io/upcoming-tv-shows](https://jmicaux.github.io/upcoming-tv-shows/)**
 
@@ -20,7 +20,10 @@ just static files (plus a free TMDB key for the French channels).
 - **French channels** Canal+ and Arte, sourced from TMDB for reliable FR coverage.
 - **Pick-and-choose channels** — check the networks/platforms you follow; your selection
   is saved in the browser and applies across every month. No selection = show everything.
-- **Genre filter** and a **Premieres only** toggle (season & series premieres), all combinable.
+- **Genre filter**, **title search** and a **Premieres only** toggle (season & series
+  premieres), all combinable, with a one-click **Reset filters**.
+- **"Watch on <platform>" links** on every card and in the detail view — jump straight to
+  the platform's search (or JustWatch as a fallback) to start watching.
 - **Detail view** per show: poster, channel, air date, season/episode, genres, summary.
 - **Favorites & Watchlist** — star any show; a dedicated Watchlist view lists your
   followed shows with their next upcoming episode.
@@ -113,8 +116,6 @@ Everything configurable lives at the top of `app.js`:
 ## Roadmap ideas
 
 - Background prefetch of the adjacent month for instant navigation.
-- Text search across shows.
-- Favorites / watchlist.
 - More non-US channels via TMDB network IDs.
 
 ## Versioning

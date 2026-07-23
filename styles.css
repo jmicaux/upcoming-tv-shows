@@ -189,7 +189,8 @@ body[data-view="watchlist"] .progress { display: none; }
   gap: 0.25rem;
 }
 
-.filters select {
+.filters select,
+.filters input[type="search"] {
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
@@ -198,6 +199,18 @@ body[data-view="watchlist"] .progress { display: none; }
   font-size: 0.9rem;
   min-width: 11rem;
 }
+
+.reset-btn {
+  align-self: flex-end;
+  background: none;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.reset-btn:hover { border-color: var(--accent); color: var(--text); }
 
 .field {
   display: flex;
@@ -451,6 +464,16 @@ body[data-view="watchlist"] .progress { display: none; }
 
 .card-meta { font-size: 0.75rem; color: var(--muted); }
 
+.card-watch {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+.card-watch:hover { text-decoration: underline; }
+
 .tag-stream {
   display: inline-block;
   font-size: 0.6rem;
@@ -527,8 +550,26 @@ body[data-view="watchlist"] .progress { display: none; }
 .modal-summary { margin-top: 1rem; color: var(--text); font-size: 0.92rem; }
 .modal-summary p { margin: 0 0 0.6rem; }
 .modal-genres { margin-top: 0.6rem; }
-.modal-fav {
+
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
   margin-top: 0.9rem;
+}
+.modal-watch {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.modal-watch:hover { opacity: 0.9; }
+.modal-fav {
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);

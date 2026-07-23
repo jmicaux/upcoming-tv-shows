@@ -3,6 +3,19 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.5.0 — 2026-07-23
+
+### Added
+- **Text search** — filter the feed by show title, combinable with the network,
+  genre and premieres filters.
+- **Reset filters** button that clears search, genre and the premieres toggle in one click.
+- **"Watch on <platform>" links** on every card and in the detail modal — jump straight
+  to the platform's search (Netflix, Prime Video, Hulu, Disney+, Max, Apple TV, Paramount+,
+  Canal+, Arte…), falling back to JustWatch for anything else.
+
+### Changed
+- Detail modal groups the watch and watchlist buttons into a single action row.
+
 ## 1.4.1 — 2026-07-23
 
 ### Changed

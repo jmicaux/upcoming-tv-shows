@@ -5,11 +5,11 @@ Browse US networks and streaming platforms, plus French channels **Canal+** and 
 follow only the ones you care about, and filter by genre. No build step, no backend —
 just static files (plus a free TMDB key for the French channels).
 
-![version](https://img.shields.io/badge/version-1.18.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
+![version](https://img.shields.io/badge/version-1.18.1-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
 
 **🔗 Live preview: [jmicaux.github.io/upcoming-tv-shows](https://jmicaux.github.io/upcoming-tv-shows/)**
 
-> The hosted preview covers US channels only — Canal+ / Arte need a local TMDB key (see below).
+> The hosted preview covers US channels only — the French channels need a TMDB key (see below).
 
 ## Features
 
@@ -51,7 +51,7 @@ Any static server works (`npx serve`, VS Code Live Server, etc.).
 
 ### Enabling the French channels (optional)
 
-Canal+ and Arte need a free [TMDB API key](https://www.themoviedb.org/settings/api):
+The French channels (Canal+, Arte, TF1, M6, France 2/3) need a free [TMDB API key](https://www.themoviedb.org/settings/api):
 
 ```bash
 cp config.example.js config.js   # then paste your key into config.js

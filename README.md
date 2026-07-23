@@ -5,7 +5,7 @@ Browse US networks and streaming platforms, plus French channels **Canal+** and 
 follow only the ones you care about, and filter by genre. No build step, no backend —
 just static files (plus a free TMDB key for the French channels).
 
-![version](https://img.shields.io/badge/version-1.6.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
+![version](https://img.shields.io/badge/version-1.7.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
 
 **🔗 Live preview: [jmicaux.github.io/upcoming-tv-shows](https://jmicaux.github.io/upcoming-tv-shows/)**
 
@@ -23,7 +23,9 @@ just static files (plus a free TMDB key for the French channels).
 - **Genre filter**, **title search** and a **Premieres only** toggle (season & series
   premieres), all combinable, with a one-click **Reset filters**.
 - **"Watch on <platform>" links** on every card and in the detail view — jump straight to
-  the platform's search (or JustWatch as a fallback) to start watching.
+  the platform's search (or JustWatch as a fallback) to start watching. Optional **watch
+  settings** (⚙) let you remap a channel to a provider you already subscribe to (e.g. a show
+  on Apple TV → "Watch on Canal+").
 - **Detail view** per show: poster, channel, air date, season/episode, genres, summary.
 - **Favorites & Watchlist** — star any show; a dedicated Watchlist view lists your
   followed shows with their next upcoming episode.

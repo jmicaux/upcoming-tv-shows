@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.6.0"; // single source of truth — bump on each release
+const APP_VERSION = "1.7.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -45,6 +45,7 @@ const TMDB_IMG = "https://image.tmdb.org/t/p/w342";
 const TMDB_IMG_ORIG = "https://image.tmdb.org/t/p/original";
 const TMDB_CACHE_PREFIX = "tmdb:fr:v1:"; // keyed by YYYY-MM
 const FAV_KEY = "tv:favorites";
+const OVERRIDES_KEY = "tv:watchOverrides"; // { sourceChannel: providerChannel } for "Watch on" links
 
 /* ---------- State ---------- */
 const state = {
@@ -60,6 +61,7 @@ const state = {
   premieresOnly: true,
   view: "month",                    // "month" | "watchlist"
   favorites: loadObject(FAV_KEY),   // { showId: trimmed show object }
+  watchOverrides: loadObject(OVERRIDES_KEY), // { sourceChannel: providerChannel }
   nextEp: {},                       // showId -> { airdate, label } | null (watchlist cache)
 };
 
@@ -104,6 +106,7 @@ const el = {
   exportBtn: document.getElementById("exportBtn"),
   importBtn: document.getElementById("importBtn"),
   importFile: document.getElementById("importFile"),
+  settingsBtn: document.getElementById("settingsBtn"),
 };
 
 /* ---------- Theme ---------- */
@@ -707,9 +710,14 @@ const WATCH_PROVIDERS = {
   "ARTE": (q) => `https://www.arte.tv/fr/search/?q=${q}`,
 };
 
+// Optional user remap: e.g. a show on "Apple TV" watched via "Canal+".
+function resolveProvider(channelName) {
+  return (channelName && state.watchOverrides[channelName]) || channelName;
+}
+
 function watchUrl(channelName, title) {
   const q = encodeURIComponent(title);
-  const provider = channelName && WATCH_PROVIDERS[channelName];
+  const provider = WATCH_PROVIDERS[resolveProvider(channelName)];
   return provider ? provider(q) : `https://www.justwatch.com/us/search?q=${q}`;
 }
 
@@ -742,7 +750,8 @@ function channelIconHtml(channelName) {
 }
 
 function watchLinkHtml(channelName, title, cls) {
-  const label = channelName ? `Watch on ${escapeHtml(channelName)}` : "Where to watch";
+  const provider = resolveProvider(channelName);
+  const label = provider ? `Watch on ${escapeHtml(provider)}` : "Where to watch";
   return `<a class="${cls}" href="${escapeAttr(watchUrl(channelName, title))}" target="_blank" rel="noopener">▸ ${label}</a>`;
 }
 
@@ -869,6 +878,77 @@ async function showChangelog() {
   }
 }
 
+/* ---------- Watch settings (channel → provider overrides) ---------- */
+function saveOverrides() {
+  try { localStorage.setItem(OVERRIDES_KEY, JSON.stringify(state.watchOverrides)); }
+  catch { /* ignore quota */ }
+}
+
+// Every channel the user could pick as a source or a watch provider.
+function allProviderNames() {
+  return [...new Set([...state.known, ...Object.keys(WATCH_PROVIDERS), ...Object.keys(NETWORK_DOMAINS)])]
+    .sort((a, b) => a.localeCompare(b, "en"));
+}
+
+function providerOptions(selected) {
+  return allProviderNames()
+    .map((n) => `<option value="${escapeAttr(n)}" ${n === selected ? "selected" : ""}>${escapeHtml(n)}</option>`)
+    .join("");
+}
+
+function showSettings() {
+  renderSettings();
+  revealModal("Watch settings");
+}
+
+function renderSettings() {
+  const rows = Object.entries(state.watchOverrides).map(([src, tgt]) => `
+    <div class="ov-row">
+      <select class="ov-src" aria-label="Source channel">${providerOptions(src)}</select>
+      <span class="ov-arrow" aria-hidden="true">→</span>
+      <select class="ov-tgt" aria-label="Watch provider">${providerOptions(tgt)}</select>
+      <button class="ov-del icon-btn" aria-label="Remove mapping">×</button>
+    </div>`).join("");
+
+  el.modalBody.innerHTML = `
+    <div class="settings">
+      <h2 class="modal-title">Watch settings</h2>
+      <p class="modal-sub">Redirect a channel's “Watch on” link to a provider you already have
+        (e.g. a show on Apple TV → Watch on Canal+).</p>
+      <div class="ov-list">${rows || '<p class="ov-empty">No mappings yet.</p>'}</div>
+      <button class="ov-add">+ Add mapping</button>
+    </div>`;
+  wireSettings();
+}
+
+function wireSettings() {
+  el.modalBody.querySelectorAll(".ov-row").forEach((row) => {
+    row.querySelector(".ov-src").addEventListener("change", commitSettings);
+    row.querySelector(".ov-tgt").addEventListener("change", commitSettings);
+    row.querySelector(".ov-del").addEventListener("click", () => { row.remove(); commitSettings(); renderSettings(); });
+  });
+  el.modalBody.querySelector(".ov-add").addEventListener("click", () => {
+    const names = allProviderNames();
+    const used = new Set(Object.keys(state.watchOverrides));
+    const src = names.find((n) => !used.has(n)) || names[0];
+    if (src) { state.watchOverrides[src] = src; saveOverrides(); renderSettings(); }
+  });
+}
+
+// Rebuild the overrides object from the current rows, then refresh the links.
+function commitSettings() {
+  const next = {};
+  el.modalBody.querySelectorAll(".ov-row").forEach((row) => {
+    const s = row.querySelector(".ov-src").value;
+    const t = row.querySelector(".ov-tgt").value;
+    if (s && t) next[s] = t;
+  });
+  state.watchOverrides = next;
+  saveOverrides();
+  if (state.view === "watchlist") renderWatchlist();
+  else renderAllBlocks();
+}
+
 /* ---------- Escaping ---------- */
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) =>
@@ -887,6 +967,7 @@ function buildPrefs() {
     theme: currentTheme,
     followedNetworks: [...state.followed],
     favorites: state.favorites,
+    watchOverrides: state.watchOverrides,
   };
 }
 
@@ -901,6 +982,10 @@ function applyPrefs(data) {
   if (data.favorites && typeof data.favorites === "object") {
     state.favorites = data.favorites;
     saveFavorites();
+  }
+  if (data.watchOverrides && typeof data.watchOverrides === "object") {
+    state.watchOverrides = data.watchOverrides;
+    saveOverrides();
   }
   if (data.theme === "light" || data.theme === "dark") {
     currentTheme = data.theme;
@@ -1056,6 +1141,7 @@ window.addEventListener("hashchange", () => setView(routeView()));
 
 el.exportBtn.addEventListener("click", exportPrefs);
 el.importBtn.addEventListener("click", importPrefs);
+el.settingsBtn.addEventListener("click", showSettings);
 el.importFile.addEventListener("change", async (e) => {
   const f = e.target.files[0];
   if (f) {

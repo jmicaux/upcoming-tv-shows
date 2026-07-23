@@ -3,6 +3,14 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.9.1 — 2026-07-23
+
+### Changed
+- Channel favicon chip is now square (rounded corners) instead of a circle, to avoid
+  clipping brand logos.
+- On cards, the "Watch on" link is shortened to "Watch" (the channel already shows in the
+  card meta); it still names the provider when a watch-setting override redirects elsewhere.
+
 ## 1.9.0 — 2026-07-23
 
 ### Added

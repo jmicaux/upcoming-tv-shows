@@ -5,7 +5,7 @@ Browse US networks and streaming platforms, plus French channels **Canal+** and 
 follow only the ones you care about, and filter by genre. No build step, no backend —
 just static files (plus a free TMDB key for the French channels).
 
-![version](https://img.shields.io/badge/version-1.17.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
+![version](https://img.shields.io/badge/version-1.17.1-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
 
 **🔗 Live preview: [jmicaux.github.io/upcoming-tv-shows](https://jmicaux.github.io/upcoming-tv-shows/)**
 
@@ -17,7 +17,7 @@ just static files (plus a free TMDB key for the French channels).
   you scroll (infinite scroll), with a sticky heading for each month.
 - **Broadcast, cable and streaming** in one place — ABC, CBS, NBC, FOX, AMC, FX, HBO…
   plus Netflix, Prime Video, Hulu, Disney+, Max, Apple TV+, Peacock, Paramount+ and more.
-- **French channels** Canal+, Arte and TF1, sourced from TMDB for reliable FR coverage.
+- **French channels** Canal+, Arte, TF1 and M6, sourced from TMDB for reliable FR coverage.
 - **Pick-and-choose channels** — check the networks/platforms you follow; your selection
   is saved in the browser and applies across every month. No selection = show everything.
 - **Genre filter**, **title search** and a **Premieres only** toggle (season & series

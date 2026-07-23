@@ -3,6 +3,12 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.13.2 — 2026-07-23
+
+### Fixed
+- Canal+ "Watch on" link now uses a `site:canalplus.com` Google search (Canal+ exposes no
+  usable on-site search).
+
 ## 1.13.1 — 2026-07-23
 
 ### Changed

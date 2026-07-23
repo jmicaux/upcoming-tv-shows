@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.13.1"; // single source of truth — bump on each release
+const APP_VERSION = "1.13.2"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -865,7 +865,7 @@ const WATCH_PROVIDERS = {
   "Peacock": (q) => `https://www.peacocktv.com/search?q=${q}`,
   "Paramount+": (q) => `https://www.paramountplus.com/search/${q}/`,
   "Showtime": (q) => `https://www.paramountplus.com/search/${q}/`,
-  "Canal+": (q) => `https://www.canalplus.com/recherche?q=${q}`,
+  "Canal+": (q) => `https://www.google.com/search?q=site:canalplus.com+${q}`,
   "ARTE": (q) => `https://www.arte.tv/fr/search/?q=${q}`,
 };
 

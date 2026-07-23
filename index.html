@@ -37,7 +37,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=1.18.1">
+  <link rel="stylesheet" href="styles.css?v=1.18.2">
 </head>
 <body>
   <noscript>
@@ -78,6 +78,9 @@
       <span class="field-label">Genre</span>
       <button type="button" id="genreBtn" class="dropdown-btn" aria-haspopup="true" aria-expanded="false">All <span id="genreBtnCount" class="pill"></span> ▾</button>
       <div id="genrePanel" class="dropdown-panel" hidden>
+        <div class="dropdown-actions">
+          <button type="button" id="genreClear">Show all</button>
+        </div>
         <div id="genreList" class="network-list"></div>
       </div>
     </div>
@@ -103,6 +106,6 @@
   </div>
 
   <script src="config.js"></script>
-  <script src="app.js?v=1.18.1"></script>
+  <script src="app.js?v=1.18.2"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.18.1"; // single source of truth — bump on each release
+const APP_VERSION = "1.18.2"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -107,6 +107,7 @@ const el = {
   genreBtnCount: document.getElementById("genreBtnCount"),
   genrePanel: document.getElementById("genrePanel"),
   genreList: document.getElementById("genreList"),
+  genreClear: document.getElementById("genreClear"),
   premieresOnly: document.getElementById("premieresOnly"),
   search: document.getElementById("search"),
   searchInput: document.getElementById("searchInput"),
@@ -1427,6 +1428,11 @@ function setGenrePanel(open) {
 el.genreBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   setGenrePanel(el.genrePanel.hidden);
+});
+el.genreClear.addEventListener("click", () => {
+  state.genres.clear();
+  renderGenreList();
+  renderAllBlocks();
 });
 el.genrePanel.addEventListener("click", (e) => e.stopPropagation());
 

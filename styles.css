@@ -597,7 +597,7 @@ body[data-view="watchlist"] .progress { display: none; }
   border-radius: var(--radius);
   max-width: 640px;
   width: 100%;
-  height: min(88vh, 620px);
+  height: min(85vh, 520px);
   display: flex;
   flex-direction: column;
   overflow: hidden;

@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.9.1"; // single source of truth — bump on each release
+const APP_VERSION = "1.10.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -63,6 +63,7 @@ const state = {
   view: "month",                    // "month" | "watchlist"
   favorites: loadObject(FAV_KEY),   // { showId: trimmed show object }
   watchOverrides: loadObject(OVERRIDES_KEY), // { sourceChannel: providerChannel }
+  navCard: null,                    // current card element for modal prev/next
   nextEp: {},                       // showId -> { airdate, label } | null (watchlist cache)
 };
 
@@ -105,6 +106,8 @@ const el = {
   modal: document.getElementById("modal"),
   modalCard: document.querySelector(".modal-card"),
   modalBody: document.getElementById("modalBody"),
+  modalPrev: document.getElementById("modalPrev"),
+  modalNext: document.getElementById("modalNext"),
   themeBtn: document.getElementById("themeBtn"),
   viewBtn: document.getElementById("viewBtn"),
   exportBtn: document.getElementById("exportBtn"),
@@ -540,15 +543,11 @@ function wireCards(container) {
   container.querySelectorAll(".card").forEach((c) => {
     const id = c.dataset.showId;
     const airdate = c.dataset.airdate;
-    const open = () => {
-      if (airdate) openModal(id, airdate);
-      else showModal(state.favorites[id], epContext(id));
-    };
-    c.addEventListener("click", open);
+    c.addEventListener("click", () => openFromCard(c));
     // Keyboard activation for the role="button" card (ignore keys from inner controls).
     c.addEventListener("keydown", (e) => {
       if (e.target !== c) return;
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openFromCard(c); }
     });
     c.querySelector(".fav-btn").addEventListener("click", (e) => {
       e.stopPropagation();
@@ -814,10 +813,39 @@ function formatDay(dateStr) {
 /* ---------- Modal ---------- */
 let lastFocused = null;
 
+// Open the detail modal for a card, remembering it so prev/next can walk the feed.
+function openFromCard(c) {
+  state.navCard = c;
+  const id = c.dataset.showId;
+  const airdate = c.dataset.airdate;
+  if (airdate) openModal(id, airdate);
+  else showModal(state.favorites[id], epContext(id));
+  updateModalNav();
+}
+
+// Step to the previous/next visible card (dir = -1 | 1) without leaving the modal.
+function modalNav(dir) {
+  if (!state.navCard) return;
+  const cards = [...el.grid.querySelectorAll(".card")];
+  const idx = cards.indexOf(state.navCard);
+  const next = idx === -1 ? null : cards[idx + dir];
+  if (!next) return;
+  next.scrollIntoView({ block: "nearest" });
+  openFromCard(next);
+}
+
+function updateModalNav() {
+  const cards = state.navCard ? [...el.grid.querySelectorAll(".card")] : [];
+  const idx = state.navCard ? cards.indexOf(state.navCard) : -1;
+  el.modalPrev.hidden = idx <= 0;
+  el.modalNext.hidden = idx === -1 || idx >= cards.length - 1;
+}
+
 // Reveal the modal with an accessible name, remembering the trigger so focus can
 // return to it on close, and move focus inside the dialog.
 function revealModal(label) {
   el.modalCard.setAttribute("aria-label", label);
+  if (!el.modal.hidden) return; // already open (carousel navigation swapped content in place)
   lastFocused = document.activeElement;
   el.modal.hidden = false;
   const closeBtn = el.modal.querySelector(".modal-close");
@@ -875,6 +903,7 @@ function showModal(s, ep) {
 
 function closeModal() {
   el.modal.hidden = true;
+  state.navCard = null;
   if (lastFocused && typeof lastFocused.focus === "function") lastFocused.focus();
   lastFocused = null;
 }
@@ -902,8 +931,10 @@ function renderMarkdown(md) {
 }
 
 async function showChangelog() {
+  state.navCard = null;
   el.modalBody.innerHTML = '<div class="modal-summary">Loading…</div>';
   revealModal("Changelog");
+  updateModalNav();
   try {
     const res = await fetch(`CHANGELOG.md?v=${APP_VERSION}`);
     if (!res.ok) throw new Error(res.status);
@@ -932,8 +963,10 @@ function providerOptions(selected) {
 }
 
 function showSettings() {
+  state.navCard = null;
   renderSettings();
   revealModal("Watch settings");
+  updateModalNav();
 }
 
 function renderSettings() {
@@ -1214,7 +1247,14 @@ el.importFile.addEventListener("change", async (e) => {
 });
 
 el.modal.querySelectorAll("[data-close]").forEach((n) => n.addEventListener("click", closeModal));
-document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !el.modal.hidden) closeModal(); });
+el.modalPrev.addEventListener("click", () => modalNav(-1));
+el.modalNext.addEventListener("click", () => modalNav(1));
+document.addEventListener("keydown", (e) => {
+  if (el.modal.hidden) return;
+  if (e.key === "Escape") closeModal();
+  else if (e.key === "ArrowLeft") modalNav(-1);
+  else if (e.key === "ArrowRight") modalNav(1);
+});
 
 // Keep Tab focus cycling inside the open dialog.
 el.modal.addEventListener("keydown", (e) => {

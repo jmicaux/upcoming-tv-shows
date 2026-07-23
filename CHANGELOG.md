@@ -3,6 +3,13 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.10.0 — 2026-07-23
+
+### Added
+- Carousel navigation in the detail modal: prev/next arrows (and ←/→ keys) step through the
+  visible shows without closing the modal. Arrows hide at the ends and are disabled for the
+  settings and changelog dialogs.
+
 ## 1.9.1 — 2026-07-23
 
 ### Changed

@@ -37,7 +37,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=1.9.1">
+  <link rel="stylesheet" href="styles.css?v=1.10.0">
 </head>
 <body>
   <noscript>
@@ -89,13 +89,15 @@
 
   <div id="modal" class="modal" hidden>
     <div class="modal-backdrop" data-close></div>
+    <button class="modal-nav prev" id="modalPrev" aria-label="Previous show" hidden>‹</button>
     <article class="modal-card" role="dialog" aria-modal="true" tabindex="-1">
       <button class="modal-close" data-close aria-label="Close">×</button>
       <div id="modalBody"></div>
     </article>
+    <button class="modal-nav next" id="modalNext" aria-label="Next show" hidden>›</button>
   </div>
 
   <script src="config.js"></script>
-  <script src="app.js?v=1.9.1"></script>
+  <script src="app.js?v=1.10.0"></script>
 </body>
 </html>

@@ -3,6 +3,12 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.13.1 — 2026-07-23
+
+### Changed
+- The detail modal now has a constant size: the header (poster, title, actions) stays
+  pinned and only the summary scrolls, so it no longer resizes between shows in the carousel.
+
 ## 1.13.0 — 2026-07-23
 
 ### Changed

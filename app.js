@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.13.3"; // single source of truth — bump on each release
+const APP_VERSION = "1.14.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -851,22 +851,21 @@ function imageHtml(show) {
     : `<div class="card-no-img">${escapeHtml(show.name)}</div>`;
 }
 
-// "Watch on <platform>" deep links. Known providers jump straight to their
-// in-app search; anything else falls back to JustWatch, which resolves where a
-// title streams per region.
-const WATCH_PROVIDERS = {
-  "Netflix": (q) => `https://www.netflix.com/search?q=${q}`,
-  "Prime Video": (q) => `https://www.amazon.com/s?k=${q}&i=instant-video`,
-  "Hulu": (q) => `https://www.hulu.com/search?q=${q}`,
-  "Disney+": (q) => `https://www.google.com/search?q=site:disneyplus.com+${q}`,
-  "Max": (q) => `https://play.max.com/search?q=${q}`,
-  "HBO": (q) => `https://play.max.com/search?q=${q}`,
-  "Apple TV": (q) => `https://tv.apple.com/search?term=${q}`,
-  "Peacock": (q) => `https://www.peacocktv.com/search?q=${q}`,
-  "Paramount+": (q) => `https://www.paramountplus.com/search/${q}/`,
-  "Showtime": (q) => `https://www.paramountplus.com/search/${q}/`,
-  "Canal+": (q) => `https://www.google.com/search?q=site:canalplus.com+${q}`,
-  "ARTE": (q) => `https://www.arte.tv/fr/search/?q=${q}`,
+// "Watch on <platform>" links. Platforms rarely expose a stable on-site search URL, so we
+// use a site-scoped Google search per provider; anything unlisted falls back to JustWatch.
+const WATCH_DOMAINS = {
+  "Netflix": "netflix.com",
+  "Prime Video": "primevideo.com",
+  "Hulu": "hulu.com",
+  "Disney+": "disneyplus.com",
+  "Max": "max.com",
+  "HBO": "max.com",
+  "Apple TV": "tv.apple.com",
+  "Peacock": "peacocktv.com",
+  "Paramount+": "paramountplus.com",
+  "Showtime": "paramountplus.com",
+  "Canal+": "canalplus.com",
+  "ARTE": "arte.tv",
 };
 
 // Optional user remap: e.g. a show on "Apple TV" watched via "Canal+".
@@ -876,8 +875,10 @@ function resolveProvider(channelName) {
 
 function watchUrl(channelName, title) {
   const q = encodeURIComponent(title);
-  const provider = WATCH_PROVIDERS[resolveProvider(channelName)];
-  return provider ? provider(q) : `https://www.justwatch.com/us/search?q=${q}`;
+  const domain = WATCH_DOMAINS[resolveProvider(channelName)];
+  return domain
+    ? `https://www.google.com/search?q=site:${domain}+${q}`
+    : `https://www.justwatch.com/us/search?q=${q}`;
 }
 
 // Official domains per channel → used to fetch a small network favicon.
@@ -1108,7 +1109,7 @@ function saveOverrides() {
 
 // Every channel the user could pick as a source or a watch provider.
 function allProviderNames() {
-  return [...new Set([...state.known, ...Object.keys(WATCH_PROVIDERS), ...Object.keys(NETWORK_DOMAINS)])]
+  return [...new Set([...state.known, ...Object.keys(WATCH_DOMAINS), ...Object.keys(NETWORK_DOMAINS)])]
     .sort((a, b) => a.localeCompare(b, "en"));
 }
 

@@ -3,6 +3,13 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.14.0 — 2026-07-23
+
+### Changed
+- All "Watch on" links now use a site-scoped Google search per platform (more durable than
+  guessing each platform's on-site search URL); JustWatch remains the fallback.
+- Reduced the detail modal height (it was too tall).
+
 ## 1.13.3 — 2026-07-23
 
 ### Fixed

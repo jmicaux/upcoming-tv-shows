@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.11.0"; // single source of truth — bump on each release
+const APP_VERSION = "1.12.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -101,7 +101,9 @@ const el = {
   search: document.getElementById("search"),
   searchInput: document.getElementById("searchInput"),
   searchToggle: document.getElementById("searchToggle"),
+  searchClear: document.getElementById("searchClear"),
   resetFilters: document.getElementById("resetFilters"),
+  clearNetwork: document.getElementById("clearNetwork"),
   resultCount: document.getElementById("resultCount"),
   modal: document.getElementById("modal"),
   modalCard: document.querySelector(".modal-card"),
@@ -465,21 +467,19 @@ function toggleNetwork(name, on) {
   if (on) state.followed.add(name);
   else state.followed.delete(name);
   saveSet(FOLLOW_KEY, state.followed);
+  dropNetworkHash();       // user is hand-editing the selection now
   updateNetworkButton();
+  updateActiveNetwork();
   renderAllBlocks();
 }
 
-// Quick filter: from a card's channel, narrow the feed to that single network.
+// Quick filter: narrow the feed to a single network via the URL hash. Transient and
+// reversible — Back, Reset, or the ✕ pill restores the saved channel selection.
 function filterToNetwork(name) {
-  state.followed = new Set([name]);
   state.known.add(name);
-  saveSet(FOLLOW_KEY, state.followed);
   saveSet(KNOWN_KEY, state.known);
-  updateNetworkButton();
-  renderNetworkList();
+  location.hash = "network=" + encodeURIComponent(name);
   toast(`Showing ${name} only`);
-  if (state.view === "watchlist") location.hash = ""; // switch to the (filtered) feed
-  else { window.scrollTo(0, 0); renderAllBlocks(); }
 }
 
 function updateNetworkButton() {
@@ -595,8 +595,42 @@ function toggleFav(id, showObj) {
   });
 }
 
-function routeView() {
-  return location.hash.replace(/^#/, "") === "watchlist" ? "watchlist" : "month";
+// URL routing via the hash: "#watchlist" or "#network=<name>" (bookmarkable).
+function parseHash() {
+  const raw = location.hash.replace(/^#/, "");
+  if (raw === "watchlist") return { view: "watchlist", network: null };
+  if (raw.startsWith("network=")) return { view: "month", network: decodeURIComponent(raw.slice(8)) };
+  return { view: "month", network: null };
+}
+
+// A network in the URL filters the feed transiently — it reflects the link, it does not
+// overwrite the user's saved channel selection (that returns on a plain reload).
+function applyRoute() {
+  const { view, network } = parseHash();
+  state.followed = network ? new Set([network]) : new Set(loadFollowed());
+  if (network) state.known.add(network);
+  updateNetworkButton();
+  updateActiveNetwork();
+  renderNetworkList();
+  setView(view);
+}
+
+// The removable "Netflix ✕" pill shown while a transient network filter is active.
+function updateActiveNetwork() {
+  const { network } = parseHash();
+  if (network) {
+    el.clearNetwork.hidden = false;
+    el.clearNetwork.innerHTML = `${escapeHtml(network)} <span aria-hidden="true">✕</span>`;
+    el.clearNetwork.setAttribute("aria-label", `Clear ${network} filter`);
+  } else {
+    el.clearNetwork.hidden = true;
+  }
+}
+
+// Silently drop a "#network=" hash (used when the user edits the selection by hand, so the
+// URL doesn't misrepresent it) without firing a route change.
+function dropNetworkHash() {
+  if (location.hash.startsWith("#network=")) history.replaceState(null, "", location.pathname + location.search);
 }
 
 function setView(v) {
@@ -1202,15 +1236,23 @@ el.networkSearch.addEventListener("input", (e) => { state.networkSearch = e.targ
 el.networkClear.addEventListener("click", () => {
   state.followed.clear();
   saveSet(FOLLOW_KEY, state.followed);
+  dropNetworkHash();
+  updateActiveNetwork();
   renderNetworkList();
   renderAllBlocks();
 });
+el.clearNetwork.addEventListener("click", () => { location.hash = ""; });
 el.networkPanel.addEventListener("click", (e) => e.stopPropagation());
 document.addEventListener("click", () => setNetworkPanel(false));
 
 el.genreFilter.addEventListener("change", (e) => { state.genre = e.target.value; renderAllBlocks(); });
 el.premieresOnly.addEventListener("change", (e) => { state.premieresOnly = e.target.checked; renderAllBlocks(); });
-el.searchInput.addEventListener("input", (e) => { state.search = e.target.value.trim().toLowerCase(); renderAllBlocks(); });
+el.searchInput.addEventListener("input", (e) => {
+  state.search = e.target.value.trim().toLowerCase();
+  el.searchClear.hidden = !e.target.value;
+  renderAllBlocks();
+});
+el.searchClear.addEventListener("click", () => { clearSearch(); el.searchInput.focus(); });
 el.resetFilters.addEventListener("click", resetFilters);
 
 // Header search: a magnifier that expands into a field on demand, collapsing when
@@ -1223,6 +1265,7 @@ function clearSearch() {
   if (!el.searchInput.value) return;
   el.searchInput.value = "";
   state.search = "";
+  el.searchClear.hidden = true;
   renderAllBlocks();
 }
 el.searchToggle.addEventListener("click", () => {
@@ -1246,13 +1289,16 @@ function resetFilters() {
   el.genreFilter.value = "";
   el.premieresOnly.checked = true;
   collapseSearch();
+  // If a transient network filter is active, exit it and restore the saved selection —
+  // applyRoute() re-renders with the search/genre/premieres we just reset above.
+  if (location.hash.startsWith("#network=")) { location.hash = ""; return; }
   renderAllBlocks();
 }
 
 el.viewBtn.addEventListener("click", () => {
   location.hash = state.view === "watchlist" ? "" : "watchlist";
 });
-window.addEventListener("hashchange", () => setView(routeView()));
+window.addEventListener("hashchange", applyRoute);
 
 el.exportBtn.addEventListener("click", exportPrefs);
 el.importBtn.addEventListener("click", importPrefs);
@@ -1303,10 +1349,7 @@ if (versionEl) {
   versionEl.title = "View changelog";
   versionEl.addEventListener("click", showChangelog);
 }
-state.view = routeView(); // honor #watchlist in a bookmarked URL
-document.body.setAttribute("data-view", state.view);
 updateViewButton();
 renderNetworkList(); // show the network list + pre-selection immediately (from the seed)
 scrollObserver.observe(sentinelEl);
-if (state.view === "watchlist") renderWatchlist();
-else enterMonthView();
+applyRoute(); // honor "#watchlist" or "#network=…" in a bookmarked URL

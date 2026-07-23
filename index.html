@@ -37,7 +37,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=1.16.0">
+  <link rel="stylesheet" href="styles.css?v=1.17.0">
 </head>
 <body>
   <noscript>
@@ -74,10 +74,13 @@
         <div id="networkList" class="network-list"></div>
       </div>
     </div>
-    <label>
-      Genre
-      <select id="genreFilter"><option value="">All</option></select>
-    </label>
+    <div class="field dropdown" id="genreDropdown">
+      <span class="field-label">Genre</span>
+      <button type="button" id="genreBtn" class="dropdown-btn" aria-haspopup="true" aria-expanded="false">All <span id="genreBtnCount" class="pill"></span> ▾</button>
+      <div id="genrePanel" class="dropdown-panel" hidden>
+        <div id="genreList" class="network-list"></div>
+      </div>
+    </div>
     <label class="switch">
       <input type="checkbox" id="premieresOnly" checked>
       Premieres only
@@ -100,6 +103,6 @@
   </div>
 
   <script src="config.js"></script>
-  <script src="app.js?v=1.16.0"></script>
+  <script src="app.js?v=1.17.0"></script>
 </body>
 </html>

@@ -37,7 +37,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=1.4.1">
+  <link rel="stylesheet" href="styles.css?v=1.5.0">
 </head>
 <body>
   <noscript>
@@ -70,10 +70,15 @@
       Genre
       <select id="genreFilter"><option value="">All</option></select>
     </label>
+    <label>
+      Search
+      <input type="search" id="searchInput" placeholder="Show title…" autocomplete="off">
+    </label>
     <label class="switch">
       <input type="checkbox" id="premieresOnly" checked>
       Premieres only
     </label>
+    <button type="button" id="resetFilters" class="reset-btn">Reset filters</button>
     <span id="resultCount" class="result-count"></span>
   </section>
 
@@ -88,6 +93,6 @@
   </div>
 
   <script src="config.js"></script>
-  <script src="app.js?v=1.4.1"></script>
+  <script src="app.js?v=1.5.0"></script>
 </body>
 </html>

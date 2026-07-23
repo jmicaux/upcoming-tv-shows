@@ -3,6 +3,11 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.13.3 — 2026-07-23
+
+### Fixed
+- Disney+ "Watch on" link now uses a `site:disneyplus.com` Google search (same reason as Canal+).
+
 ## 1.13.2 — 2026-07-23
 
 ### Fixed

@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.13.2"; // single source of truth — bump on each release
+const APP_VERSION = "1.13.3"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -858,7 +858,7 @@ const WATCH_PROVIDERS = {
   "Netflix": (q) => `https://www.netflix.com/search?q=${q}`,
   "Prime Video": (q) => `https://www.amazon.com/s?k=${q}&i=instant-video`,
   "Hulu": (q) => `https://www.hulu.com/search?q=${q}`,
-  "Disney+": (q) => `https://www.disneyplus.com/search?q=${q}`,
+  "Disney+": (q) => `https://www.google.com/search?q=site:disneyplus.com+${q}`,
   "Max": (q) => `https://play.max.com/search?q=${q}`,
   "HBO": (q) => `https://play.max.com/search?q=${q}`,
   "Apple TV": (q) => `https://tv.apple.com/search?term=${q}`,

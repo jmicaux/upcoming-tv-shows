@@ -3,6 +3,12 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.18.1 — 2026-07-23
+
+### Changed
+- Settings and docs now refer to "the French channels" generically instead of naming only
+  Canal+ / Arte (TF1, M6 and France 2/3 are supported too).
+
 ## 1.18.0 — 2026-07-23
 
 ### Added

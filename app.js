@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.18.0"; // single source of truth — bump on each release
+const APP_VERSION = "1.18.1"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -1177,8 +1177,8 @@ function renderSettings() {
     <div class="settings">
       <h2 class="modal-title">Settings</h2>
 
-      <h3 class="settings-h">French channels (Canal+ / Arte)</h3>
-      <p class="settings-note">Add your free <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">TMDB API key</a> to load Canal+ and Arte. Stored only in this browser.</p>
+      <h3 class="settings-h">French channels</h3>
+      <p class="settings-note">Add your free <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">TMDB API key</a> to load the French channels (Canal+, Arte, TF1, M6, France 2/3). Stored only in this browser.</p>
       <div class="tmdb-row">
         <input type="password" id="tmdbKeyInput" class="tmdb-input" placeholder="TMDB API key" value="${escapeAttr(TMDB_KEY)}" autocomplete="off">
         <button type="button" class="tmdb-save">Save</button>

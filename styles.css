@@ -597,10 +597,15 @@ body[data-view="watchlist"] .progress { display: none; }
   border-radius: var(--radius);
   max-width: 640px;
   width: 100%;
-  max-height: min(88vh, 640px);
-  overflow-y: auto;
+  height: min(88vh, 620px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: 1.5rem;
 }
+/* Body fills the fixed-height card; the summary scrolls, the header stays put. */
+#modalBody { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.changelog, .settings { flex: 1; min-height: 0; overflow-y: auto; }
 .modal-nav {
   position: absolute;
   top: 50%;
@@ -635,7 +640,7 @@ body[data-view="watchlist"] .progress { display: none; }
   background: none; border: none; color: var(--muted);
   font-size: 1.6rem; cursor: pointer; line-height: 1;
 }
-.modal-head { display: flex; gap: 1rem; }
+.modal-head { display: flex; gap: 1rem; flex-shrink: 0; }
 .modal-head img { width: 120px; border-radius: 8px; flex-shrink: 0; }
 .modal-title { margin: 0 0 0.3rem; }
 .modal-sub {
@@ -686,7 +691,7 @@ body[data-view="watchlist"] .progress { display: none; }
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-.modal-summary { margin-top: 1rem; color: var(--text); font-size: 0.92rem; }
+.modal-summary { margin-top: 1rem; color: var(--text); font-size: 0.92rem; flex: 1; min-height: 0; overflow-y: auto; }
 .modal-summary p { margin: 0 0 0.6rem; }
 .modal-genres { margin-top: 0.6rem; }
 

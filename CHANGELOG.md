@@ -3,6 +3,13 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.7.0 — 2026-07-23
+
+### Added
+- **Watch settings** (⚙ in the header): optionally remap a channel to a provider you
+  already have, so the "Watch on" link points there instead (e.g. a show on Apple TV →
+  "Watch on Canal+"). Mappings persist locally and travel with export/import preferences.
+
 ## 1.6.0 — 2026-07-23
 
 ### Accessibility

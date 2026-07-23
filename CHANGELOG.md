@@ -3,6 +3,11 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.16.0 — 2026-07-23
+
+### Added
+- TF1 as a French channel (TMDB network 290), alongside Canal+ and Arte.
+
 ## 1.15.0 — 2026-07-23
 
 ### Added

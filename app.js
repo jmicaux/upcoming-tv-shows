@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.18.2"; // single source of truth — bump on each release
+const APP_VERSION = "1.18.3"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -60,6 +60,7 @@ const state = {
   followed: new Set(loadFollowed()),                 // networks the user picked; empty = show all
   known: new Set([...SEED_NETWORKS, ...loadArray(KNOWN_KEY)]), // all pickable networks
   networkSearch: "",
+  genreSearch: "",
   search: "",                       // free-text title search (lowercased)
   genres: new Set(),                // selected genres (empty = all); a show matches any
   availableGenres: new Set(),       // genres present in the loaded feed
@@ -107,6 +108,7 @@ const el = {
   genreBtnCount: document.getElementById("genreBtnCount"),
   genrePanel: document.getElementById("genrePanel"),
   genreList: document.getElementById("genreList"),
+  genreSearch: document.getElementById("genreSearch"),
   genreClear: document.getElementById("genreClear"),
   premieresOnly: document.getElementById("premieresOnly"),
   search: document.getElementById("search"),
@@ -547,9 +549,12 @@ function rebuildFilterOptions() {
 }
 
 function renderGenreList() {
-  const names = [...state.availableGenres].sort((a, b) => a.localeCompare(b, "en"));
+  const q = state.genreSearch.trim().toLowerCase();
+  const names = [...state.availableGenres]
+    .filter((n) => !q || n.toLowerCase().includes(q))
+    .sort((a, b) => a.localeCompare(b, "en"));
   if (names.length === 0) {
-    el.genreList.innerHTML = '<div class="none">No genres yet.</div>';
+    el.genreList.innerHTML = `<div class="none">${state.availableGenres.size ? "No genre matches." : "No genres yet."}</div>`;
   } else {
     el.genreList.innerHTML = names.map((n) => {
       const checked = state.genres.has(n) ? "checked" : "";
@@ -1429,6 +1434,7 @@ el.genreBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   setGenrePanel(el.genrePanel.hidden);
 });
+el.genreSearch.addEventListener("input", (e) => { state.genreSearch = e.target.value; renderGenreList(); });
 el.genreClear.addEventListener("click", () => {
   state.genres.clear();
   renderGenreList();

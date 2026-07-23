@@ -3,6 +3,11 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.18.3 — 2026-07-23
+
+### Added
+- Filter-list search box in the Genre dropdown, matching the Networks dropdown.
+
 ## 1.18.2 — 2026-07-23
 
 ### Added

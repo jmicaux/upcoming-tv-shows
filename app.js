@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.5.0"; // single source of truth — bump on each release
+const APP_VERSION = "1.5.1"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -704,6 +704,34 @@ function watchUrl(channelName, title) {
   return provider ? provider(q) : `https://www.justwatch.com/us/search?q=${q}`;
 }
 
+// Official domains per channel → used to fetch a small network favicon.
+const NETWORK_DOMAINS = {
+  "ABC": "abc.com", "CBS": "cbs.com", "NBC": "nbc.com", "FOX": "fox.com",
+  "The CW": "cwtv.com", "PBS": "pbs.org",
+  "AMC": "amc.com", "FX": "fxnetworks.com", "FXX": "fxnetworks.com",
+  "USA Network": "usanetwork.com", "TNT": "tntdrama.com", "TBS": "tbs.com",
+  "HBO": "hbo.com", "Showtime": "sho.com", "Starz": "starz.com",
+  "A&E": "aetv.com", "History": "history.com", "Bravo": "bravotv.com",
+  "E!": "eonline.com", "Syfy": "syfy.com", "Comedy Central": "cc.com", "MTV": "mtv.com",
+  "Cartoon Network": "cartoonnetwork.com", "Adult Swim": "adultswim.com",
+  "Nickelodeon": "nick.com", "Disney Channel": "disneynow.com", "Freeform": "freeform.com",
+  "TLC": "tlc.com", "HGTV": "hgtv.com", "Food Network": "foodnetwork.com",
+  "Discovery Channel": "discovery.com", "National Geographic": "nationalgeographic.com",
+  "Lifetime": "mylifetime.com", "Hallmark Channel": "hallmarkchannel.com",
+  "Paramount Network": "paramountnetwork.com", "BET": "bet.com", "truTV": "trutv.com",
+  "Netflix": "netflix.com", "Prime Video": "primevideo.com", "Hulu": "hulu.com",
+  "Disney+": "disneyplus.com", "Max": "max.com", "Apple TV": "tv.apple.com",
+  "Peacock": "peacocktv.com", "Paramount+": "paramountplus.com", "AMC+": "amcplus.com",
+  "Shudder": "shudder.com", "ESPN+": "espn.com",
+  "Canal+": "canalplus.com", "ARTE": "arte.tv",
+};
+
+function channelIconHtml(channelName) {
+  const domain = channelName && NETWORK_DOMAINS[channelName];
+  if (!domain) return "";
+  return `<img class="channel-ico" src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" alt="" loading="lazy">`;
+}
+
 function watchLinkHtml(channelName, title, cls) {
   const label = channelName ? `Watch on ${escapeHtml(channelName)}` : "Where to watch";
   return `<a class="${cls}" href="${escapeAttr(watchUrl(channelName, title))}" target="_blank" rel="noopener">▸ ${label}</a>`;
@@ -758,7 +786,7 @@ function showModal(s, ep) {
       ${img}
       <div>
         <h2 class="modal-title">${escapeHtml(s.name)}</h2>
-        <p class="modal-sub">${escapeHtml(sub.join(" · "))}</p>
+        <p class="modal-sub">${s.channel ? channelIconHtml(s.channel.name) : ""}${escapeHtml(sub.join(" · "))}</p>
         ${genres}
         <div class="modal-actions">
           ${watch}

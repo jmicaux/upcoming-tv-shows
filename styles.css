@@ -528,6 +528,13 @@ body[data-view="watchlist"] .progress { display: none; }
 .modal-head img { width: 120px; border-radius: 8px; flex-shrink: 0; }
 .modal-title { margin: 0 0 0.3rem; }
 .modal-sub { color: var(--muted); font-size: 0.9rem; margin: 0 0 0.6rem; }
+.channel-ico {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  vertical-align: -3px;
+  margin-right: 0.35rem;
+}
 .toast {
   position: fixed;
   bottom: 1.25rem;

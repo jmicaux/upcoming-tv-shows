@@ -3,6 +3,11 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.5.1 — 2026-07-23
+
+### Added
+- Network favicon next to the channel name in the detail modal (known channels only).
+
 ## 1.5.0 — 2026-07-23
 
 ### Added

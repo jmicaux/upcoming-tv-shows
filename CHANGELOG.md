@@ -3,6 +3,12 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.10.1 — 2026-07-23
+
+### Changed
+- The detail modal now keeps a constant size and scrolls internally for long content,
+  so it no longer resizes when stepping through shows with the carousel.
+
 ## 1.10.0 — 2026-07-23
 
 ### Added

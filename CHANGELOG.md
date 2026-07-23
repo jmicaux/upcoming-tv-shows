@@ -3,6 +3,21 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.6.0 — 2026-07-23
+
+### Accessibility
+- Show cards are now keyboard-operable (`role="button"`, focusable, Enter/Space to open)
+  with a visible focus ring.
+- Detail modal manages focus: it moves focus into the dialog on open, traps Tab inside
+  while open, returns focus to the triggering card on close, and exposes an accessible name.
+- Favorite buttons expose their state via `aria-pressed`; the network dropdown exposes
+  `aria-haspopup`/`aria-expanded`; the channel search field and modal close button got
+  proper labels (and the label language now matches the page).
+- Result count is announced via an `aria-live` region instead of re-announcing the whole grid.
+- Fixed low-contrast colors: the gold "In watchlist" button (unreadable in light mode) and
+  the red "Watch on" / streaming text now use theme-aware, AA-compliant colors.
+- Honors `prefers-reduced-motion` by dropping hover/transition animations.
+
 ## 1.5.1 — 2026-07-23
 
 ### Added

@@ -5,6 +5,8 @@
   --text: #e8eaed;
   --muted: #9aa0ac;
   --accent: #e50914;
+  --accent-text: #ff6b70; /* readable accent for text on surfaces (dark theme) */
+  --star-on: #ffd34d;     /* favorite gold — readable on dark surfaces */
   --border: #2c313c;
   --radius: 10px;
 }
@@ -25,6 +27,8 @@
     --text: #1a1d24;
     --muted: #5c6470;
     --border: #dcdfe4;
+    --accent-text: #c1121f; /* darker red for contrast on light surfaces */
+    --star-on: #7a5a00;     /* dark amber — readable on light surfaces */
   }
 }
 
@@ -35,6 +39,8 @@
   --text: #1a1d24;
   --muted: #5c6470;
   --border: #dcdfe4;
+  --accent-text: #c1121f;
+  --star-on: #7a5a00;
 }
 
 * { box-sizing: border-box; }
@@ -469,7 +475,7 @@ body[data-view="watchlist"] .progress { display: none; }
   margin-top: 0.5rem;
   font-size: 0.72rem;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
 }
 .card-watch:hover { text-decoration: underline; }
@@ -479,8 +485,8 @@ body[data-view="watchlist"] .progress { display: none; }
   font-size: 0.6rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--accent);
-  border: 1px solid var(--accent);
+  color: var(--accent-text);
+  border: 1px solid var(--accent-text);
   border-radius: 4px;
   padding: 0 0.25rem;
   margin-left: 0.2rem;
@@ -586,4 +592,21 @@ body[data-view="watchlist"] .progress { display: none; }
   cursor: pointer;
 }
 .modal-fav:hover { border-color: var(--accent); }
-.modal-fav.on { border-color: #ffd34d; color: #ffd34d; }
+.modal-fav.on { border-color: var(--star-on); color: var(--star-on); }
+
+/* ---------- Accessibility ---------- */
+/* Clear keyboard-focus ring for interactive elements (cards are role="button"). */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.modal-card:focus-visible { outline: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .card:hover { transform: none; }
+  .fav-btn:hover { transform: none; }
+}

@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.8.0"; // single source of truth — bump on each release
+const APP_VERSION = "1.8.1"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -53,6 +53,7 @@ const state = {
   blocks: [],                       // [{ month: Date, items: [], el: HTMLElement }]
   loading: false,                   // a month block is currently loading
   reachedEnd: false,                // no further scheduling data upstream
+  emptyStreak: 0,                   // consecutive empty months (for end detection)
   followed: new Set(loadFollowed()),                 // networks the user picked; empty = show all
   known: new Set([...SEED_NETWORKS, ...loadArray(KNOWN_KEY)]), // all pickable networks
   networkSearch: "",
@@ -80,7 +81,8 @@ function saveSet(key, set) {
   try { localStorage.setItem(key, JSON.stringify([...set])); } catch { /* ignore quota */ }
 }
 function saveFavorites() {
-  try { localStorage.setItem(FAV_KEY, JSON.stringify(state.favorites)); } catch { /* ignore quota */ }
+  try { localStorage.setItem(FAV_KEY, JSON.stringify(state.favorites)); }
+  catch { toast("Storage full — your watchlist may not be saved."); }
 }
 
 /* ---------- DOM ---------- */
@@ -279,7 +281,7 @@ function makeFrItem(show, season, ep) {
       image: show.poster_path
         ? { medium: TMDB_IMG + show.poster_path, original: TMDB_IMG_ORIG + show.poster_path }
         : null,
-      summary: show.overview ? `<p>${show.overview}</p>` : "",
+      summary: show.overview ? `<p>${escapeHtml(show.overview)}</p>` : "",
       premiered: show.first_air_date || null,
     },
   };
@@ -334,7 +336,8 @@ function writeTmdbCache(monthKey, data) {
   catch { /* ignore quota */ }
 }
 
-const MAX_MONTHS = 24; // safety cap for the infinite scroll
+const MAX_MONTHS = 24;       // safety cap for the infinite scroll
+const EMPTY_MONTHS_END = 3;  // stop only after this many consecutive empty months
 
 function monthAt(offset) {
   return new Date(state.firstMonth.getFullYear(), state.firstMonth.getMonth() + offset, 1);
@@ -374,7 +377,14 @@ async function loadNextMonth() {
   updateResultCount();
 
   state.loading = false;
-  if (block.items.length === 0) { state.reachedEnd = true; setSentinel("No further scheduling data."); return; }
+  // A single empty month isn't the end (a far-future month may simply have no data yet).
+  // Only stop after several empty months in a row so the feed keeps flowing past gaps.
+  if (block.items.length === 0) {
+    state.emptyStreak += 1;
+    if (state.emptyStreak >= EMPTY_MONTHS_END) { state.reachedEnd = true; setSentinel("No further scheduling data."); return; }
+  } else {
+    state.emptyStreak = 0;
+  }
   setSentinel("");
 
   // Auto-fill the viewport while the page is too short to scroll. Guard against
@@ -745,10 +755,22 @@ const NETWORK_DOMAINS = {
   "Canal+": "canalplus.com", "ARTE": "arte.tv",
 };
 
+// Deterministic chip color from the channel name (for the initial fallback).
+function chipColor(name) {
+  let h = 0;
+  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  return `hsl(${h} 55% 42%)`;
+}
+
 function channelIconHtml(channelName) {
   const domain = channelName && NETWORK_DOMAINS[channelName];
   if (!domain) return "";
-  return `<span class="channel-chip"><img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" alt="" loading="lazy"></span>`;
+  const initial = escapeAttr(channelName.trim()[0].toUpperCase());
+  // Favicon with a graceful fallback: if it fails to load, drop it and show a colored
+  // initial chip instead (no broken image, no lingering Google dependency).
+  return `<span class="channel-chip" data-initial="${initial}" style="--chip-bg:${chipColor(channelName)}">` +
+    `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" alt="" loading="lazy" ` +
+    `onerror="this.remove();this.parentNode.classList.add('is-initial')"></span>`;
 }
 
 function watchLinkHtml(channelName, title, cls) {
@@ -883,7 +905,7 @@ async function showChangelog() {
 /* ---------- Watch settings (channel → provider overrides) ---------- */
 function saveOverrides() {
   try { localStorage.setItem(OVERRIDES_KEY, JSON.stringify(state.watchOverrides)); }
-  catch { /* ignore quota */ }
+  catch { toast("Storage full — watch settings may not be saved."); }
 }
 
 // Every channel the user could pick as a source or a watch provider.
@@ -975,6 +997,9 @@ function buildPrefs() {
 
 function applyPrefs(data) {
   if (!data || typeof data !== "object") return;
+  // Importing overwrites local state — confirm when there's something to lose.
+  const hasData = Object.keys(state.favorites).length > 0 || state.followed.size > 0;
+  if (hasData && !confirm("Replace your current favorites, followed channels and settings with this file?")) return;
   if (Array.isArray(data.followedNetworks)) {
     state.followed = new Set(data.followedNetworks);
     saveSet(FOLLOW_KEY, state.followed);

@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.10.1"; // single source of truth — bump on each release
+const APP_VERSION = "1.11.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -469,6 +469,19 @@ function toggleNetwork(name, on) {
   renderAllBlocks();
 }
 
+// Quick filter: from a card's channel, narrow the feed to that single network.
+function filterToNetwork(name) {
+  state.followed = new Set([name]);
+  state.known.add(name);
+  saveSet(FOLLOW_KEY, state.followed);
+  saveSet(KNOWN_KEY, state.known);
+  updateNetworkButton();
+  renderNetworkList();
+  toast(`Showing ${name} only`);
+  if (state.view === "watchlist") location.hash = ""; // switch to the (filtered) feed
+  else { window.scrollTo(0, 0); renderAllBlocks(); }
+}
+
 function updateNetworkButton() {
   const n = state.followed.size;
   el.networkBtn.childNodes[0].nodeValue = n === 0 ? "All " : "Selected ";
@@ -555,6 +568,8 @@ function wireCards(container) {
     });
     const watch = c.querySelector(".card-watch");
     if (watch) watch.addEventListener("click", (e) => e.stopPropagation());
+    const chan = c.querySelector(".chan-link");
+    if (chan) chan.addEventListener("click", (e) => { e.stopPropagation(); filterToNetwork(chan.dataset.chan); });
   });
 }
 
@@ -644,7 +659,6 @@ async function renderWatchlist() {
 
 function watchlistCardHtml(show) {
   const chan = show.channel ? show.channel.name : "—";
-  const streaming = show.channel && show.channel.streaming;
   return `
     <article class="card" role="button" tabindex="0" aria-label="${escapeAttr(`${show.name}, ${chan}. View details`)}" data-show-id="${escapeAttr(String(show.id))}">
       ${favBtnHtml(show.id)}
@@ -652,7 +666,7 @@ function watchlistCardHtml(show) {
       <div class="card-body">
         <div class="card-date">${escapeHtml(nextEpLabel(state.nextEp[show.id]))}</div>
         <h3 class="card-title">${escapeHtml(show.name)}</h3>
-        <div class="card-meta">${escapeHtml(chan)}${streaming ? ' <span class="tag-stream">streaming</span>' : ""}</div>
+        <div class="card-meta">${chanMetaHtml(show.channel)}</div>
         ${watchLinkHtml(show.channel && show.channel.name, show.name, "card-watch", true)}
       </div>
     </article>`;
@@ -785,9 +799,15 @@ function watchLinkHtml(channelName, title, cls, compact) {
   return `<a class="${cls}" href="${escapeAttr(watchUrl(channelName, title))}" target="_blank" rel="noopener">▸ ${label}</a>`;
 }
 
+// Card meta line: channel name as a quick-filter link (+ streaming tag).
+function chanMetaHtml(channel) {
+  if (!channel) return "—";
+  const stream = channel.streaming ? ' <span class="tag-stream">streaming</span>' : "";
+  return `<button class="chan-link" data-chan="${escapeAttr(channel.name)}" title="Show ${escapeAttr(channel.name)} only">${escapeHtml(channel.name)}</button>${stream}`;
+}
+
 function cardHtml(it) {
   const chan = it.show.channel ? it.show.channel.name : "—";
-  const streaming = it.show.channel && it.show.channel.streaming;
   const premiere = it.number === 1
     ? (it.season === 1 ? "Series premiere" : `Season ${it.season}`)
     : `S${it.season}E${it.number}`;
@@ -798,7 +818,7 @@ function cardHtml(it) {
       <div class="card-body">
         <div class="card-date">${formatDay(it.airdate)}</div>
         <h3 class="card-title">${escapeHtml(it.show.name)}</h3>
-        <div class="card-meta">${escapeHtml(chan)}${streaming ? ' <span class="tag-stream">streaming</span>' : ""}</div>
+        <div class="card-meta">${chanMetaHtml(it.show.channel)}</div>
         <span class="badge">${escapeHtml(premiere)}</span>
         ${watchLinkHtml(it.show.channel && it.show.channel.name, it.show.name, "card-watch", true)}
       </div>

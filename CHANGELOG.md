@@ -3,6 +3,12 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.11.0 — 2026-07-23
+
+### Added
+- Channel name on cards is now a quick-filter link: click it to narrow the feed to that
+  network only (a first step toward browsing by network).
+
 ## 1.10.1 — 2026-07-23
 
 ### Changed

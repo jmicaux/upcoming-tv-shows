@@ -639,6 +639,13 @@ body[data-view="watchlist"] .progress { display: none; }
 }
 .modal-fav:hover { border-color: var(--accent); }
 .modal-fav.on { border-color: var(--star-on); color: var(--star-on); }
+.modal-epguides {
+  align-self: center;
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-decoration: none;
+}
+.modal-epguides:hover { color: var(--text); text-decoration: underline; }
 
 /* Watch settings (channel → provider mappings) */
 .settings .modal-title { margin: 0 0 0.3rem; }

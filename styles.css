@@ -151,6 +151,31 @@ body {
 }
 .icon-btn:hover { border-color: var(--accent); }
 
+/* Expanding header search */
+.search { display: flex; align-items: center; }
+.search-toggle { display: inline-flex; align-items: center; justify-content: center; }
+.search-input {
+  width: 0;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  opacity: 0;
+  transition: width 0.2s ease, opacity 0.2s ease, padding 0.2s ease;
+}
+.search.open .search-input {
+  width: 12rem;
+  max-width: 44vw;
+  padding: 0.4rem 0.6rem;
+  border-color: var(--border);
+  opacity: 1;
+  margin-right: 0.4rem;
+}
+body[data-view="watchlist"] .search { display: none; }
+
 .view-btn {
   background: var(--surface-2);
   color: var(--text);

@@ -3,6 +3,13 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.8.0 — 2026-07-23
+
+### Changed
+- Title search moved to the header as an expanding magnifier: click the loupe to reveal the
+  field, it collapses when left empty, and Escape clears and closes it. Declutters the
+  filters bar and follows the common search-to-expand pattern.
+
 ## 1.7.1 — 2026-07-23
 
 ### Changed

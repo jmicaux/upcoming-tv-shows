@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.7.1"; // single source of truth — bump on each release
+const APP_VERSION = "1.8.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -95,7 +95,9 @@ const el = {
   networkDropdown: document.getElementById("networkDropdown"),
   genreFilter: document.getElementById("genreFilter"),
   premieresOnly: document.getElementById("premieresOnly"),
+  search: document.getElementById("search"),
   searchInput: document.getElementById("searchInput"),
+  searchToggle: document.getElementById("searchToggle"),
   resetFilters: document.getElementById("resetFilters"),
   resultCount: document.getElementById("resultCount"),
   modal: document.getElementById("modal"),
@@ -1122,6 +1124,29 @@ el.premieresOnly.addEventListener("change", (e) => { state.premieresOnly = e.tar
 el.searchInput.addEventListener("input", (e) => { state.search = e.target.value.trim().toLowerCase(); renderAllBlocks(); });
 el.resetFilters.addEventListener("click", resetFilters);
 
+// Header search: a magnifier that expands into a field on demand, collapsing when
+// left empty (Escape clears + collapses and returns focus to the icon).
+function collapseSearch() {
+  el.search.classList.remove("open");
+  el.searchToggle.setAttribute("aria-expanded", "false");
+}
+function clearSearch() {
+  if (!el.searchInput.value) return;
+  el.searchInput.value = "";
+  state.search = "";
+  renderAllBlocks();
+}
+el.searchToggle.addEventListener("click", () => {
+  const open = el.search.classList.toggle("open");
+  el.searchToggle.setAttribute("aria-expanded", String(open));
+  if (open) el.searchInput.focus();
+  else clearSearch();
+});
+el.searchInput.addEventListener("blur", () => { if (!el.searchInput.value) collapseSearch(); });
+el.searchInput.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { clearSearch(); collapseSearch(); el.searchToggle.focus(); }
+});
+
 // Reset the transient feed filters (search, genre, premieres) to their defaults.
 // Network selection has its own "Show all" control in the dropdown and is left intact.
 function resetFilters() {
@@ -1131,6 +1156,7 @@ function resetFilters() {
   el.searchInput.value = "";
   el.genreFilter.value = "";
   el.premieresOnly.checked = true;
+  collapseSearch();
   renderAllBlocks();
 }
 

@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.17.1"; // single source of truth — bump on each release
+const APP_VERSION = "1.18.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -24,14 +24,14 @@ const SEED_NETWORKS = [
   "Netflix", "Prime Video", "Hulu", "Disney+", "Max", "Apple TV",
   "Peacock", "Paramount+", "AMC+", "Starz", "Shudder", "ESPN+",
   // Selected French channels (sourced from TMDB)
-  "Canal+", "ARTE", "TF1", "M6",
+  "Canal+", "ARTE", "TF1", "M6", "France 2", "France 3",
 ];
 
 // Big networks pre-selected on the very first visit (until the user changes it).
 const DEFAULT_FOLLOWED = [
   "HBO", "Max", "Showtime", "Starz", "FX", "AMC",
   "Netflix", "Hulu", "Prime Video", "Disney+", "Apple TV", "Paramount+", "Peacock",
-  "Canal+", "ARTE", "TF1", "M6",
+  "Canal+", "ARTE", "TF1", "M6", "France 2", "France 3",
 ];
 
 // Web/streaming platforms to keep from the (worldwide) web schedule.
@@ -42,8 +42,8 @@ const STREAMING_ALLOWLIST = /^(Netflix|Prime Video|Amazon|Hulu|Disney\+|Max|HBO 
 const TMDB_KEY_STORAGE = "tv:tmdbKey";
 // Priority: a key entered in-app (localStorage) → a build-time config.js key → none.
 let TMDB_KEY = localStorage.getItem(TMDB_KEY_STORAGE) || (window.LINEUP_CONFIG && window.LINEUP_CONFIG.TMDB_KEY) || "";
-const TMDB_NETWORKS = "285|1628|290|712"; // Canal+ (285) | ARTE (1628) | TF1 (290) | M6 (712)
-const TMDB_CHANNEL_NAMES = { 285: "Canal+", 1628: "ARTE", 290: "TF1", 712: "M6" };
+const TMDB_NETWORKS = "285|1628|290|712|361|249"; // Canal+ | ARTE | TF1 | M6 | France 2 | France 3
+const TMDB_CHANNEL_NAMES = { 285: "Canal+", 1628: "ARTE", 290: "TF1", 712: "M6", 361: "France 2", 249: "France 3" };
 const TMDB_IMG = "https://image.tmdb.org/t/p/w342";
 const TMDB_IMG_ORIG = "https://image.tmdb.org/t/p/original";
 const TMDB_CACHE_PREFIX = "tmdb:fr:v1:"; // keyed by YYYY-MM
@@ -901,6 +901,8 @@ const WATCH_DOMAINS = {
   "ARTE": "arte.tv",
   "TF1": "tf1.fr",
   "M6": "m6.fr",
+  "France 2": "france.tv",
+  "France 3": "france.tv",
 };
 
 // Optional user remap: e.g. a show on "Apple TV" watched via "Canal+".
@@ -936,6 +938,7 @@ const NETWORK_DOMAINS = {
   "Peacock": "peacocktv.com", "Paramount+": "paramountplus.com", "AMC+": "amcplus.com",
   "Shudder": "shudder.com", "ESPN+": "espn.com",
   "Canal+": "canalplus.com", "ARTE": "arte.tv", "TF1": "tf1.fr", "M6": "m6.fr",
+  "France 2": "france.tv", "France 3": "france.tv",
 };
 
 // Deterministic chip color from the channel name (for the initial fallback).

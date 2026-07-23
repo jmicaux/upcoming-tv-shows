@@ -3,6 +3,11 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.18.0 — 2026-07-23
+
+### Added
+- France 2 (TMDB 361) and France 3 (TMDB 249) as French channels.
+
 ## 1.17.1 — 2026-07-23
 
 ### Added

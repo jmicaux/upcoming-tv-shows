@@ -3,6 +3,12 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.7.1 — 2026-07-23
+
+### Changed
+- The channel favicon in the detail modal is now a uniform round chip (clipped, fixed size,
+  neutral background) instead of a raw, inconsistently-sized favicon.
+
 ## 1.7.0 — 2026-07-23
 
 ### Added

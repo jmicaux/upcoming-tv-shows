@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.7.0"; // single source of truth — bump on each release
+const APP_VERSION = "1.7.1"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -746,7 +746,7 @@ const NETWORK_DOMAINS = {
 function channelIconHtml(channelName) {
   const domain = channelName && NETWORK_DOMAINS[channelName];
   if (!domain) return "";
-  return `<img class="channel-ico" src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" alt="" loading="lazy">`;
+  return `<span class="channel-chip"><img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" alt="" loading="lazy"></span>`;
 }
 
 function watchLinkHtml(channelName, title, cls) {

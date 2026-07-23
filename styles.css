@@ -630,9 +630,32 @@ body[data-view="watchlist"] .progress { display: none; }
 .modal-nav.next { right: max(0.5rem, calc(50% - 340px)); }
 .modal-nav:hover { border-color: var(--accent); }
 @media (max-width: 560px) {
-  .modal-nav { width: 2.2rem; height: 2.2rem; font-size: 1.3rem; }
-  .modal-nav.prev { left: 0.25rem; }
-  .modal-nav.next { right: 0.25rem; }
+  .month-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.7rem;
+    padding: 0.8rem;
+  }
+
+  .modal { padding: 0.6rem; }
+  .modal-card { padding: 1.1rem; height: min(90vh, 560px); }
+  .modal-close { top: 0.4rem; right: 0.5rem; }
+  .modal-head { gap: 0.75rem; }
+  .modal-head img { width: 88px; }
+  .modal-title { font-size: 1.15rem; }
+  /* Leave room so the bottom pager doesn't cover the last summary lines. */
+  .modal-summary { padding-bottom: 3.2rem; }
+
+  /* Carousel arrows become a centered pager at the bottom (no mid-text overlap). */
+  .modal-nav {
+    top: auto;
+    bottom: 0.6rem;
+    transform: none;
+    width: 2.4rem;
+    height: 2.4rem;
+    font-size: 1.4rem;
+  }
+  .modal-nav.prev { left: calc(50% - 3.2rem); right: auto; }
+  .modal-nav.next { right: calc(50% - 3.2rem); left: auto; }
 }
 
 .modal-close {

@@ -3,6 +3,13 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.14.1 — 2026-07-23
+
+### Changed
+- Mobile responsiveness: tighter modal (smaller padding, poster and title), carousel arrows
+  move to a bottom pager instead of overlapping the text, and the card grid shows two
+  columns on phones.
+
 ## 1.14.0 — 2026-07-23
 
 ### Changed

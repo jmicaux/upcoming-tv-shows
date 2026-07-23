@@ -3,6 +3,11 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.18.2 — 2026-07-23
+
+### Added
+- "Show all" button in the Genre dropdown to clear the selected genres (matching Networks).
+
 ## 1.18.1 — 2026-07-23
 
 ### Changed

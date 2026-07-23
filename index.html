@@ -37,7 +37,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=1.7.1">
+  <link rel="stylesheet" href="styles.css?v=1.8.0">
 </head>
 <body>
   <noscript>
@@ -46,6 +46,12 @@
   <header class="topbar">
     <h1 class="brand">Lineup <span class="brand-sub">Upcoming TV Shows</span> <span class="brand-ver" id="appVersion"></span></h1>
     <div class="actions">
+      <div class="search" id="search">
+        <input type="search" id="searchInput" class="search-input" placeholder="Search shows…" aria-label="Search shows" autocomplete="off">
+        <button type="button" id="searchToggle" class="icon-btn search-toggle" aria-label="Search shows" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+      </div>
       <button id="viewBtn" class="view-btn"></button>
       <button id="exportBtn" class="icon-btn" title="Export preferences" aria-label="Export preferences">⭳</button>
       <button id="importBtn" class="icon-btn" title="Import preferences" aria-label="Import preferences">⭱</button>
@@ -71,10 +77,6 @@
       Genre
       <select id="genreFilter"><option value="">All</option></select>
     </label>
-    <label>
-      Search
-      <input type="search" id="searchInput" placeholder="Show title…" autocomplete="off">
-    </label>
     <label class="switch">
       <input type="checkbox" id="premieresOnly" checked>
       Premieres only
@@ -94,6 +96,6 @@
   </div>
 
   <script src="config.js"></script>
-  <script src="app.js?v=1.7.1"></script>
+  <script src="app.js?v=1.8.0"></script>
 </body>
 </html>

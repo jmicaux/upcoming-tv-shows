@@ -3,6 +3,12 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.20.0 — 2026-07-23
+
+### Added
+- "Hide past" toggle to remove already-aired days from the current month (off by default,
+  which keeps them visible but dimmed).
+
 ## 1.19.0 — 2026-07-23
 
 ### Added

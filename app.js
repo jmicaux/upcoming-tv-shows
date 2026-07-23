@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.19.0"; // single source of truth — bump on each release
+const APP_VERSION = "1.20.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -65,6 +65,7 @@ const state = {
   genres: new Set(),                // selected genres (empty = all); a show matches any
   availableGenres: new Set(),       // genres present in the loaded feed
   premieresOnly: true,
+  hidePast: false,                  // hide already-aired days in the current month
   view: "month",                    // "month" | "watchlist"
   favorites: loadObject(FAV_KEY),   // { showId: trimmed show object }
   watchOverrides: loadObject(OVERRIDES_KEY), // { sourceChannel: providerChannel }
@@ -111,6 +112,7 @@ const el = {
   genreSearch: document.getElementById("genreSearch"),
   genreClear: document.getElementById("genreClear"),
   premieresOnly: document.getElementById("premieresOnly"),
+  hidePast: document.getElementById("hidePast"),
   search: document.getElementById("search"),
   searchInput: document.getElementById("searchInput"),
   searchToggle: document.getElementById("searchToggle"),
@@ -512,6 +514,7 @@ function visibleItemsIn(items) {
   const filtering = state.followed.size > 0;
   return items.filter((it) => {
     if (state.premieresOnly && it.number !== 1) return false;
+    if (state.hidePast && isPastDate(it.airdate)) return false;
     if (filtering && (!it.show.channel || !state.followed.has(it.show.channel.name))) return false;
     if (state.genres.size && !it.show.genres.some((g) => state.genres.has(g))) return false;
     return true;
@@ -1447,6 +1450,7 @@ el.genrePanel.addEventListener("click", (e) => e.stopPropagation());
 document.addEventListener("click", () => { setNetworkPanel(false); setGenrePanel(false); });
 
 el.premieresOnly.addEventListener("change", (e) => { state.premieresOnly = e.target.checked; renderAllBlocks(); });
+el.hidePast.addEventListener("change", (e) => { state.hidePast = e.target.checked; renderAllBlocks(); });
 el.searchInput.addEventListener("input", (e) => onSearchInput(e.target.value));
 el.searchClear.addEventListener("click", () => { clearSearch(); el.searchInput.focus(); });
 el.resetFilters.addEventListener("click", resetFilters);
@@ -1482,9 +1486,11 @@ function resetFilters() {
   state.search = "";
   state.genres.clear();
   state.premieresOnly = true;
+  state.hidePast = false;
   el.searchInput.value = "";
   el.searchClear.hidden = true;
   el.premieresOnly.checked = true;
+  el.hidePast.checked = false;
   renderGenreList();
   collapseSearch();
   // If a transient network filter is active, exit it and restore the saved selection —

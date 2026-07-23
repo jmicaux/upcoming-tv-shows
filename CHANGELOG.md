@@ -3,6 +3,19 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.12.0 — 2026-07-23
+
+### Added
+- The channel quick-filter is now bookmarkable: clicking a channel sets `#network=<name>`
+  in the URL. It's transient — it does not overwrite your saved channel selection.
+- A removable "<network> ✕" pill shows the active network filter; clicking it (or the
+  browser Back button, or Reset filters) restores your previous selection.
+- Clear (✕) button in the header search field.
+
+### Fixed
+- The detail modal no longer forces a tall fixed height (which left a large empty area);
+  it fits its content and scrolls internally only when the content is too long.
+
 ## 1.11.0 — 2026-07-23
 
 ### Added

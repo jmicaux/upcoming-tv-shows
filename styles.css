@@ -483,6 +483,15 @@ body[data-view="watchlist"] .progress { display: none; }
 
 .card:hover { transform: translateY(-3px); border-color: var(--accent); }
 
+/* Already-aired days in the current month: dimmed, with a muted date badge. */
+.card.past { opacity: 0.5; }
+.card.past:hover { opacity: 1; }
+.card.past .card-date {
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
 .card-img {
   aspect-ratio: 2 / 3;
   width: 100%;

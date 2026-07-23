@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.14.1"; // single source of truth — bump on each release
+const APP_VERSION = "1.15.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -39,7 +39,9 @@ const STREAMING_ALLOWLIST = /^(Netflix|Prime Video|Amazon|Hulu|Disney\+|Max|HBO 
 
 // French channels come from TMDB (far better FR coverage than TVMaze).
 // Key is provided at runtime by config.js (git-ignored) — see config.example.js.
-const TMDB_KEY = (window.LINEUP_CONFIG && window.LINEUP_CONFIG.TMDB_KEY) || "";
+const TMDB_KEY_STORAGE = "tv:tmdbKey";
+// Priority: a key entered in-app (localStorage) → a build-time config.js key → none.
+let TMDB_KEY = localStorage.getItem(TMDB_KEY_STORAGE) || (window.LINEUP_CONFIG && window.LINEUP_CONFIG.TMDB_KEY) || "";
 const TMDB_NETWORKS = "285|1628"; // Canal+ (285) | ARTE (1628)
 const TMDB_IMG = "https://image.tmdb.org/t/p/w342";
 const TMDB_IMG_ORIG = "https://image.tmdb.org/t/p/original";
@@ -1122,7 +1124,7 @@ function providerOptions(selected) {
 function showSettings() {
   state.navCard = null;
   renderSettings();
-  revealModal("Watch settings");
+  revealModal("Settings");
   updateModalNav();
 }
 
@@ -1137,16 +1139,51 @@ function renderSettings() {
 
   el.modalBody.innerHTML = `
     <div class="settings">
-      <h2 class="modal-title">Watch settings</h2>
-      <p class="modal-sub">Redirect a channel's “Watch on” link to a provider you already have
+      <h2 class="modal-title">Settings</h2>
+
+      <h3 class="settings-h">French channels (Canal+ / Arte)</h3>
+      <p class="settings-note">Add your free <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">TMDB API key</a> to load Canal+ and Arte. Stored only in this browser.</p>
+      <div class="tmdb-row">
+        <input type="password" id="tmdbKeyInput" class="tmdb-input" placeholder="TMDB API key" value="${escapeAttr(TMDB_KEY)}" autocomplete="off">
+        <button type="button" class="tmdb-save">Save</button>
+      </div>
+
+      <h3 class="settings-h">Watch redirects</h3>
+      <p class="settings-note">Send a channel's “Watch on” link to a provider you already have
         (e.g. a show on Apple TV → Watch on Canal+).</p>
       <div class="ov-list">${rows || '<p class="ov-empty">No mappings yet.</p>'}</div>
-      <button class="ov-add">+ Add mapping</button>
+      <button type="button" class="ov-add">+ Add mapping</button>
     </div>`;
   wireSettings();
 }
 
+function clearTmdbCache() {
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith(TMDB_CACHE_PREFIX)) localStorage.removeItem(k);
+  }
+}
+
+function saveTmdbKey(value) {
+  const key = value.trim();
+  TMDB_KEY = key;
+  try { key ? localStorage.setItem(TMDB_KEY_STORAGE, key) : localStorage.removeItem(TMDB_KEY_STORAGE); }
+  catch { /* ignore quota */ }
+  clearTmdbCache();
+  toast(key ? "TMDB key saved — reloading French channels" : "TMDB key cleared");
+  // Rebuild the feed from scratch so months re-fetch (now) with the FR channels.
+  state.blocks = [];
+  state.reachedEnd = false;
+  state.emptyStreak = 0;
+  if (state.view === "month" && !state.searching) enterMonthView();
+}
+
 function wireSettings() {
+  const keyInput = el.modalBody.querySelector("#tmdbKeyInput");
+  const save = () => saveTmdbKey(keyInput.value);
+  el.modalBody.querySelector(".tmdb-save").addEventListener("click", save);
+  keyInput.addEventListener("keydown", (e) => { if (e.key === "Enter") save(); });
+
   el.modalBody.querySelectorAll(".ov-row").forEach((row) => {
     row.querySelector(".ov-src").addEventListener("change", commitSettings);
     row.querySelector(".ov-tgt").addEventListener("change", commitSettings);

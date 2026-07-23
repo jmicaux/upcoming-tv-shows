@@ -3,6 +3,13 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.15.0 — 2026-07-23
+
+### Added
+- Enter your TMDB API key directly in ⚙ Settings to enable Canal+ / Arte. It's stored only
+  in the browser (localStorage), so the hosted preview can load French channels without a key
+  in the repo. Saving reloads the feed; clearing the field disables the French channels.
+
 ## 1.14.1 — 2026-07-23
 
 ### Changed

@@ -3,6 +3,12 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.17.0 — 2026-07-23
+
+### Changed
+- The Genre filter is now a multi-select dropdown (like Networks): pick several genres and
+  the feed shows shows matching any of them.
+
 ## 1.16.0 — 2026-07-23
 
 ### Added

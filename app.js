@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.16.0"; // single source of truth — bump on each release
+const APP_VERSION = "1.17.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -61,7 +61,8 @@ const state = {
   known: new Set([...SEED_NETWORKS, ...loadArray(KNOWN_KEY)]), // all pickable networks
   networkSearch: "",
   search: "",                       // free-text title search (lowercased)
-  genre: "",
+  genres: new Set(),                // selected genres (empty = all); a show matches any
+  availableGenres: new Set(),       // genres present in the loaded feed
   premieresOnly: true,
   view: "month",                    // "month" | "watchlist"
   favorites: loadObject(FAV_KEY),   // { showId: trimmed show object }
@@ -101,7 +102,11 @@ const el = {
   networkSearch: document.getElementById("networkSearch"),
   networkClear: document.getElementById("networkClear"),
   networkDropdown: document.getElementById("networkDropdown"),
-  genreFilter: document.getElementById("genreFilter"),
+  genreDropdown: document.getElementById("genreDropdown"),
+  genreBtn: document.getElementById("genreBtn"),
+  genreBtnCount: document.getElementById("genreBtnCount"),
+  genrePanel: document.getElementById("genrePanel"),
+  genreList: document.getElementById("genreList"),
   premieresOnly: document.getElementById("premieresOnly"),
   search: document.getElementById("search"),
   searchInput: document.getElementById("searchInput"),
@@ -505,7 +510,7 @@ function visibleItemsIn(items) {
   return items.filter((it) => {
     if (state.premieresOnly && it.number !== 1) return false;
     if (filtering && (!it.show.channel || !state.followed.has(it.show.channel.name))) return false;
-    if (state.genre && !it.show.genres.includes(state.genre)) return false;
+    if (state.genres.size && !it.show.genres.some((g) => state.genres.has(g))) return false;
     return true;
   });
 }
@@ -535,8 +540,39 @@ function rebuildFilterOptions() {
     it.show.genres.forEach((g) => genres.add(g));
   }
   if (added) saveSet(KNOWN_KEY, state.known);
-  fillSelect(el.genreFilter, genres, state.genre);
+  state.availableGenres = genres;
+  renderGenreList();
   renderNetworkList();
+}
+
+function renderGenreList() {
+  const names = [...state.availableGenres].sort((a, b) => a.localeCompare(b, "en"));
+  if (names.length === 0) {
+    el.genreList.innerHTML = '<div class="none">No genres yet.</div>';
+  } else {
+    el.genreList.innerHTML = names.map((n) => {
+      const checked = state.genres.has(n) ? "checked" : "";
+      return `<label><input type="checkbox" value="${escapeAttr(n)}" ${checked}>${escapeHtml(n)}</label>`;
+    }).join("");
+    el.genreList.querySelectorAll("input").forEach((cb) => {
+      cb.addEventListener("change", () => toggleGenre(cb.value, cb.checked));
+    });
+  }
+  updateGenreButton();
+}
+
+function toggleGenre(name, on) {
+  if (on) state.genres.add(name);
+  else state.genres.delete(name);
+  updateGenreButton();
+  renderAllBlocks();
+}
+
+function updateGenreButton() {
+  const n = state.genres.size;
+  el.genreBtn.childNodes[0].nodeValue = n === 0 ? "All " : "Selected ";
+  el.genreBtnCount.textContent = n > 0 ? String(n) : "";
+  el.genreBtnCount.classList.toggle("show", n > 0);
 }
 
 function renderNetworkList() {
@@ -583,13 +619,6 @@ function updateNetworkButton() {
   el.networkBtn.childNodes[0].nodeValue = n === 0 ? "All " : "Selected ";
   el.networkBtnCount.textContent = n > 0 ? String(n) : "";
   el.networkBtnCount.classList.toggle("show", n > 0);
-}
-
-function fillSelect(select, valueSet, current) {
-  const values = [...valueSet].sort((a, b) => a.localeCompare(b, "en"));
-  select.innerHTML = '<option value="">All</option>' +
-    values.map((v) => `<option value="${escapeAttr(v)}">${escapeHtml(v)}</option>`).join("");
-  select.value = current && values.includes(current) ? current : "";
 }
 
 /* ---------- Render (month blocks + infinite scroll) ---------- */
@@ -1386,9 +1415,20 @@ el.networkClear.addEventListener("click", () => {
 });
 el.clearNetwork.addEventListener("click", () => { location.hash = ""; });
 el.networkPanel.addEventListener("click", (e) => e.stopPropagation());
-document.addEventListener("click", () => setNetworkPanel(false));
 
-el.genreFilter.addEventListener("change", (e) => { state.genre = e.target.value; renderAllBlocks(); });
+function setGenrePanel(open) {
+  el.genrePanel.hidden = !open;
+  el.genreBtn.setAttribute("aria-expanded", String(open));
+}
+el.genreBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  setGenrePanel(el.genrePanel.hidden);
+});
+el.genrePanel.addEventListener("click", (e) => e.stopPropagation());
+
+// One outside-click closes any open filter dropdown.
+document.addEventListener("click", () => { setNetworkPanel(false); setGenrePanel(false); });
+
 el.premieresOnly.addEventListener("change", (e) => { state.premieresOnly = e.target.checked; renderAllBlocks(); });
 el.searchInput.addEventListener("input", (e) => onSearchInput(e.target.value));
 el.searchClear.addEventListener("click", () => { clearSearch(); el.searchInput.focus(); });
@@ -1423,11 +1463,12 @@ el.searchInput.addEventListener("keydown", (e) => {
 // Network selection has its own "Show all" control in the dropdown and is left intact.
 function resetFilters() {
   state.search = "";
-  state.genre = "";
+  state.genres.clear();
   state.premieresOnly = true;
   el.searchInput.value = "";
-  el.genreFilter.value = "";
+  el.searchClear.hidden = true;
   el.premieresOnly.checked = true;
+  renderGenreList();
   collapseSearch();
   // If a transient network filter is active, exit it and restore the saved selection —
   // applyRoute() re-renders with the search/genre/premieres we just reset above.
@@ -1491,5 +1532,6 @@ if (versionEl) {
 }
 updateViewButton();
 renderNetworkList(); // show the network list + pre-selection immediately (from the seed)
+renderGenreList();   // initialise the (empty) genre picker; fills in as months load
 scrollObserver.observe(sentinelEl);
 applyRoute(); // honor "#watchlist" or "#network=…" in a bookmarked URL

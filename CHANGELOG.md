@@ -3,6 +3,19 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.8.1 — 2026-07-23
+
+### Fixed
+- The month feed no longer stops permanently at the first empty month; it keeps loading
+  past gaps and only ends after several consecutive empty months.
+- Escaped TMDB show summaries before rendering them (prevents HTML injection from data).
+
+### Changed
+- Importing preferences now asks for confirmation before replacing your favorites and settings.
+- Channel favicons fall back to a colored initial chip if the icon fails to load (no broken
+  image, no lingering external dependency).
+- Storage-quota failures now surface a toast instead of silently dropping your data.
+
 ## 1.8.0 — 2026-07-23
 
 ### Changed

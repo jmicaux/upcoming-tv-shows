@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.5.1"; // single source of truth — bump on each release
+const APP_VERSION = "1.6.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -97,6 +97,7 @@ const el = {
   resetFilters: document.getElementById("resetFilters"),
   resultCount: document.getElementById("resultCount"),
   modal: document.getElementById("modal"),
+  modalCard: document.querySelector(".modal-card"),
   modalBody: document.getElementById("modalBody"),
   themeBtn: document.getElementById("themeBtn"),
   viewBtn: document.getElementById("viewBtn"),
@@ -524,9 +525,15 @@ function wireCards(container) {
   container.querySelectorAll(".card").forEach((c) => {
     const id = c.dataset.showId;
     const airdate = c.dataset.airdate;
-    c.addEventListener("click", () => {
+    const open = () => {
       if (airdate) openModal(id, airdate);
       else showModal(state.favorites[id], epContext(id));
+    };
+    c.addEventListener("click", open);
+    // Keyboard activation for the role="button" card (ignore keys from inner controls).
+    c.addEventListener("keydown", (e) => {
+      if (e.target !== c) return;
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
     });
     c.querySelector(".fav-btn").addEventListener("click", (e) => {
       e.stopPropagation();
@@ -554,6 +561,8 @@ function toggleFav(id, showObj) {
   document.querySelectorAll(`.fav-btn[data-fav="${CSS.escape(String(id))}"]`).forEach((b) => {
     b.classList.toggle("on", on);
     b.textContent = on ? "★" : "☆";
+    b.setAttribute("aria-pressed", String(on));
+    b.setAttribute("aria-label", on ? "Remove from watchlist" : "Add to watchlist");
   });
 }
 
@@ -623,7 +632,7 @@ function watchlistCardHtml(show) {
   const chan = show.channel ? show.channel.name : "—";
   const streaming = show.channel && show.channel.streaming;
   return `
-    <article class="card" data-show-id="${escapeAttr(String(show.id))}">
+    <article class="card" role="button" tabindex="0" aria-label="${escapeAttr(`${show.name}, ${chan}. View details`)}" data-show-id="${escapeAttr(String(show.id))}">
       ${favBtnHtml(show.id)}
       ${imageHtml(show)}
       <div class="card-body">
@@ -670,8 +679,8 @@ async function ensureNextEpisode(show) {
 }
 
 function favBtnHtml(id) {
-  const on = state.favorites[id] ? "on" : "";
-  return `<button class="fav-btn ${on}" data-fav="${escapeAttr(String(id))}" title="Toggle favorite" aria-label="Toggle favorite">${on ? "★" : "☆"}</button>`;
+  const on = !!state.favorites[id];
+  return `<button class="fav-btn ${on ? "on" : ""}" data-fav="${escapeAttr(String(id))}" title="Toggle favorite" aria-label="Add to watchlist" aria-pressed="${on}">${on ? "★" : "☆"}</button>`;
 }
 
 function imageHtml(show) {
@@ -744,7 +753,7 @@ function cardHtml(it) {
     ? (it.season === 1 ? "Series premiere" : `Season ${it.season}`)
     : `S${it.season}E${it.number}`;
   return `
-    <article class="card" data-show-id="${escapeAttr(String(it.show.id))}" data-airdate="${escapeAttr(it.airdate)}">
+    <article class="card" role="button" tabindex="0" aria-label="${escapeAttr(`${it.show.name} — ${formatDay(it.airdate)}, ${chan}. View details`)}" data-show-id="${escapeAttr(String(it.show.id))}" data-airdate="${escapeAttr(it.airdate)}">
       ${favBtnHtml(it.show.id)}
       ${imageHtml(it.show)}
       <div class="card-body">
@@ -763,6 +772,18 @@ function formatDay(dateStr) {
 }
 
 /* ---------- Modal ---------- */
+let lastFocused = null;
+
+// Reveal the modal with an accessible name, remembering the trigger so focus can
+// return to it on close, and move focus inside the dialog.
+function revealModal(label) {
+  el.modalCard.setAttribute("aria-label", label);
+  lastFocused = document.activeElement;
+  el.modal.hidden = false;
+  const closeBtn = el.modal.querySelector(".modal-close");
+  (closeBtn || el.modalCard).focus();
+}
+
 function openModal(showId, airdate) {
   const it = allItems().find((x) => String(x.show.id) === String(showId) && x.airdate === airdate);
   if (it) showModal(it.show, { airdate: it.airdate, season: it.season, number: it.number });
@@ -790,7 +811,7 @@ function showModal(s, ep) {
         ${genres}
         <div class="modal-actions">
           ${watch}
-          <button class="modal-fav ${favOn}">${favOn ? "★ In watchlist" : "☆ Add to watchlist"}</button>
+          <button class="modal-fav ${favOn}" aria-pressed="${!!favOn}">${favOn ? "★ In watchlist" : "☆ Add to watchlist"}</button>
         </div>
       </div>
     </div>
@@ -802,12 +823,17 @@ function showModal(s, ep) {
     const on = !!state.favorites[s.id];
     favBtn.classList.toggle("on", on);
     favBtn.textContent = on ? "★ In watchlist" : "☆ Add to watchlist";
+    favBtn.setAttribute("aria-pressed", String(on));
   });
 
-  el.modal.hidden = false;
+  revealModal(s.name);
 }
 
-function closeModal() { el.modal.hidden = true; }
+function closeModal() {
+  el.modal.hidden = true;
+  if (lastFocused && typeof lastFocused.focus === "function") lastFocused.focus();
+  lastFocused = null;
+}
 
 /* ---------- Changelog ---------- */
 // Minimal, safe Markdown → HTML for our own CHANGELOG.md (escape first, then format).
@@ -833,7 +859,7 @@ function renderMarkdown(md) {
 
 async function showChangelog() {
   el.modalBody.innerHTML = '<div class="modal-summary">Loading…</div>';
-  el.modal.hidden = false;
+  revealModal("Changelog");
   try {
     const res = await fetch(`CHANGELOG.md?v=${APP_VERSION}`);
     if (!res.ok) throw new Error(res.status);
@@ -988,9 +1014,13 @@ function toast(msg) {
 }
 
 /* ---------- Events ---------- */
+function setNetworkPanel(open) {
+  el.networkPanel.hidden = !open;
+  el.networkBtn.setAttribute("aria-expanded", String(open));
+}
 el.networkBtn.addEventListener("click", (e) => {
   e.stopPropagation();
-  el.networkPanel.hidden = !el.networkPanel.hidden;
+  setNetworkPanel(el.networkPanel.hidden);
 });
 el.networkSearch.addEventListener("input", (e) => { state.networkSearch = e.target.value; renderNetworkList(); });
 el.networkClear.addEventListener("click", () => {
@@ -1000,7 +1030,7 @@ el.networkClear.addEventListener("click", () => {
   renderAllBlocks();
 });
 el.networkPanel.addEventListener("click", (e) => e.stopPropagation());
-document.addEventListener("click", () => { el.networkPanel.hidden = true; });
+document.addEventListener("click", () => setNetworkPanel(false));
 
 el.genreFilter.addEventListener("change", (e) => { state.genre = e.target.value; renderAllBlocks(); });
 el.premieresOnly.addEventListener("change", (e) => { state.premieresOnly = e.target.checked; renderAllBlocks(); });
@@ -1036,7 +1066,18 @@ el.importFile.addEventListener("change", async (e) => {
 });
 
 el.modal.querySelectorAll("[data-close]").forEach((n) => n.addEventListener("click", closeModal));
-document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !el.modal.hidden) closeModal(); });
+
+// Keep Tab focus cycling inside the open dialog.
+el.modal.addEventListener("keydown", (e) => {
+  if (e.key !== "Tab") return;
+  const f = [...el.modalCard.querySelectorAll('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+    .filter((x) => !x.disabled && x.offsetParent !== null);
+  if (!f.length) return;
+  const first = f[0], last = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+});
 
 /* ---------- Boot ---------- */
 // Keep sticky month headings tucked right under the (sticky, wrap-variable) top bar.

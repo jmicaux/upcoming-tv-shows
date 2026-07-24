@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.22.0"; // single source of truth — bump on each release
+const APP_VERSION = "1.23.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -19,34 +19,55 @@ const UK_NETWORKS = [
   "ITV1", "ITV2", "Channel 4", "5", "Sky Atlantic", "Sky Max", "E4", // TVmaze labels Channel 5 as "5"
 ];
 const AU_NETWORKS = ["ABC", "Seven Network", "Nine Network", "Network 10", "SBS"];
-const NORDIC_NETWORKS = [
-  "SVT1", "SVT2", "TV4",            // Sweden
-  "NRK1", "NRK2", "TV 2",           // Norway (TVmaze also shows "TV 2 Direkte")
-  "DR1", "DR2", "TV2",              // Denmark (TVmaze writes it without a space)
-  "Yle TV1", "Yle TV2", "MTV3",     // Finland
-  "RÚV", "Stöð 2",                  // Iceland
-];
-// Country codes whose schedules we additionally fetch (US is fetched unfiltered elsewhere).
-const BROADCAST_COUNTRIES = ["GB", "AU", "SE", "NO", "DK", "FI", "IS"];
+// Nordic flagship channels, per country (incl. the messy real TVmaze name variants).
+const SE_NETWORKS = ["SVT1", "SVT2", "TV4"];
+const NO_NETWORKS = ["NRK1", "NRK2", "TV 2", "TV 2 Direkte"];
+const DK_NETWORKS = ["DR1", "DR2", "TV2"];          // Denmark's channel has no space on TVmaze
+const FI_NETWORKS = ["Yle TV1", "Yle TV2", "MTV3"];
+const IS_NETWORKS = ["RÚV", "Stöð 2"];
+// country code -> flagship channels. A country's schedule is only fetched when the user
+// follows at least one of its channels, so API calls stay proportional to the selection.
+const COUNTRY_NETWORKS = {
+  GB: UK_NETWORKS, AU: AU_NETWORKS,
+  SE: SE_NETWORKS, NO: NO_NETWORKS, DK: DK_NETWORKS, FI: FI_NETWORKS, IS: IS_NETWORKS,
+};
+const NORDIC_NETWORKS = [...SE_NETWORKS, ...NO_NETWORKS, ...DK_NETWORKS, ...FI_NETWORKS, ...IS_NETWORKS];
 // Keep only flagship broadcasters from those schedules. Prefix-anchored (not fully anchored)
 // so messy real-world variants still match: "TV 2 Direkte", "SVT2", "ABC News", "5STAR"…
 const FLAGSHIP_RE = /^(BBC (One|Two|Three|Four)|ITV\d|Channel 4|E4|5|Sky (Atlantic|Max)|ABC|Seven Network|Nine Network|Network 10|SBS|SVT\d?|TV4|NRK\d?|TV ?2|DR\d?|Yle TV\d?|MTV3|RÚV|Stöð 2)/i;
 
-const SEED_NETWORKS = [
-  // Broadcast / cable
+const US_BROADCAST = [
   "ABC", "CBS", "NBC", "FOX", "The CW", "PBS",
   "AMC", "FX", "FXX", "USA Network", "TNT", "TBS", "HBO", "Showtime", "Starz",
   "A&E", "History", "Bravo", "E!", "Syfy", "Comedy Central", "MTV",
   "Cartoon Network", "Adult Swim", "Nickelodeon", "Disney Channel", "Freeform",
   "TLC", "HGTV", "Food Network", "Discovery Channel", "National Geographic",
   "Lifetime", "Hallmark Channel", "Paramount Network", "BET", "truTV",
-  // Streaming (US-available)
+];
+const STREAMING_NETWORKS = [
   "Netflix", "Prime Video", "Hulu", "Disney+", "Max", "Apple TV",
-  "Peacock", "Paramount+", "AMC+", "Starz", "Shudder", "ESPN+",
-  // Selected French channels (sourced from TMDB)
-  "Canal+", "ARTE", "TF1", "M6", "France 2", "France 3",
-  // UK / Australia / Nordic flagship broadcasters
+  "Peacock", "Paramount+", "AMC+", "Shudder", "ESPN+",
+];
+const FR_NETWORKS = ["Canal+", "ARTE", "TF1", "M6", "France 2", "France 3"];
+
+const SEED_NETWORKS = [
+  ...US_BROADCAST, ...STREAMING_NETWORKS, ...FR_NETWORKS,
   ...UK_NETWORKS, ...AU_NETWORKS, ...NORDIC_NETWORKS,
+];
+
+// Grouped view for the channel picker (label + the channels that belong to each group),
+// so the user can select/clear a whole country at once.
+const NETWORK_GROUPS = [
+  { label: "🇺🇸 United States", names: US_BROADCAST },
+  { label: "📺 Streaming", names: STREAMING_NETWORKS },
+  { label: "🇫🇷 France", names: FR_NETWORKS },
+  { label: "🇬🇧 United Kingdom", names: UK_NETWORKS },
+  { label: "🇦🇺 Australia", names: AU_NETWORKS },
+  { label: "🇸🇪 Sweden", names: SE_NETWORKS },
+  { label: "🇳🇴 Norway", names: NO_NETWORKS },
+  { label: "🇩🇰 Denmark", names: DK_NETWORKS },
+  { label: "🇫🇮 Finland", names: FI_NETWORKS },
+  { label: "🇮🇸 Iceland", names: IS_NETWORKS },
 ];
 
 // Big networks pre-selected on the very first visit (until the user changes it).
@@ -92,6 +113,7 @@ const state = {
   premieresOnly: true,
   hidePast: false,                  // hide already-aired days in the current month
   view: "month",                    // "month" | "watchlist"
+  loadedSources: new Set(),         // upstream sources already fetched into the loaded blocks
   favorites: loadObject(FAV_KEY),   // { showId: { id, name } } — lean; details are re-fetchable by id
   showCache: {},                    // showId -> full trimmed show (in-memory hydration, not persisted)
   watchOverrides: loadObject(OVERRIDES_KEY), // { sourceChannel: providerChannel }
@@ -205,10 +227,12 @@ function isPastDate(dateStr) {
   return dateStr < ymd(new Date());
 }
 
-/* ---------- Cache ---------- */
-function readCache(dateStr) {
+/* ---------- Cache (keyed per source + day, so each source caches independently) ---------- */
+function cacheKey(src, dateStr) { return `${CACHE_PREFIX}${src}:${dateStr}`; }
+
+function readCache(src, dateStr) {
   try {
-    const raw = localStorage.getItem(CACHE_PREFIX + dateStr);
+    const raw = localStorage.getItem(cacheKey(src, dateStr));
     if (!raw) return null;
     const entry = JSON.parse(raw);
     if (!isPastDate(dateStr) && Date.now() - entry.ts > FUTURE_TTL_MS) return null;
@@ -218,14 +242,14 @@ function readCache(dateStr) {
   }
 }
 
-function writeCache(dateStr, data) {
+function writeCache(src, dateStr, data) {
   const entry = JSON.stringify({ ts: Date.now(), data });
   try {
-    localStorage.setItem(CACHE_PREFIX + dateStr, entry);
+    localStorage.setItem(cacheKey(src, dateStr), entry);
   } catch {
     // Quota hit: drop the oldest schedule entries and retry once.
     pruneCache();
-    try { localStorage.setItem(CACHE_PREFIX + dateStr, entry); } catch { /* give up */ }
+    try { localStorage.setItem(cacheKey(src, dateStr), entry); } catch { /* give up */ }
   }
 }
 
@@ -311,42 +335,58 @@ function showFromTmdb(d, id) {
   };
 }
 
-async function fetchDay(dateStr) {
-  const cached = readCache(dateStr);
-  if (cached) return { data: cached, fromCache: true };
-
-  // 1) Broadcast / cable: US schedule, keep items that have a network.
-  const bcRaw = await throttledJson(`${API}/schedule?country=US&date=${dateStr}`);
-  const broadcast = bcRaw
-    .filter((it) => it.show && it.show.network)
-    .map((it) => trimItem(it, it.show, false));
-
-  // 2) International broadcast (UK, Australia, Nordics): keep only flagship channels.
-  const intl = [];
-  for (const country of BROADCAST_COUNTRIES) {
-    try {
-      const raw = await throttledJson(`${API}/schedule?country=${country}&date=${dateStr}`);
-      for (const it of raw) {
-        if (it.show && it.show.network && FLAGSHIP_RE.test(it.show.network.name)) {
-          intl.push(trimItem(it, it.show, false));
-        }
-      }
-    } catch { /* a country may have no data for a given day — skip it */ }
+// Which upstream sources a channel selection needs: "US" (national broadcast/cable),
+// "web" (streaming), "FR" (French via TMDB), and one entry per followed country code.
+// An empty selection needs nothing → we fetch nothing and show nothing.
+function neededSources(followed) {
+  const sources = new Set();
+  for (const name of followed) {
+    if (STREAMING_ALLOWLIST.test(name)) { sources.add("web"); continue; }
+    if (FR_NETWORKS.includes(name)) { sources.add("FR"); continue; }
+    let country = null;
+    for (const cc in COUNTRY_NETWORKS) if (COUNTRY_NETWORKS[cc].includes(name)) { country = cc; break; }
+    sources.add(country || "US"); // unrecognised name → assume a US network (broad catch-all)
   }
+  return sources;
+}
 
-  // 3) Streaming: worldwide web schedule (Netflix/Prime are global), kept via allow-list.
-  const webRaw = await throttledJson(`${API}/schedule/web?date=${dateStr}`);
-  const streaming = webRaw
-    .map((it) => ({ it, s: it._embedded && it._embedded.show }))
-    .filter(({ s }) => {
-      const chan = s && (s.webChannel || s.network);
-      return chan && STREAMING_ALLOWLIST.test(chan.name);
-    })
-    .map(({ it, s }) => trimItem(it, s, true));
+// Fetch (or read from cache) one source's shows for one day. Errors → [] and NOT cached,
+// so a transient failure retries; a successful-but-empty day IS cached to avoid refetching.
+async function fetchSourceDay(src, dateStr) {
+  const cached = readCache(src, dateStr);
+  if (cached) return cached;
+  let data;
+  try {
+    if (src === "US") {
+      const raw = await throttledJson(`${API}/schedule?country=US&date=${dateStr}`);
+      data = raw.filter((it) => it.show && it.show.network).map((it) => trimItem(it, it.show, false));
+    } else if (src === "web") {
+      const raw = await throttledJson(`${API}/schedule/web?date=${dateStr}`);
+      data = raw
+        .map((it) => ({ it, s: it._embedded && it._embedded.show }))
+        .filter(({ s }) => { const chan = s && (s.webChannel || s.network); return chan && STREAMING_ALLOWLIST.test(chan.name); })
+        .map(({ it, s }) => trimItem(it, s, true));
+    } else { // international country code: keep flagship channels only
+      const raw = await throttledJson(`${API}/schedule?country=${src}&date=${dateStr}`);
+      data = raw
+        .filter((it) => it.show && it.show.network && FLAGSHIP_RE.test(it.show.network.name))
+        .map((it) => trimItem(it, it.show, false));
+    }
+  } catch {
+    return []; // don't cache errors — retry on the next pass
+  }
+  writeCache(src, dateStr, data);
+  return data;
+}
 
-  const data = [...broadcast, ...intl, ...streaming];
-  writeCache(dateStr, data);
-  return { data, fromCache: false };
+// Merge all needed per-day sources for one day (FR is handled per-month via TMDB).
+async function fetchDay(dateStr, sources) {
+  const out = [];
+  for (const src of sources) {
+    if (src === "FR") continue;
+    out.push(...await fetchSourceDay(src, dateStr));
+  }
+  return out;
 }
 
 /* ---------- French channels via TMDB ---------- */
@@ -462,6 +502,15 @@ function normalizeFavorites() {
 // Load the next month's data, appending a block and rendering it progressively.
 async function loadNextMonth() {
   if (state.loading || state.reachedEnd || state.blocks.length >= MAX_MONTHS) return;
+
+  // Only fetch the sources the current selection needs — nothing followed → nothing at all.
+  const sources = neededSources(state.followed);
+  if (sources.size === 0) {
+    state.reachedEnd = true; // no auto-loading until the selection changes (see toggleNetwork)
+    setSentinel("Select at least one channel above to see upcoming shows.");
+    return;
+  }
+
   state.loading = true;
   setSentinel(`Loading ${monthLabel(monthAt(state.blocks.length))}…`);
 
@@ -474,8 +523,7 @@ async function loadNextMonth() {
   let lastRender = 0;
   for (const day of days) {
     try {
-      const res = await fetchDay(day);
-      block.items.push(...res.data);
+      block.items.push(...await fetchDay(day, sources));
     } catch (err) {
       console.error(err);
       continue;
@@ -483,7 +531,8 @@ async function loadNextMonth() {
     const now = Date.now();
     if (now - lastRender > 250) { lastRender = now; rebuildFilterOptions(); renderBlock(block); }
   }
-  block.items.push(...(await fetchFrMonth(month)));
+  if (sources.has("FR")) block.items.push(...(await fetchFrMonth(month)));
+  for (const s of sources) state.loadedSources.add(s);
   rebuildFilterOptions();
   renderBlock(block);
   updateResultCount();
@@ -596,11 +645,11 @@ function searchCardHtml(show) {
 
 /* ---------- Filtering ---------- */
 function visibleItemsIn(items) {
-  const filtering = state.followed.size > 0;
+  if (state.followed.size === 0) return []; // nothing selected → show nothing
   return items.filter((it) => {
     if (state.premieresOnly && it.number !== 1) return false;
     if (state.hidePast && isPastDate(it.airdate)) return false;
-    if (filtering && (!it.show.channel || !state.followed.has(it.show.channel.name))) return false;
+    if (!it.show.channel || !state.followed.has(it.show.channel.name)) return false;
     if (state.genres.size && !it.show.genres.some((g) => state.genres.has(g))) return false;
     return true;
   });
@@ -671,22 +720,72 @@ function updateGenreButton() {
 
 function renderNetworkList() {
   const q = state.networkSearch.trim().toLowerCase();
-  const names = [...state.known]
-    .filter((n) => !q || n.toLowerCase().includes(q))
-    .sort((a, b) => a.localeCompare(b, "en"));
+  const match = (n) => !q || n.toLowerCase().includes(q);
 
-  if (names.length === 0) {
+  // Build groups (US / Streaming / France / per country), then an "Other" bucket for any
+  // discovered channel that isn't in a predefined group. `all` is the full membership used
+  // by the group's select-all toggle; `names` is what's actually shown (known + search).
+  const classified = new Set(NETWORK_GROUPS.flatMap((g) => g.names));
+  const groups = NETWORK_GROUPS.map((g) => ({
+    label: g.label, all: g.names, names: g.names.filter((n) => state.known.has(n) && match(n)),
+  }));
+  const others = [...state.known].filter((n) => !classified.has(n) && match(n)).sort((a, b) => a.localeCompare(b, "en"));
+  if (others.length) groups.push({ label: "Other", all: others, names: others });
+
+  const visible = groups.filter((g) => g.names.length);
+  if (visible.length === 0) {
     el.networkList.innerHTML = '<div class="none">No channel matches.</div>';
-  } else {
-    el.networkList.innerHTML = names.map((n) => {
+    updateNetworkButton();
+    return;
+  }
+
+  el.networkList.innerHTML = visible.map((g, gi) => {
+    const allOn = g.all.length > 0 && g.all.every((n) => state.followed.has(n));
+    const rows = g.names.map((n) => {
       const checked = state.followed.has(n) ? "checked" : "";
       return `<label><input type="checkbox" value="${escapeAttr(n)}" ${checked}>${escapeHtml(n)}</label>`;
     }).join("");
-    el.networkList.querySelectorAll("input").forEach((cb) => {
-      cb.addEventListener("change", () => toggleNetwork(cb.value, cb.checked));
-    });
-  }
+    return `<div class="net-group">
+        <div class="net-group-head">
+          <span class="net-group-label">${escapeHtml(g.label)}</span>
+          <button type="button" class="net-group-all" data-group="${gi}">${allOn ? "Clear" : "All"}</button>
+        </div>${rows}</div>`;
+  }).join("");
+
+  el.networkList.querySelectorAll(".net-group-all").forEach((btn) => {
+    const g = visible[+btn.dataset.group];
+    btn.addEventListener("click", () => toggleGroup(g.all, !g.all.every((n) => state.followed.has(n))));
+  });
+  el.networkList.querySelectorAll("input").forEach((cb) => {
+    cb.addEventListener("change", () => toggleNetwork(cb.value, cb.checked));
+  });
   updateNetworkButton();
+}
+
+// Select or clear every channel in a group (a whole country / streaming / US) at once.
+function toggleGroup(names, on) {
+  for (const n of names) {
+    if (on) { state.followed.add(n); state.known.add(n); }
+    else state.followed.delete(n);
+  }
+  saveSet(FOLLOW_KEY, state.followed);
+  saveSet(KNOWN_KEY, state.known);
+  dropNetworkHash();
+  updateNetworkButton();
+  updateActiveNetwork();
+  renderNetworkList();
+  const needsFetch = [...neededSources(state.followed)].some((s) => !state.loadedSources.has(s));
+  if (needsFetch) resetFeed(); else renderAllBlocks();
+}
+
+// Rebuild the feed from scratch (used when the set of needed sources changes). Cached
+// source-days come back instantly; only genuinely new sources hit the network.
+function resetFeed() {
+  state.blocks = [];
+  state.loadedSources = new Set();
+  state.reachedEnd = false;
+  state.emptyStreak = 0;
+  if (state.view === "month" && !state.searching) enterMonthView();
 }
 
 function toggleNetwork(name, on) {
@@ -696,7 +795,11 @@ function toggleNetwork(name, on) {
   dropNetworkHash();       // user is hand-editing the selection now
   updateNetworkButton();
   updateActiveNetwork();
-  renderAllBlocks();
+  // Following a channel from a not-yet-fetched source needs a reload; otherwise a
+  // client-side re-filter of the already-loaded blocks is enough.
+  const needsFetch = [...neededSources(state.followed)].some((s) => !state.loadedSources.has(s));
+  if (needsFetch) resetFeed();
+  else renderAllBlocks();
 }
 
 // Quick filter: narrow the feed to a single network via the URL hash. Transient and
@@ -1316,11 +1419,7 @@ function saveTmdbKey(value) {
   catch { /* ignore quota */ }
   clearTmdbCache();
   toast(key ? "TMDB key saved — reloading French channels" : "TMDB key cleared");
-  // Rebuild the feed from scratch so months re-fetch (now) with the FR channels.
-  state.blocks = [];
-  state.reachedEnd = false;
-  state.emptyStreak = 0;
-  if (state.view === "month" && !state.searching) enterMonthView();
+  resetFeed(); // rebuild so months re-fetch (now) with the FR channels
 }
 
 function wireSettings() {

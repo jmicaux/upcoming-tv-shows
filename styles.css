@@ -483,14 +483,8 @@ body[data-view="watchlist"] .progress { display: none; }
 
 .card:hover { transform: translateY(-3px); border-color: var(--accent); }
 
-/* Already-aired days: no opacity anywhere (text must stay legible). The "past" signal
-   is a grayscale poster + muted title + muted date badge — restored to colour on hover. */
-.card.past .card-img,
-.card.past .card-no-img { filter: grayscale(1); transition: filter 0.2s ease; }
-.card.past .card-title { color: var(--muted); }
-.card.past:hover .card-img,
-.card.past:hover .card-no-img { filter: none; }
-.card.past:hover .card-title { color: var(--text); }
+/* Already-aired days: no dimming at all — the card stays full colour like any other.
+   The only differentiator is the explicit "Aired" badge below. */
 /* Explicit, always-visible "already aired" marker (not colour-only, for a11y). */
 .aired-flag {
   position: absolute;

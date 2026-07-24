@@ -3,6 +3,21 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.22.0 — 2026-07-24
+
+### Added
+- UK, Australian and Nordic (Sweden, Norway, Denmark, Finland, Iceland) broadcasters.
+  Their TVmaze schedules are now fetched alongside the US one, filtered to flagship
+  channels only (BBC, ITV, Channel 4/5, Sky; ABC/Seven/Nine/Network 10/SBS; SVT, TV4,
+  NRK, DR, TV 2, Yle, MTV3, RÚV/Stöð 2). These appear in the channel picker and are
+  pre-selected for new users.
+
+### Notes
+- Nordic coverage on TVmaze is sparse and channel names are inconsistent, so relatively
+  few Nordic titles may show up.
+- Loading a month now issues more API calls (one schedule request per country), so the
+  first load of each month is slower; results are cached per day afterwards.
+
 ## 1.21.3 — 2026-07-24
 
 ### Changed

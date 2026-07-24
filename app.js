@@ -1,17 +1,37 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.21.3"; // single source of truth — bump on each release
+const APP_VERSION = "1.22.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
-const CACHE_PREFIX = "tvmaze:sched:v3:"; // v3: US + streaming + selected FR channels
+const CACHE_PREFIX = "tvmaze:sched:v4:"; // v4: US + streaming + FR + UK/AU/Nordic flagships
 const FUTURE_TTL_MS = 6 * 60 * 60 * 1000; // 6h for today/future days
 const REQUEST_GAP_MS = 550;               // throttle: ~18 req / 10s, under TVMaze's ~20/10s
 const FOLLOW_KEY = "tv:followedNetworks";
 const KNOWN_KEY = "tv:knownNetworks";
 
 // Seed list so the major US channels are pickable before any month is browsed.
+// Flagship international broadcasters kept from each country's TVmaze schedule.
+// (We fetch the whole country schedule but keep only these networks — "flagship only".)
+const UK_NETWORKS = [
+  "BBC One", "BBC Two", "BBC Three", "BBC Four",
+  "ITV1", "ITV2", "Channel 4", "5", "Sky Atlantic", "Sky Max", "E4", // TVmaze labels Channel 5 as "5"
+];
+const AU_NETWORKS = ["ABC", "Seven Network", "Nine Network", "Network 10", "SBS"];
+const NORDIC_NETWORKS = [
+  "SVT1", "SVT2", "TV4",            // Sweden
+  "NRK1", "NRK2", "TV 2",           // Norway (TVmaze also shows "TV 2 Direkte")
+  "DR1", "DR2", "TV2",              // Denmark (TVmaze writes it without a space)
+  "Yle TV1", "Yle TV2", "MTV3",     // Finland
+  "RÚV", "Stöð 2",                  // Iceland
+];
+// Country codes whose schedules we additionally fetch (US is fetched unfiltered elsewhere).
+const BROADCAST_COUNTRIES = ["GB", "AU", "SE", "NO", "DK", "FI", "IS"];
+// Keep only flagship broadcasters from those schedules. Prefix-anchored (not fully anchored)
+// so messy real-world variants still match: "TV 2 Direkte", "SVT2", "ABC News", "5STAR"…
+const FLAGSHIP_RE = /^(BBC (One|Two|Three|Four)|ITV\d|Channel 4|E4|5|Sky (Atlantic|Max)|ABC|Seven Network|Nine Network|Network 10|SBS|SVT\d?|TV4|NRK\d?|TV ?2|DR\d?|Yle TV\d?|MTV3|RÚV|Stöð 2)/i;
+
 const SEED_NETWORKS = [
   // Broadcast / cable
   "ABC", "CBS", "NBC", "FOX", "The CW", "PBS",
@@ -25,6 +45,8 @@ const SEED_NETWORKS = [
   "Peacock", "Paramount+", "AMC+", "Starz", "Shudder", "ESPN+",
   // Selected French channels (sourced from TMDB)
   "Canal+", "ARTE", "TF1", "M6", "France 2", "France 3",
+  // UK / Australia / Nordic flagship broadcasters
+  ...UK_NETWORKS, ...AU_NETWORKS, ...NORDIC_NETWORKS,
 ];
 
 // Big networks pre-selected on the very first visit (until the user changes it).
@@ -32,6 +54,9 @@ const DEFAULT_FOLLOWED = [
   "HBO", "Max", "Showtime", "Starz", "FX", "AMC",
   "Netflix", "Hulu", "Prime Video", "Disney+", "Apple TV", "Paramount+", "Peacock",
   "Canal+", "ARTE", "TF1", "M6", "France 2", "France 3",
+  "BBC One", "ITV1", "Channel 4", "Sky Atlantic",           // UK
+  "ABC", "Seven Network",                                    // Australia
+  "SVT1", "NRK1", "DR1", "Yle TV1", "RÚV",                   // Nordics
 ];
 
 // Web/streaming platforms to keep from the (worldwide) web schedule.
@@ -296,7 +321,20 @@ async function fetchDay(dateStr) {
     .filter((it) => it.show && it.show.network)
     .map((it) => trimItem(it, it.show, false));
 
-  // 2) Streaming: worldwide web schedule (Netflix/Prime are global), kept via allow-list.
+  // 2) International broadcast (UK, Australia, Nordics): keep only flagship channels.
+  const intl = [];
+  for (const country of BROADCAST_COUNTRIES) {
+    try {
+      const raw = await throttledJson(`${API}/schedule?country=${country}&date=${dateStr}`);
+      for (const it of raw) {
+        if (it.show && it.show.network && FLAGSHIP_RE.test(it.show.network.name)) {
+          intl.push(trimItem(it, it.show, false));
+        }
+      }
+    } catch { /* a country may have no data for a given day — skip it */ }
+  }
+
+  // 3) Streaming: worldwide web schedule (Netflix/Prime are global), kept via allow-list.
   const webRaw = await throttledJson(`${API}/schedule/web?date=${dateStr}`);
   const streaming = webRaw
     .map((it) => ({ it, s: it._embedded && it._embedded.show }))
@@ -306,7 +344,7 @@ async function fetchDay(dateStr) {
     })
     .map(({ it, s }) => trimItem(it, s, true));
 
-  const data = [...broadcast, ...streaming];
+  const data = [...broadcast, ...intl, ...streaming];
   writeCache(dateStr, data);
   return { data, fromCache: false };
 }
@@ -1001,6 +1039,19 @@ const NETWORK_DOMAINS = {
   "Shudder": "shudder.com", "ESPN+": "espn.com",
   "Canal+": "canalplus.com", "ARTE": "arte.tv", "TF1": "tf1.fr", "M6": "m6.fr",
   "France 2": "france.tv", "France 3": "france.tv",
+  // UK
+  "BBC One": "bbc.co.uk", "BBC Two": "bbc.co.uk", "BBC Three": "bbc.co.uk", "BBC Four": "bbc.co.uk",
+  "ITV1": "itv.com", "ITV2": "itv.com", "Channel 4": "channel4.com", "E4": "channel4.com",
+  "5": "channel5.com", "Sky Atlantic": "sky.com", "Sky Max": "sky.com",
+  // Australia
+  "Seven Network": "7plus.com.au", "Nine Network": "nine.com.au",
+  "Network 10": "10play.com.au", "SBS": "sbs.com.au",
+  // Nordics
+  "SVT1": "svt.se", "SVT2": "svt.se", "TV4": "tv4.se",
+  "NRK1": "nrk.no", "NRK2": "nrk.no", "TV 2": "tv2.no", "TV 2 Direkte": "tv2.no",
+  "DR1": "dr.dk", "DR2": "dr.dk", "TV2": "tv2.dk",
+  "Yle TV1": "yle.fi", "Yle TV2": "yle.fi", "MTV3": "mtv.fi",
+  "RÚV": "ruv.is", "Stöð 2": "stod2.is",
 };
 
 // Deterministic chip color from the channel name (for the initial fallback).

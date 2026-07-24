@@ -3,6 +3,21 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.23.0 — 2026-07-24
+
+### Changed
+- The feed now fetches only the sources your selection needs. Each channel maps to a
+  source (US broadcast, streaming, France, or a specific country) and only those schedules
+  are requested. Following only US channels is back to ~2 calls/day; a country is queried
+  only when you follow one of its channels. Schedules are cached per source per day.
+- With no channels selected, the feed shows nothing (and fetches nothing) instead of
+  "show everything".
+
+### Added
+- The channel picker is grouped (United States, Streaming, France, UK, Australia, and each
+  Nordic country) with an "All / Clear" button per group, so you can select or clear a
+  whole country at once.
+
 ## 1.22.0 — 2026-07-24
 
 ### Added

@@ -351,6 +351,33 @@ body[data-view="watchlist"] .progress { display: none; }
 .network-list label:hover { background: var(--surface-2); }
 .network-list input { accent-color: var(--accent); }
 .network-list .none { color: var(--muted); font-size: 0.85rem; padding: 0.5rem 0.35rem; }
+.net-group { display: flex; flex-direction: column; gap: 0.1rem; }
+.net-group + .net-group { margin-top: 0.45rem; }
+.net-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.3rem 0.35rem 0.15rem;
+}
+.net-group-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.net-group-all {
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--accent-text);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 9px;
+}
+.net-group-all:hover { border-color: var(--accent); color: var(--accent); }
 
 .filters .switch {
   flex-direction: row;

@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.21.1"; // single source of truth — bump on each release
+const APP_VERSION = "1.21.2"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -1043,6 +1043,7 @@ function cardHtml(it) {
   return `
     <article class="card${past ? " past" : ""}" role="button" tabindex="0" aria-label="${escapeAttr(`${it.show.name} — ${formatDay(it.airdate)}${past ? " (aired)" : ""}, ${chan}. View details`)}" data-show-id="${escapeAttr(String(it.show.id))}" data-airdate="${escapeAttr(it.airdate)}">
       ${favBtnHtml(it.show.id)}
+      ${past ? '<span class="aired-flag">Aired</span>' : ""}
       ${imageHtml(it.show)}
       <div class="card-body">
         <div class="card-date">${formatDay(it.airdate)}</div>

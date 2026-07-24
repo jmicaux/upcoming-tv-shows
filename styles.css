@@ -491,6 +491,23 @@ body[data-view="watchlist"] .progress { display: none; }
 .card.past:hover .card-img,
 .card.past:hover .card-no-img { filter: none; }
 .card.past:hover .card-title { color: var(--text); }
+/* Explicit, always-visible "already aired" marker (not colour-only, for a11y). */
+.aired-flag {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 2;
+  padding: 2px 7px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
 .card.past .card-date {
   background: var(--surface-2);
   color: var(--muted);

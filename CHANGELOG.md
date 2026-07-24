@@ -3,6 +3,12 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.21.2 — 2026-07-24
+
+### Added
+- Aired-episode cards now carry an explicit "Aired" badge in the top-left corner, so the
+  past state is obvious and not conveyed by the (subtle, colour-only) grayscale alone.
+
 ## 1.21.1 — 2026-07-24
 
 ### Changed

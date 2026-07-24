@@ -504,7 +504,7 @@ function searchCardHtml(show) {
         <div class="card-status">${escapeHtml(statusLabel(show))}</div>
         <h3 class="card-title">${escapeHtml(show.name)}</h3>
         <div class="card-meta">${chanMetaHtml(show.channel)}</div>
-        ${watchLinkHtml(show.channel && show.channel.name, show.name, "card-watch", true)}
+        ${watchLinkHtml(show.channel && show.channel.name, show.name, "card-watch")}
       </div>
     </article>`;
 }
@@ -843,7 +843,7 @@ function watchlistCardHtml(show) {
         <div class="card-date">${escapeHtml(nextEpLabel(state.nextEp[show.id]))}</div>
         <h3 class="card-title">${escapeHtml(show.name)}</h3>
         <div class="card-meta">${chanMetaHtml(show.channel)}</div>
-        ${watchLinkHtml(show.channel && show.channel.name, show.name, "card-watch", true)}
+        ${watchLinkHtml(show.channel && show.channel.name, show.name, "card-watch")}
       </div>
     </article>`;
 }
@@ -968,16 +968,9 @@ function channelIconHtml(channelName) {
     `onerror="this.remove();this.parentNode.classList.add('is-initial')"></span>`;
 }
 
-function watchLinkHtml(channelName, title, cls, compact) {
+function watchLinkHtml(channelName, title, cls) {
   const provider = resolveProvider(channelName);
-  let label;
-  if (compact) {
-    // On cards the channel already shows in the meta line — only name the provider when
-    // an override redirects the link elsewhere; otherwise keep it to a plain "Watch".
-    label = provider && provider !== channelName ? `Watch on ${escapeHtml(provider)}` : "Watch";
-  } else {
-    label = provider ? `Watch on ${escapeHtml(provider)}` : "Where to watch";
-  }
+  const label = provider ? `Watch on ${escapeHtml(provider)}` : "Where to watch";
   return `<a class="${cls}" href="${escapeAttr(watchUrl(channelName, title))}" target="_blank" rel="noopener">▸ ${label}</a>`;
 }
 
@@ -1003,7 +996,7 @@ function cardHtml(it) {
         <h3 class="card-title">${escapeHtml(it.show.name)}</h3>
         <div class="card-meta">${chanMetaHtml(it.show.channel)}</div>
         <span class="badge">${escapeHtml(premiere)}</span>
-        ${watchLinkHtml(it.show.channel && it.show.channel.name, it.show.name, "card-watch", true)}
+        ${watchLinkHtml(it.show.channel && it.show.channel.name, it.show.name, "card-watch")}
       </div>
     </article>`;
 }

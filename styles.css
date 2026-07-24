@@ -483,9 +483,14 @@ body[data-view="watchlist"] .progress { display: none; }
 
 .card:hover { transform: translateY(-3px); border-color: var(--accent); }
 
-/* Already-aired days in the current month: dimmed, with a muted date badge. */
-.card.past { opacity: 0.5; }
-.card.past:hover { opacity: 1; }
+/* Already-aired days: dim the poster only so the text stays legible (WCAG AA).
+   The "past" signal lives on the image + muted title, not on whole-card opacity. */
+.card.past .card-img,
+.card.past .card-no-img { opacity: 0.55; filter: saturate(0.6); transition: opacity 0.2s ease, filter 0.2s ease; }
+.card.past .card-title { color: var(--muted); }
+.card.past:hover .card-img,
+.card.past:hover .card-no-img { opacity: 1; filter: none; }
+.card.past:hover .card-title { color: var(--text); }
 .card.past .card-date {
   background: var(--surface-2);
   color: var(--muted);

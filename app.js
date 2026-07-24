@@ -67,7 +67,8 @@ const state = {
   premieresOnly: true,
   hidePast: false,                  // hide already-aired days in the current month
   view: "month",                    // "month" | "watchlist"
-  favorites: loadObject(FAV_KEY),   // { showId: trimmed show object }
+  favorites: loadObject(FAV_KEY),   // { showId: { id, name } } — lean; details are re-fetchable by id
+  showCache: {},                    // showId -> full trimmed show (in-memory hydration, not persisted)
   watchOverrides: loadObject(OVERRIDES_KEY), // { sourceChannel: providerChannel }
   navCard: null,                    // current card element for modal prev/next
   searching: false,                 // showing catalog search results (vs the month feed)
@@ -253,6 +254,38 @@ function trimItem(it, s, streaming) {
   };
 }
 
+// Rebuild a full show object from the TVmaze /shows/{id} payload — used to rehydrate
+// a lean favorite (only { id, name } is persisted; everything else is fetched by id).
+function showFromTvmaze(d) {
+  const chan = d.network || d.webChannel;
+  return {
+    id: d.id,
+    name: d.name,
+    genres: d.genres || [],
+    channel: chan ? { name: chan.name, streaming: !d.network && !!d.webChannel } : null,
+    image: d.image ? { medium: d.image.medium, original: d.image.original } : null,
+    summary: d.summary || "",
+    premiered: d.premiered || null,
+    status: d.status || null,
+  };
+}
+
+// Same, from a TMDB tv/{id} payload (French channels use the "tmdb:" id prefix).
+function showFromTmdb(d, id) {
+  return {
+    id,
+    name: d.name,
+    genres: (d.genres || []).map((g) => g.name),
+    channel: { name: tmdbChannel(d.networks), streaming: false },
+    image: d.poster_path
+      ? { medium: TMDB_IMG + d.poster_path, original: TMDB_IMG_ORIG + d.poster_path }
+      : null,
+    summary: d.overview ? `<p>${escapeHtml(d.overview)}</p>` : "",
+    premiered: d.first_air_date || null,
+    status: d.status || null,
+  };
+}
+
 async function fetchDay(dateStr) {
   const cached = readCache(dateStr);
   if (cached) return { data: cached, fromCache: true };
@@ -370,8 +403,22 @@ function allItems() {
 
 // Resolve a show object by id from any source (favorites, search results, or the feed).
 function showFor(id) {
-  return state.favorites[id] || state.searchShows[id] ||
+  return state.showCache[id] || state.favorites[id] || state.searchShows[id] ||
     ((allItems().find((x) => String(x.show.id) === String(id)) || {}).show);
+}
+
+// Migrate legacy full-snapshot favorites (from before the lean format) to { id, name },
+// seeding the session cache with the old data so nothing needs re-fetching right now.
+function normalizeFavorites() {
+  let changed = false;
+  for (const [id, fav] of Object.entries(state.favorites)) {
+    if (fav && (fav.summary !== undefined || fav.image !== undefined || fav.channel !== undefined)) {
+      state.showCache[id] = fav;
+      state.favorites[id] = { id: fav.id, name: fav.name };
+      changed = true;
+    }
+  }
+  if (changed) saveFavorites();
 }
 
 // Load the next month's data, appending a block and rendering it progressively.
@@ -714,7 +761,8 @@ function toggleFav(id, showObj) {
   } else {
     const show = showObj || showFor(id);
     if (!show) return;
-    state.favorites[id] = show;
+    state.favorites[id] = { id: show.id, name: show.name }; // lean; details re-fetchable by id
+    state.showCache[id] = show;                             // keep full data for this session
   }
   saveFavorites();
   updateViewButton();
@@ -833,7 +881,8 @@ async function renderWatchlist() {
   wireCards(el.grid);
 }
 
-function watchlistCardHtml(show) {
+function watchlistCardHtml(fav) {
+  const show = showFor(fav.id) || fav; // fav is lean { id, name }; details come from the hydration cache
   const chan = show.channel ? show.channel.name : "—";
   return `
     <article class="card" role="button" tabindex="0" aria-label="${escapeAttr(`${show.name}, ${chan}. View details`)}" data-show-id="${escapeAttr(String(show.id))}">
@@ -868,11 +917,15 @@ async function ensureNextEpisode(show) {
     if (String(id).startsWith("tmdb:")) {
       if (TMDB_KEY) {
         const d = await tmdb(`tv/${String(id).slice(5)}`);
+        state.showCache[id] = showFromTmdb(d, id); // rehydrate the lean favorite from the same call
         const e = d.next_episode_to_air;
         if (e) ep = { airdate: e.air_date, season: e.season_number, number: e.episode_number, label: `S${e.season_number}E${e.episode_number}` };
       }
     } else {
+      // This call already returns the full show — cache it so lean favorites render
+      // (poster, channel, summary) without a second request.
       const d = await throttledJson(`${API}/shows/${id}?embed=nextepisode`);
+      state.showCache[id] = showFromTvmaze(d);
       const e = d._embedded && d._embedded.nextepisode;
       if (e) ep = { airdate: e.airdate, season: e.season, number: e.number, label: `S${e.season}E${e.number}` };
     }
@@ -1056,8 +1109,9 @@ function openModal(showId, airdate) {
 function showModal(s, ep) {
   if (!s) return;
   const img = s.image ? `<img src="${escapeAttr(s.image.original || s.image.medium)}" alt="">` : "";
-  const genres = s.genres.length
-    ? `<div class="modal-genres">${s.genres.map((g) => `<span class="badge">${escapeHtml(g)}</span>`).join(" ")}</div>`
+  const genreList = s.genres || []; // a lean favorite that failed to hydrate has no genres
+  const genres = genreList.length
+    ? `<div class="modal-genres">${genreList.map((g) => `<span class="badge">${escapeHtml(g)}</span>`).join(" ")}</div>`
     : "";
   const summary = s.summary || "<p>No summary available.</p>";
 
@@ -1285,6 +1339,8 @@ function applyPrefs(data) {
   }
   if (data.favorites && typeof data.favorites === "object") {
     state.favorites = data.favorites;
+    state.showCache = {};
+    normalizeFavorites(); // lean the import if it carries legacy full snapshots; saves too
     saveFavorites();
   }
   if (data.watchOverrides && typeof data.watchOverrides === "object") {
@@ -1546,6 +1602,7 @@ if (versionEl) {
   versionEl.title = "View changelog";
   versionEl.addEventListener("click", showChangelog);
 }
+normalizeFavorites(); // shrink any legacy full-snapshot favorites to { id, name }
 updateViewButton();
 renderNetworkList(); // show the network list + pre-selection immediately (from the seed)
 renderGenreList();   // initialise the (empty) genre picker; fills in as months load

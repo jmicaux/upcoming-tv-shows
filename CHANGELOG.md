@@ -3,6 +3,16 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.21.0 — 2026-07-24
+
+### Changed
+- Aired-episode cards now dim only the poster instead of the whole card, so the title,
+  date and channel stay legible (WCAG AA contrast).
+- Cards always show "Watch on {network}" instead of a bare "Watch".
+- Favorites are stored lean (`{ id, name }`); show details are re-fetched by id from the
+  API (reusing the call the watchlist already makes), shrinking the exported prefs JSON by
+  ~80%. Legacy favorites are migrated automatically on load.
+
 ## 1.20.0 — 2026-07-23
 
 ### Added

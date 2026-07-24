@@ -3,6 +3,13 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.21.3 — 2026-07-24
+
+### Changed
+- Aired-episode cards no longer dim at all (removed the grayscale poster and muted title):
+  they render in full colour like any other card. The "Aired" badge (plus the grey date
+  badge) is now the sole differentiator.
+
 ## 1.21.2 — 2026-07-24
 
 ### Added

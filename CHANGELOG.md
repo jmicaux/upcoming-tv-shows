@@ -3,6 +3,13 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.21.1 — 2026-07-24
+
+### Changed
+- Aired-episode cards no longer use any opacity. The "past" signal is now a grayscale
+  poster (restored to colour on hover) plus the muted title and date badge, keeping every
+  card fully legible.
+
 ## 1.21.0 — 2026-07-24
 
 ### Changed

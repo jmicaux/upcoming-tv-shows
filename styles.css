@@ -483,13 +483,13 @@ body[data-view="watchlist"] .progress { display: none; }
 
 .card:hover { transform: translateY(-3px); border-color: var(--accent); }
 
-/* Already-aired days: dim the poster only so the text stays legible (WCAG AA).
-   The "past" signal lives on the image + muted title, not on whole-card opacity. */
+/* Already-aired days: no opacity anywhere (text must stay legible). The "past" signal
+   is a grayscale poster + muted title + muted date badge — restored to colour on hover. */
 .card.past .card-img,
-.card.past .card-no-img { opacity: 0.55; filter: saturate(0.6); transition: opacity 0.2s ease, filter 0.2s ease; }
+.card.past .card-no-img { filter: grayscale(1); transition: filter 0.2s ease; }
 .card.past .card-title { color: var(--muted); }
 .card.past:hover .card-img,
-.card.past:hover .card-no-img { opacity: 1; filter: none; }
+.card.past:hover .card-no-img { filter: none; }
 .card.past:hover .card-title { color: var(--text); }
 .card.past .card-date {
   background: var(--surface-2);

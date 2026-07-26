@@ -91,7 +91,7 @@ body {
   letter-spacing: 0;
   cursor: pointer;
 }
-.brand-ver:hover { opacity: 1; color: var(--accent); text-decoration: underline; }
+.brand-ver:hover { opacity: 1; color: var(--accent-text); text-decoration: underline; }
 
 .changelog h2 { font-size: 1.2rem; margin: 0 0 0.3rem; }
 .changelog h3 { font-size: 1rem; margin: 1.1rem 0 0.2rem; }
@@ -105,7 +105,7 @@ body {
 .changelog p { margin: 0 0 0.6rem; font-size: 0.9rem; }
 .changelog ul { margin: 0 0 0.6rem; padding-left: 1.1rem; }
 .changelog li { font-size: 0.9rem; margin-bottom: 0.2rem; }
-.changelog a { color: var(--accent); }
+.changelog a { color: var(--accent-text); }
 
 @media (max-width: 560px) {
   .brand-sub { display: none; }
@@ -200,7 +200,7 @@ body[data-view="watchlist"] .search { display: none; }
   white-space: nowrap;
 }
 .view-btn:hover { border-color: var(--accent); }
-.view-btn .count { color: var(--accent); font-weight: 600; }
+.view-btn .count { color: var(--accent-text); font-weight: 600; }
 
 /* Watchlist view hides month navigation and filters. */
 body[data-view="watchlist"] .month-nav,
@@ -377,7 +377,7 @@ body[data-view="watchlist"] .progress { display: none; }
   border-radius: 999px;
   padding: 1px 9px;
 }
-.net-group-all:hover { border-color: var(--accent); color: var(--accent); }
+.net-group-all:hover { border-color: var(--accent); color: var(--accent-text); }
 
 .filters .switch {
   flex-direction: row;
@@ -875,4 +875,15 @@ body[data-view="watchlist"] .progress { display: none; }
   }
   .card:hover { transform: none; }
   .fav-btn:hover { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

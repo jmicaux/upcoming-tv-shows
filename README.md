@@ -1,17 +1,18 @@
 # Lineup — Upcoming TV Shows
 
 A lightweight web app that lists **upcoming TV and streaming premieres, month by month**.
-Browse US networks and streaming platforms, plus French channels **Canal+** and **Arte**,
+Browse US broadcast/cable and streaming platforms, flagship channels from the **UK,
+Australia and the Nordics**, plus French channels (**Canal+**, **Arte**, TF1, M6, France 2/3) —
 follow only the ones you care about, and filter by genre. No build step, no backend —
 just static files (plus a free TMDB key for the French channels).
 
-![version](https://img.shields.io/badge/version-1.20.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
+![version](https://img.shields.io/badge/version-1.23.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
 
 **🔗 Live preview: [jmicaux.github.io/upcoming-tv-shows](https://jmicaux.github.io/upcoming-tv-shows/)**
 
 If you enjoy this app, you can [buy me a coffee ☕](https://buymeacoffee.com/jmicaux).
 
-> The hosted preview covers US channels only — the French channels need a TMDB key (see below).
+> The hosted preview covers US, UK, Australian and Nordic channels out of the box — only the French channels need a TMDB key (see below).
 
 ## Features
 
@@ -19,6 +20,8 @@ If you enjoy this app, you can [buy me a coffee ☕](https://buymeacoffee.com/jm
   you scroll (infinite scroll), with a sticky heading for each month.
 - **Broadcast, cable and streaming** in one place — ABC, CBS, NBC, FOX, AMC, FX, HBO…
   plus Netflix, Prime Video, Hulu, Disney+, Max, Apple TV+, Peacock, Paramount+ and more.
+- **UK, Australia & Nordic flagships** — BBC, ITV, Channel 4, Sky; ABC, Seven, Nine, Network 10,
+  SBS; SVT, NRK, DR, Yle, RÚV — pulled keyless from TVMaze country schedules (flagship channels only).
 - **French channels** Canal+, Arte, TF1, M6 and France 2/3, sourced from TMDB for reliable FR coverage.
 - **Pick-and-choose channels** — check the networks/platforms you follow; your selection
   is saved in the browser and applies across every month. No selection = show everything.
@@ -83,13 +86,16 @@ No dependencies, no package.json — everything runs in the browser.
 
 ## Data sources
 
-**US TV & streaming** — the free [TVMaze API](https://www.tvmaze.com/api) (no key required):
+**US, UK, Australia & Nordics** — the free [TVMaze API](https://www.tvmaze.com/api) (no key required):
 
 - **Broadcast / cable** — `GET /schedule?country=US&date=YYYY-MM-DD` (items with a `network`).
 - **Streaming** — `GET /schedule/web?date=YYYY-MM-DD` (queried worldwide, because platforms
   like Netflix and Prime Video are global in TVMaze), filtered to a US-available allow-list.
+- **UK / Australia / Nordics** — `GET /schedule?country=CC&date=YYYY-MM-DD` per followed
+  country, filtered to a flagship-channel allow-list (`FLAGSHIP_RE`). A country is only
+  fetched when you follow at least one of its channels.
 
-A month is built by aggregating one pair of calls per day, then grouping client-side.
+A month is built by aggregating the needed calls per day, then grouping client-side.
 
 **French channels (Canal+, Arte)** — [TMDB](https://www.themoviedb.org/) `discover/tv`, whose
 FR coverage is far better than TVMaze's. One pass per month resolves each show's episodes that
@@ -103,6 +109,7 @@ Everything configurable lives at the top of `app.js`:
 | --- | --- |
 | `SEED_NETWORKS` | Channels shown in the picker before any month is browsed. |
 | `STREAMING_ALLOWLIST` | Regex of streaming platforms kept from the worldwide web schedule. |
+| `COUNTRY_NETWORKS` / `FLAGSHIP_RE` | Per-country flagship channels (UK/AU/Nordics) and the regex that keeps only them from each country schedule. |
 | `TMDB_KEY` | Your free TMDB API key (v3), required for the Canal+ / Arte data. |
 | `TMDB_NETWORKS` | Pipe-separated TMDB network IDs to pull (Canal+ = 285, ARTE = 1628). |
 | `FUTURE_TTL_MS` | Cache lifetime for today/future days (past days are cached permanently). |
@@ -120,11 +127,6 @@ Everything configurable lives at the top of `app.js`:
 - Export/import uses the File System Access API on Chrome/Edge (over https/localhost) and
   remembers the chosen file for one-click re-sync; other browsers fall back to a plain
   download / file upload.
-
-## Roadmap ideas
-
-- Background prefetch of the adjacent month for instant navigation.
-- More non-US channels via TMDB network IDs.
 
 ## Versioning
 

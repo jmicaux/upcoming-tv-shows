@@ -13,8 +13,10 @@ Only the latest release receives security fixes.
 
 Please **do not** open a public issue for security problems.
 
-Report vulnerabilities privately by email to **jmicaux@gmail.com**, or via GitHub's
-[private vulnerability reporting](https://github.com/jmicaux/upcoming-tv-shows/security/advisories/new).
+Report vulnerabilities privately via GitHub's
+[private vulnerability reporting](https://github.com/jmicaux/upcoming-tv-shows/security/advisories/new)
+— on the repository, go to **Security → Advisories → Report a vulnerability**. This keeps the
+report private and notifies the maintainer directly (no public issue).
 
 Include a description of the issue and its impact, steps to reproduce (or a proof of
 concept), and the affected version. You can expect an acknowledgement within a few days.

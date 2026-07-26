@@ -148,6 +148,12 @@ On every release, update the version in **three** places so browsers pick up fre
 The `?v=` query forces browsers to re-download the CSS/JS after a deploy instead of serving
 a stale cached copy.
 
+## Quality
+
+This project follows a documented quality review process covering accessibility, security, performance and code quality.
+
+See [QUALITY.md](QUALITY.md).
+
 ## License
 
 Licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE.md): you are free to fork,

@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.23.0"; // single source of truth — bump on each release
+const APP_VERSION = "1.23.1"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -671,18 +671,23 @@ function dedupeSort(items) {
 
 function rebuildFilterOptions() {
   const genres = new Set();
-  let added = false;
+  let channelsAdded = false;
   for (const it of allItems()) {
     if (it.show.channel && !state.known.has(it.show.channel.name)) {
       state.known.add(it.show.channel.name);
-      added = true;
+      channelsAdded = true;
     }
     it.show.genres.forEach((g) => genres.add(g));
   }
-  if (added) saveSet(KNOWN_KEY, state.known);
+  if (channelsAdded) saveSet(KNOWN_KEY, state.known);
+  // Only re-render the filter panels when their options actually changed — progressive
+  // loading calls this every ~250ms, and rebuilding these lists' innerHTML each time is
+  // wasteful and makes an open filter panel flash.
+  const genresChanged = genres.size !== state.availableGenres.size
+    || [...genres].some((g) => !state.availableGenres.has(g));
   state.availableGenres = genres;
-  renderGenreList();
-  renderNetworkList();
+  if (genresChanged) renderGenreList();
+  if (channelsAdded) renderNetworkList();
 }
 
 function renderGenreList() {
@@ -853,13 +858,37 @@ function renderBlock(block) {
   const emptyEl = block.el.querySelector(".month-empty");
   const cards = dedupeSort(visibleItemsIn(block.items));
   if (cards.length === 0) {
-    grid.innerHTML = "";
+    if (grid.firstChild) grid.replaceChildren();
     emptyEl.hidden = false;
-  } else {
-    emptyEl.hidden = true;
-    grid.innerHTML = cards.map(cardHtml).join("");
-    wireCards(grid);
+    return;
   }
+  emptyEl.hidden = true;
+
+  // Keyed reconciliation instead of rebuilding innerHTML. Progressive loading calls this
+  // every ~250ms as each day arrives; wiping innerHTML each time destroyed and recreated
+  // every card (and its <img>), so images re-fetched/repainted in a loop → visible flashing.
+  // Here we reuse existing card nodes by their stable "showId:airdate" key (moving a node
+  // preserves its loaded image) and only build genuinely new cards.
+  const existing = new Map();
+  for (const node of grid.children) existing.set(`${node.dataset.showId}:${node.dataset.airdate}`, node);
+
+  const keep = new Set();
+  let prev = null;
+  for (const it of cards) {
+    const key = `${it.show.id}:${it.airdate}`;
+    keep.add(key);
+    let node = existing.get(key);
+    if (!node) {
+      const tpl = document.createElement("template");
+      tpl.innerHTML = cardHtml(it).trim();
+      node = tpl.content.firstElementChild;
+      wireCard(node);
+    }
+    const ref = prev ? prev.nextSibling : grid.firstChild;
+    if (node !== ref) grid.insertBefore(node, ref);
+    prev = node;
+  }
+  for (const [key, node] of existing) if (!keep.has(key)) node.remove();
 }
 
 function renderAllBlocks() {
@@ -873,26 +902,28 @@ function updateResultCount() {
   el.resultCount.textContent = `${n} result${n !== 1 ? "s" : ""}`;
 }
 
+// Wire a single card's interactions (used by both full and incremental rendering).
+function wireCard(c) {
+  const id = c.dataset.showId;
+  c.addEventListener("click", () => openFromCard(c));
+  // Keyboard activation for the role="button" card (ignore keys from inner controls).
+  c.addEventListener("keydown", (e) => {
+    if (e.target !== c) return;
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openFromCard(c); }
+  });
+  c.querySelector(".fav-btn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleFav(id);
+  });
+  const watch = c.querySelector(".card-watch");
+  if (watch) watch.addEventListener("click", (e) => e.stopPropagation());
+  const chan = c.querySelector(".chan-link");
+  if (chan) chan.addEventListener("click", (e) => { e.stopPropagation(); filterToNetwork(chan.dataset.chan); });
+}
+
 // Shared card wiring for month blocks and the watchlist grid.
 function wireCards(container) {
-  container.querySelectorAll(".card").forEach((c) => {
-    const id = c.dataset.showId;
-    const airdate = c.dataset.airdate;
-    c.addEventListener("click", () => openFromCard(c));
-    // Keyboard activation for the role="button" card (ignore keys from inner controls).
-    c.addEventListener("keydown", (e) => {
-      if (e.target !== c) return;
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openFromCard(c); }
-    });
-    c.querySelector(".fav-btn").addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleFav(id);
-    });
-    const watch = c.querySelector(".card-watch");
-    if (watch) watch.addEventListener("click", (e) => e.stopPropagation());
-    const chan = c.querySelector(".chan-link");
-    if (chan) chan.addEventListener("click", (e) => { e.stopPropagation(); filterToNetwork(chan.dataset.chan); });
-  });
+  container.querySelectorAll(".card").forEach(wireCard);
 }
 
 /* ---------- Favorites & Watchlist ---------- */

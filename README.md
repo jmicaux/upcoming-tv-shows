@@ -144,6 +144,12 @@ On every release, update the version in **three** places so browsers pick up fre
 The `?v=` query forces browsers to re-download the CSS/JS after a deploy instead of serving
 a stale cached copy.
 
+## License
+
+Licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE.md): you are free to fork,
+modify and share this project **for noncommercial purposes**, as long as you keep the
+attribution (`Required Notice: Copyright jmicaux`). Commercial use is not permitted.
+
 ## Credits
 
 Data by [TVMaze](https://www.tvmaze.com/) and [TMDB](https://www.themoviedb.org/). This

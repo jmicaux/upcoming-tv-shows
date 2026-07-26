@@ -9,6 +9,8 @@ just static files (plus a free TMDB key for the French channels).
 
 **🔗 Live preview: [jmicaux.github.io/upcoming-tv-shows](https://jmicaux.github.io/upcoming-tv-shows/)**
 
+If you enjoy this app, you can [buy me a coffee ☕](https://buymeacoffee.com/jmicaux).
+
 > The hosted preview covers US channels only — the French channels need a TMDB key (see below).
 
 ## Features

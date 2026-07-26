@@ -1202,8 +1202,7 @@ function channelIconHtml(channelName) {
   // Favicon with a graceful fallback: if it fails to load, drop it and show a colored
   // initial chip instead (no broken image, no lingering Google dependency).
   return `<span class="channel-chip" data-initial="${initial}" style="--chip-bg:${chipColor(channelName)}">` +
-    `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" alt="" loading="lazy" ` +
-    `onerror="this.remove();this.parentNode.classList.add('is-initial')"></span>`;
+    `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" alt="" loading="lazy"></span>`;
 }
 
 function watchLinkHtml(channelName, title, cls) {
@@ -1299,7 +1298,7 @@ function showModal(s, ep) {
   const genres = genreList.length
     ? `<div class="modal-genres">${genreList.map((g) => `<span class="badge">${escapeHtml(g)}</span>`).join(" ")}</div>`
     : "";
-  const summary = s.summary || "<p>No summary available.</p>";
+  const summary = sanitizeHtml(s.summary) || "<p>No summary available.</p>";
 
   const sub = [s.channel ? s.channel.name + (s.channel.streaming ? " (streaming)" : "") : "—"];
   if (ep && ep.airdate) sub.push(formatDay(ep.airdate));
@@ -1493,6 +1492,31 @@ function escapeHtml(str) {
 }
 function escapeAttr(str) { return escapeHtml(str); }
 
+// Sanitize untrusted HTML (e.g. TVMaze summaries, which are community-editable) before it
+// goes into innerHTML. Parses in an inert DOMParser document (no resource loading / no script
+// execution), keeps a small formatting allowlist, drops every attribute except safe hrefs.
+const SANITIZE_ALLOWED = { A: 1, P: 1, BR: 1, B: 1, I: 1, EM: 1, STRONG: 1, U: 1, UL: 1, OL: 1, LI: 1, SPAN: 1 };
+function sanitizeHtml(dirty) {
+  const body = new DOMParser().parseFromString(String(dirty || ""), "text/html").body;
+  (function walk(node) {
+    for (const child of Array.from(node.childNodes)) {
+      if (child.nodeType === Node.COMMENT_NODE) { child.remove(); continue; }
+      if (child.nodeType !== Node.ELEMENT_NODE) continue;
+      const tag = child.tagName;
+      if (tag === "SCRIPT" || tag === "STYLE") { child.remove(); continue; }
+      if (!SANITIZE_ALLOWED[tag]) { child.replaceWith(document.createTextNode(child.textContent)); continue; }
+      for (const attr of Array.from(child.attributes)) {
+        const keepHref = tag === "A" && attr.name.toLowerCase() === "href"
+          && /^(https?:|mailto:)/i.test(attr.value.trim());
+        if (!keepHref) child.removeAttribute(attr.name);
+      }
+      if (tag === "A") { child.setAttribute("target", "_blank"); child.setAttribute("rel", "noopener noreferrer"); }
+      walk(child);
+    }
+  })(body);
+  return body.innerHTML;
+}
+
 /* ---------- Preferences export / import ---------- */
 const FS_SUPPORTED = "showSaveFilePicker" in window;
 
@@ -1678,6 +1702,16 @@ el.genreClear.addEventListener("click", () => {
 el.genrePanel.addEventListener("click", (e) => e.stopPropagation());
 
 // One outside-click closes any open filter dropdown.
+// Channel favicon fallback, done with a capturing delegated listener (error events don't
+// bubble) instead of an inline onerror handler — so a strict Content-Security-Policy holds.
+document.addEventListener("error", (e) => {
+  const img = e.target;
+  if (img instanceof HTMLImageElement) {
+    const chip = img.closest(".channel-chip");
+    if (chip) { img.remove(); chip.classList.add("is-initial"); }
+  }
+}, true);
+
 document.addEventListener("click", () => { setNetworkPanel(false); setGenrePanel(false); });
 
 el.premieresOnly.addEventListener("change", (e) => { state.premieresOnly = e.target.checked; renderAllBlocks(); });

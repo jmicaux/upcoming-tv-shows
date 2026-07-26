@@ -43,7 +43,7 @@ If you enjoy this app, you can support it:
 - **Local caching** so revisited months load instantly, with request throttling to stay
   within the TVMaze rate limit.
 
-## Running it
+## Install & usage
 
 The app is fully static. TVMaze sends permissive CORS headers, so in most browsers you can
 just open `index.html` directly. If your browser blocks `fetch` on `file://`, serve the folder:

@@ -10,6 +10,8 @@ just static files (plus a free TMDB key for the French channels).
 
 **🔗 Live preview: [jmicaux.github.io/upcoming-tv-shows](https://jmicaux.github.io/upcoming-tv-shows/)**
 
+![Lineup — upcoming TV & streaming premieres, month by month](screenshot.png)
+
 If you enjoy this app, you can support it:
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy_me_a_coffee-ffdd00?style=flat-square&logo=buymeacoffee&logoColor=1a1a1a)](https://buymeacoffee.com/jmicaux)

@@ -3,6 +3,17 @@
 All notable changes to Lineup are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.23.1 — 2026-07-26
+
+### Fixed
+- The series grid no longer flickers while a month loads. Progressive rendering used to
+  rebuild the whole grid's HTML every ~250ms, destroying and recreating every card (and its
+  image) each tick, so images kept re-fetching and repainting. Rendering now reconciles
+  cards by a stable `showId:airdate` key — existing cards (and their loaded images) are
+  reused, only genuinely new cards are created. Filter panels are likewise only rebuilt when
+  their options actually change.
+- Aligned the `?v=` cache-busting query in `index.html` with `APP_VERSION` (was stuck at 1.20.0).
+
 ## 1.23.0 — 2026-07-24
 
 ### Changed

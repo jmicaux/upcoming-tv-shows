@@ -1,7 +1,16 @@
 # Changelog
 
-All notable changes to Lineup are documented here. This project follows
+All notable changes to Upcoming TV Shows are documented here. This project follows
 [semver](https://semver.org/).
+
+## 1.24.0 — 2026-11-08
+
+### Changed
+- The app is renamed **Upcoming TV Shows** (formerly *Lineup*) to avoid confusion with an
+  existing iOS app of the same name. Title, header, social cards, structured data and
+  favicon ("Up") are updated. Your saved preferences and favorites are kept, and
+  preference files exported from Lineup still import.
+- Exported preferences are now saved as `upcoming-tv-shows-preferences.json`.
 
 ## 1.23.1 — 2026-07-26
 

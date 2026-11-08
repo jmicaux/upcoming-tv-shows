@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.23.1"; // single source of truth — bump on each release
+const APP_VERSION = "1.24.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const API = "https://api.tvmaze.com";
@@ -1599,14 +1599,14 @@ async function ensurePermission(handle, write) {
 
 async function exportPrefs() {
   const json = JSON.stringify(buildPrefs(), null, 2);
-  if (!FS_SUPPORTED) { downloadJson("lineup-preferences.json", json); return; }
+  if (!FS_SUPPORTED) { downloadJson("upcoming-tv-shows-preferences.json", json); return; }
   try {
     let handle = await idbGet("prefsHandle");
     if (handle && !(await ensurePermission(handle, true))) handle = null;
     if (!handle) {
       handle = await window.showSaveFilePicker({
         id: "lineup-prefs",
-        suggestedName: "lineup-preferences.json",
+        suggestedName: "upcoming-tv-shows-preferences.json",
         startIn: "documents",
         types: [{ description: "JSON", accept: { "application/json": [".json"] } }],
       });
@@ -1811,7 +1811,7 @@ function syncTopbarHeight() {
 syncTopbarHeight();
 window.addEventListener("resize", syncTopbarHeight);
 
-console.log(`Lineup v${APP_VERSION}`);
+console.log(`Upcoming TV Shows v${APP_VERSION}`);
 const versionEl = document.getElementById("appVersion");
 if (versionEl) {
   versionEl.textContent = `v${APP_VERSION}`;

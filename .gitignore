@@ -3,6 +3,7 @@ config.js
 
 # Stray preferences export at the repo root — the kept copy lives in presets/
 /lineup-preferences.json
+/upcoming-tv-shows-preferences.json
 
 # Local product/planning notes — not part of the shipped app
 Lineup_Product_Roadmap.md

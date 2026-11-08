@@ -1,6 +1,6 @@
-# Contributing to Lineup
+# Contributing to Upcoming TV Shows
 
-Thanks for your interest in improving Lineup! It's a dependency-free static web app —
+Thanks for your interest in improving Upcoming TV Shows! It's a dependency-free static web app —
 contributions that keep it simple are very welcome.
 
 ## Getting started

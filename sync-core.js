@@ -21,10 +21,10 @@
 
   const union = (a, b) => [...new Set([...(a || []), ...(b || [])])];
 
-  // Followed channels: null = never chosen on this device, [] = "show all" (a real choice
-  // that still yields to a non-empty selection), otherwise the union.
+  // Followed channels: null = never chosen (the app keeps its curated defaults), [] = an
+  // explicit empty selection (yields to a non-empty one), otherwise the union.
   function mergeFollowed(local, remote) {
-    if (local == null) return remote || [];
+    if (local == null) return remote == null ? null : remote;
     if (remote == null) return local;
     if (local.length === 0) return remote;
     if (remote.length === 0) return local;
@@ -34,7 +34,7 @@
   function mergePrefs(local, remote) {
     const l = local || {};
     if (!isValidPrefs(remote)) {
-      return { ...l, app: "lineup", version: PREFS_VERSION, followedNetworks: l.followedNetworks || [] };
+      return { ...l, app: "lineup", version: PREFS_VERSION, followedNetworks: l.followedNetworks == null ? null : l.followedNetworks };
     }
     return {
       app: "lineup",
@@ -49,6 +49,7 @@
   }
 
   const MARKER_KEY = "tv:syncedUser";
+  const PENDING_KEY = "tv:syncPending"; // set while a local change has not reached the account
   const PUSH_DEBOUNCE_MS = 1000;
 
   // The sync engine. All I/O is injected so it can be unit-tested without a browser:
@@ -56,12 +57,13 @@
   //   applyLocal(prefs)     → write prefs into the app (silently)
   //   storage               → localStorage-like { getItem, setItem, removeItem }
   //   fetchRemote()         → Promise<{ data, updated_at } | null>
-  //   pushRemote(prefs)     → Promise<void>
+  //   pushRemote(prefs, updatedAt) → Promise<void>  (updatedAt: ISO string to store with the row)
   //   onStatus(status)      → "idle" | "syncing" | "synced" | "error" | "offline"
   function createSync(deps) {
     const { getLocal, applyLocal, storage, fetchRemote, pushRemote, onStatus } = deps;
     const schedule = deps.setTimeout, unschedule = deps.clearTimeout;
     let signedIn = false;
+    let ready = false;     // first fetch+merge done for this sign-in; pushes allowed
     let timer = null;
     let dirty = false;
     let lastRemoteAt = null;
@@ -71,9 +73,12 @@
 
     async function push(prefs) {
       status("syncing");
+      const at = new Date(deps.now()).toISOString();
       try {
-        await pushRemote(prefs);
+        await pushRemote(prefs, at);
         dirty = false;
+        storage.removeItem(PENDING_KEY);
+        lastRemoteAt = at; // what the row now holds; onVisible must not re-apply our own push
         status("synced");
       } catch {
         dirty = true;
@@ -81,21 +86,27 @@
       }
     }
 
+    let currentUser = null;
     async function onSignedIn(userId) {
       signedIn = true;
+      currentUser = userId;
       status("syncing");
       let remote;
       try { remote = await fetchRemote(); }
       catch { status("offline"); return; }
       if (remote && remote.updated_at) lastRemoteAt = remote.updated_at;
 
-      if (storage.getItem(MARKER_KEY) === userId) {
+      const known = storage.getItem(MARKER_KEY) === userId;
+      const pending = storage.getItem(PENDING_KEY) !== null;
+      ready = true;
+      if (known && !pending) {
         // This device already met this account: the account is the source of truth.
         if (remoteValid(remote)) { applyLocal(remote.data); status("synced"); }
         else await push(mergePrefs(getLocal(), null));
         return;
       }
-      // First time this account signs in here: merge, so nothing local is lost.
+      // First time this account signs in here (or a change never reached the account):
+      // merge, so nothing local is lost.
       const merged = mergePrefs(getLocal(), remoteValid(remote) ? remote.data : null);
       applyLocal(merged);
       await push(merged);
@@ -104,6 +115,7 @@
 
     function onSignedOut() {
       signedIn = false;
+      ready = false;
       if (timer !== null) { unschedule(timer); timer = null; }
       status("idle");
     }
@@ -111,18 +123,21 @@
     function onLocalChange() {
       if (!signedIn) return;
       dirty = true;
+      storage.setItem(PENDING_KEY, "1"); // survives a tab closed before the push
+      if (!ready) return;                 // pushed by the retried onSignedIn merge
       if (timer !== null) unschedule(timer);
       timer = schedule(async () => { timer = null; await flush(); }, PUSH_DEBOUNCE_MS);
     }
 
     async function flush() {
-      if (!signedIn || !dirty) return;
+      if (!signedIn || !ready || !dirty) return;
       if (timer !== null) { unschedule(timer); timer = null; }
       await push(getLocal());
     }
 
     async function onVisible() {
       if (!signedIn) return;
+      if (!ready) { await onSignedIn(currentUser); return; } // first fetch failed: retry it
       let remote;
       try { remote = await fetchRemote(); }
       catch { status("offline"); return; }

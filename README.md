@@ -103,7 +103,7 @@ enough):
    Security policies, `delete_my_account()` function).
 3. **Authentication → URL configuration**: Site URL = your deployment
    (e.g. `https://<you>.github.io/upcoming-tv-shows/`); add it and
-   `http://localhost:8080/` to Redirect URLs.
+   `http://localhost:8000/` to Redirect URLs.
 4. **Google sign-in**: in [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
    create an *OAuth client ID* (Web application) with authorized redirect URI
    `https://<project-ref>.supabase.co/auth/v1/callback`; paste the client ID and secret in

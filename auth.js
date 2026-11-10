@@ -24,15 +24,18 @@
     if (error) throw error;
     return data; // null when the user has no row yet
   }
-  async function pushRemote(prefs) {
-    const { error } = await client.from("preferences").upsert({ user_id: user.id, data: prefs, updated_at: new Date().toISOString() });
+  async function pushRemote(prefs, updatedAt) {
+    const { error } = await client.from("preferences").upsert({ user_id: user.id, data: prefs, updated_at: updatedAt });
     if (error) throw error;
   }
   const STATUS_TITLE = { idle: "Account", syncing: "Syncing…", synced: "Synced", error: "Sync failed — will retry", offline: "Sync unavailable" };
   function onStatus(s) {
+    if (s === "error" && syncStatus !== "error") toast("Sync failed — will retry on your next change");
     syncStatus = s;
     accountBtn.dataset.sync = s;
     accountBtn.title = STATUS_TITLE[s] || "Account";
+    // The coloured dot alone must not carry the state (WCAG 1.4.1).
+    accountBtn.setAttribute("aria-label", s === "idle" ? "Account" : `Account — ${STATUS_TITLE[s]}`);
     const line = document.getElementById("accountSyncLine");
     if (line) line.textContent = STATUS_TITLE[s] || "";
   }
@@ -61,7 +64,7 @@
       user = null;
       sync.onSignedOut();
     }
-    if (isAccountDialogOpen()) renderAccount();
+    if (isAccountDialogOpen()) { renderAccount(); focusAccountDialog(); }
   });
 
   // After an OAuth / magic-link return, supabase-js exchanges ?code= for a session; then
@@ -74,6 +77,13 @@
 
   /* ---------- Dialog ---------- */
   function isAccountDialogOpen() { return !el.modal.hidden && !!el.modalBody.querySelector(".account"); }
+
+  // Re-rendering replaces the dialog's content, which would drop keyboard focus onto <body>
+  // outside the focus trap (WCAG 2.4.3). Put it back on the first action.
+  function focusAccountDialog() {
+    const target = el.modalBody.querySelector("#signOutBtn, #googleBtn");
+    if (target) target.focus();
+  }
 
   function showAccount() {
     state.navCard = null;
@@ -208,6 +218,7 @@
       user = null;
       toast("Account deleted");
       renderAccount();
+      focusAccountDialog();
     });
   }
 

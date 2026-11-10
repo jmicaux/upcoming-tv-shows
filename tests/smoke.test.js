@@ -32,3 +32,32 @@ test("privacy page exists and exposes no personal email", () => {
   assert.doesNotMatch(html, /@gmail\.com/);
   assert.match(html, /delete/i);
 });
+
+test("applyPrefs respects a #network= deep link and refetches new sources", () => {
+  const fn = read("app.js").match(/function applyPrefs[\s\S]*?\n}\n/)[0];
+  assert.match(fn, /parseHash\(\)\.network/);
+  assert.match(fn, /neededSources\(state\.followed\)/);
+  assert.match(fn, /try \{[\s\S]*finally \{\s*applyingPrefs = false/);
+});
+
+test("scripts are deferred so a slow CDN cannot block the app", () => {
+  const html = read("index.html");
+  for (const f of ["supabase-config.js", "sync-core.js", "config.js", "app.js", "auth.js"]) {
+    assert.match(html, new RegExp(`<script defer src="${f.replace(".", "\\.")}`), f);
+  }
+  assert.match(html, /<script defer src="https:\/\/cdn\.jsdelivr\.net/);
+});
+
+test("auth.js restores focus after re-render, toasts on sync error and labels the sync state", () => {
+  const src = read("auth.js");
+  assert.match(src, /function focusAccountDialog/);
+  assert.match(src, /toast\("Sync failed/);
+  assert.match(src, /accountBtn\.setAttribute\("aria-label"/);
+});
+
+test("README dev server port matches the documented redirect URL", () => {
+  const md = read("README.md");
+  const port = md.match(/http\.server (\d+)/)[1];
+  assert.match(md, new RegExp(`http://localhost:${port}/`));
+  assert.doesNotMatch(md, /localhost:8080/);
+});

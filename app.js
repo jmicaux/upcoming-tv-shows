@@ -1558,13 +1558,17 @@ function applyPrefs(data, { silent = false } = {}) {
   const hasData = Object.keys(state.favorites).length > 0 || state.followed.size > 0;
   if (!silent && hasData && !confirm("Replace your current favorites, followed channels and settings with this file?")) return;
   applyingPrefs = silent;
+  try {
   if (Array.isArray(data.knownNetworks)) {
     state.known = new Set([...SEED_NETWORKS, ...data.knownNetworks]);
     saveSet(KNOWN_KEY, state.known);
   }
   if (Array.isArray(data.followedNetworks)) {
-    state.followed = new Set(data.followedNetworks);
-    saveSet(FOLLOW_KEY, state.followed); emitPrefsChanged();
+    // A shared "#network=" link filters the feed transiently; keep it on screen and only
+    // save the selection for when the link is cleared.
+    if (parseHash().network) saveSet(FOLLOW_KEY, new Set(data.followedNetworks));
+    else { state.followed = new Set(data.followedNetworks); saveSet(FOLLOW_KEY, state.followed); }
+    emitPrefsChanged();
     data.followedNetworks.forEach((n) => state.known.add(n));
     saveSet(KNOWN_KEY, state.known);
   }
@@ -1583,10 +1587,16 @@ function applyPrefs(data, { silent = false } = {}) {
     localStorage.setItem(THEME_KEY, currentTheme);
     applyTheme(currentTheme);
   }
-  applyingPrefs = false;
+  } finally {
+    applyingPrefs = false;
+  }
   updateViewButton();
   renderNetworkList();
+  // Channels that come from a source not loaded yet (e.g. a Nordic channel followed on
+  // another device) need the feed rebuilt, exactly as toggling them by hand would.
+  const needsFetch = [...neededSources(state.followed)].some((s) => !state.loadedSources.has(s));
   if (state.view === "watchlist") renderWatchlist();
+  else if (needsFetch) resetFeed();
   else renderAllBlocks();
   if (!silent) toast("Preferences imported");
 }

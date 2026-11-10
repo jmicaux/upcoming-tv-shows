@@ -140,6 +140,15 @@ function saveSet(key, set) {
 function saveFavorites() {
   try { localStorage.setItem(FAV_KEY, JSON.stringify(state.favorites)); }
   catch { toast("Storage full — your watchlist may not be saved."); }
+  emitPrefsChanged();
+}
+
+// Account sync (auth.js) listens for this to push the local preferences to the account.
+// Silenced while applyPrefs() replays preferences that came from the account.
+let applyingPrefs = false;
+function emitPrefsChanged() {
+  if (applyingPrefs) return;
+  document.dispatchEvent(new CustomEvent("prefs:changed"));
 }
 
 /* ---------- DOM ---------- */
@@ -196,6 +205,7 @@ el.themeBtn.addEventListener("click", () => {
   currentTheme = currentTheme === "dark" ? "light" : "dark";
   localStorage.setItem(THEME_KEY, currentTheme);
   applyTheme(currentTheme);
+  emitPrefsChanged();
 });
 
 /* ---------- Date helpers ---------- */
@@ -773,7 +783,7 @@ function toggleGroup(names, on) {
     if (on) { state.followed.add(n); state.known.add(n); }
     else state.followed.delete(n);
   }
-  saveSet(FOLLOW_KEY, state.followed);
+  saveSet(FOLLOW_KEY, state.followed); emitPrefsChanged();
   saveSet(KNOWN_KEY, state.known);
   dropNetworkHash();
   updateNetworkButton();
@@ -796,7 +806,7 @@ function resetFeed() {
 function toggleNetwork(name, on) {
   if (on) state.followed.add(name);
   else state.followed.delete(name);
-  saveSet(FOLLOW_KEY, state.followed);
+  saveSet(FOLLOW_KEY, state.followed); emitPrefsChanged();
   dropNetworkHash();       // user is hand-editing the selection now
   updateNetworkButton();
   updateActiveNetwork();
@@ -1385,6 +1395,7 @@ async function showChangelog() {
 function saveOverrides() {
   try { localStorage.setItem(OVERRIDES_KEY, JSON.stringify(state.watchOverrides)); }
   catch { toast("Storage full — watch settings may not be saved."); }
+  emitPrefsChanged();
 }
 
 // Every channel the user could pick as a source or a watch provider.
@@ -1527,19 +1538,33 @@ function buildPrefs() {
     exportedAt: new Date().toISOString(),
     theme: currentTheme,
     followedNetworks: [...state.followed],
+    knownNetworks: [...state.known],
     favorites: state.favorites,
     watchOverrides: state.watchOverrides,
   };
 }
 
-function applyPrefs(data) {
+// Same as buildPrefs(), but a channel selection that was never saved on this device
+// (still the curated defaults) is reported as null so sync does not treat it as a choice.
+function localPrefsForSync() {
+  const prefs = buildPrefs();
+  if (localStorage.getItem(FOLLOW_KEY) === null) prefs.followedNetworks = null;
+  return prefs;
+}
+
+function applyPrefs(data, { silent = false } = {}) {
   if (!data || typeof data !== "object") return;
   // Importing overwrites local state — confirm when there's something to lose.
   const hasData = Object.keys(state.favorites).length > 0 || state.followed.size > 0;
-  if (hasData && !confirm("Replace your current favorites, followed channels and settings with this file?")) return;
+  if (!silent && hasData && !confirm("Replace your current favorites, followed channels and settings with this file?")) return;
+  applyingPrefs = silent;
+  if (Array.isArray(data.knownNetworks)) {
+    state.known = new Set([...SEED_NETWORKS, ...data.knownNetworks]);
+    saveSet(KNOWN_KEY, state.known);
+  }
   if (Array.isArray(data.followedNetworks)) {
     state.followed = new Set(data.followedNetworks);
-    saveSet(FOLLOW_KEY, state.followed);
+    saveSet(FOLLOW_KEY, state.followed); emitPrefsChanged();
     data.followedNetworks.forEach((n) => state.known.add(n));
     saveSet(KNOWN_KEY, state.known);
   }
@@ -1558,11 +1583,12 @@ function applyPrefs(data) {
     localStorage.setItem(THEME_KEY, currentTheme);
     applyTheme(currentTheme);
   }
+  applyingPrefs = false;
   updateViewButton();
   renderNetworkList();
   if (state.view === "watchlist") renderWatchlist();
   else renderAllBlocks();
-  toast("Preferences imported");
+  if (!silent) toast("Preferences imported");
 }
 
 // Tiny IndexedDB kv to remember the chosen prefs file handle.
@@ -1676,7 +1702,7 @@ el.networkBtn.addEventListener("click", (e) => {
 el.networkSearch.addEventListener("input", (e) => { state.networkSearch = e.target.value; renderNetworkList(); });
 el.networkClear.addEventListener("click", () => {
   state.followed.clear();
-  saveSet(FOLLOW_KEY, state.followed);
+  saveSet(FOLLOW_KEY, state.followed); emitPrefsChanged();
   dropNetworkHash();
   updateActiveNetwork();
   renderNetworkList();

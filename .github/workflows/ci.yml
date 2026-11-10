@@ -29,5 +29,8 @@ jobs:
           find . -name '*.js' -not -path './.git/*' -print0 \
             | xargs -0 -r -n1 node --check
 
+      - name: Run unit tests
+        run: node --test tests/
+
       - name: Validate HTML
         run: npx --yes html-validate '**/*.html'

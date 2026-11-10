@@ -48,7 +48,95 @@
     };
   }
 
-  const api = { isValidPrefs, mergePrefs };
+  const MARKER_KEY = "tv:syncedUser";
+  const PUSH_DEBOUNCE_MS = 1000;
+
+  // The sync engine. All I/O is injected so it can be unit-tested without a browser:
+  //   getLocal()            → prefs (followedNetworks may be null = never chosen here)
+  //   applyLocal(prefs)     → write prefs into the app (silently)
+  //   storage               → localStorage-like { getItem, setItem, removeItem }
+  //   fetchRemote()         → Promise<{ data, updated_at } | null>
+  //   pushRemote(prefs)     → Promise<void>
+  //   onStatus(status)      → "idle" | "syncing" | "synced" | "error" | "offline"
+  function createSync(deps) {
+    const { getLocal, applyLocal, storage, fetchRemote, pushRemote, onStatus } = deps;
+    const schedule = deps.setTimeout, unschedule = deps.clearTimeout;
+    let signedIn = false;
+    let timer = null;
+    let dirty = false;
+    let lastRemoteAt = null;
+
+    const status = (s) => { if (onStatus) onStatus(s); };
+    const remoteValid = (r) => !!(r && isValidPrefs(r.data));
+
+    async function push(prefs) {
+      status("syncing");
+      try {
+        await pushRemote(prefs);
+        dirty = false;
+        status("synced");
+      } catch {
+        dirty = true;
+        status("error");
+      }
+    }
+
+    async function onSignedIn(userId) {
+      signedIn = true;
+      status("syncing");
+      let remote;
+      try { remote = await fetchRemote(); }
+      catch { status("offline"); return; }
+      if (remote && remote.updated_at) lastRemoteAt = remote.updated_at;
+
+      if (storage.getItem(MARKER_KEY) === userId) {
+        // This device already met this account: the account is the source of truth.
+        if (remoteValid(remote)) { applyLocal(remote.data); status("synced"); }
+        else await push(mergePrefs(getLocal(), null));
+        return;
+      }
+      // First time this account signs in here: merge, so nothing local is lost.
+      const merged = mergePrefs(getLocal(), remoteValid(remote) ? remote.data : null);
+      applyLocal(merged);
+      await push(merged);
+      storage.setItem(MARKER_KEY, userId);
+    }
+
+    function onSignedOut() {
+      signedIn = false;
+      if (timer !== null) { unschedule(timer); timer = null; }
+      status("idle");
+    }
+
+    function onLocalChange() {
+      if (!signedIn) return;
+      dirty = true;
+      if (timer !== null) unschedule(timer);
+      timer = schedule(async () => { timer = null; await flush(); }, PUSH_DEBOUNCE_MS);
+    }
+
+    async function flush() {
+      if (!signedIn || !dirty) return;
+      if (timer !== null) { unschedule(timer); timer = null; }
+      await push(getLocal());
+    }
+
+    async function onVisible() {
+      if (!signedIn) return;
+      let remote;
+      try { remote = await fetchRemote(); }
+      catch { status("offline"); return; }
+      if (!remoteValid(remote)) return;
+      if (lastRemoteAt && remote.updated_at && remote.updated_at <= lastRemoteAt) return;
+      lastRemoteAt = remote.updated_at;
+      applyLocal(remote.data);
+      status("synced");
+    }
+
+    return { onSignedIn, onSignedOut, onLocalChange, onVisible, flush };
+  }
+
+  const api = { isValidPrefs, mergePrefs, createSync, MARKER_KEY };
   root.SyncCore = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

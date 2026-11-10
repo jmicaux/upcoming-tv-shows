@@ -876,3 +876,40 @@ body[data-view="watchlist"] .progress { display: none; }
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------- Account (optional sync) ---------- */
+.account-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+.account-btn[data-sync="synced"]::after,
+.account-btn[data-sync="syncing"]::after,
+.account-btn[data-sync="error"]::after,
+.account-btn[data-sync="offline"]::after {
+  content: ""; position: absolute; top: 3px; right: 3px; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--sync-ok); border: 1px solid var(--surface-2);
+}
+.account-btn[data-sync="syncing"]::after { background: var(--muted); }
+.account-btn[data-sync="error"]::after,
+.account-btn[data-sync="offline"]::after { background: var(--sync-warn); }
+:root { --sync-ok: #3fb950; --sync-warn: #f0b429; }
+:root[data-theme="light"] { --sync-ok: #1a7f37; --sync-warn: #b45309; }
+@media (prefers-color-scheme: light) { :root:not([data-theme]) { --sync-ok: #1a7f37; --sync-warn: #b45309; } }
+
+.account { flex: 1; min-height: 0; overflow-y: auto; }
+.account-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.6rem 0; }
+.account-row input[type="email"], .account-row input[type="text"] {
+  flex: 1 1 12rem; min-width: 0; padding: 0.45rem 0.6rem; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: inherit;
+}
+.account-btn-primary, .account-btn-secondary, .account-btn-danger {
+  display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.8rem; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: inherit; cursor: pointer;
+}
+.account-btn-primary:hover, .account-btn-secondary:hover { border-color: var(--accent); }
+.account-btn-danger { color: var(--accent-text); }
+.account-btn-danger:hover { border-color: var(--accent-text); }
+.account-status { color: var(--muted); font-size: 0.85rem; margin: 0.4rem 0; min-height: 1.2em; }
+.account-status[data-kind="error"] { color: var(--accent-text); }
+.account-email { font-weight: 600; word-break: break-all; }
+.account-confirm { border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem; margin-top: 0.6rem; }
+.account-confirm label { display: flex; gap: 0.5rem; align-items: center; margin: 0.5rem 0; font-size: 0.9rem; }
+.account-footer { margin-top: 1.2rem; font-size: 0.85rem; color: var(--muted); }
+.account-footer a { color: var(--accent-text); }

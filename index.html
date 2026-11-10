@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cloud.umami.is; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cloud.umami.is https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:; base-uri 'self'; form-action 'self'; object-src 'none'">
   <title>Upcoming TV Shows</title>
   <meta name="description" content="Track upcoming TV and streaming premieres month by month across US, UK, Australian, Nordic and French channels. Follow your favorites and filter by genre.">
 
@@ -66,6 +66,9 @@
       <button id="exportBtn" class="icon-btn" title="Export preferences" aria-label="Export preferences">⭳</button>
       <button id="importBtn" class="icon-btn" title="Import preferences" aria-label="Import preferences">⭱</button>
       <input id="importFile" type="file" accept="application/json" hidden>
+      <button id="accountBtn" class="icon-btn account-btn" title="Account" aria-label="Account" data-sync="idle" hidden>
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      </button>
       <button id="settingsBtn" class="icon-btn" title="Settings" aria-label="Settings">⚙</button>
       <button id="themeBtn" class="theme-btn" aria-label="Toggle theme"></button>
     </div>
@@ -119,7 +122,11 @@
     <button class="modal-nav next" id="modalNext" aria-label="Next show" hidden>›</button>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
+  <script src="supabase-config.js?v=1.25.0"></script>
+  <script src="sync-core.js?v=1.25.0"></script>
   <script src="config.js"></script>
-  <script src="app.js?v=1.24.0"></script>
+  <script src="app.js?v=1.25.0"></script>
+  <script src="auth.js?v=1.25.0"></script>
 </body>
 </html>

@@ -3,6 +3,26 @@
 All notable changes to Upcoming TV Shows are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.25.0 — 2026-11-10
+
+### Added
+- **Optional account** (👤 in the header) to keep your followed channels, watchlist, watch
+  redirects and theme on every device. Sign in with Google; no password. Everything still
+  works without an account, and your TMDB key is never synced.
+- The first time an account signs in on a device, local and account preferences are merged
+  (nothing is lost); afterwards the account is the source of truth and changes are saved
+  about a second after you make them.
+- **Delete account** removes the account and its stored preferences; optionally also clears
+  this device.
+- `privacy.html` describing what is stored and why.
+- Email sign-in (magic link + 6-digit code) is built in but off (`EMAIL_LOGIN: false`) until
+  a custom email sender is configured.
+
+### Changed
+- Accounts are backed by Supabase (EU region, Row Level Security). The app loads a pinned
+  `supabase-js` from jsDelivr with Subresource Integrity; the CSP allows that origin.
+- Unit tests (`node --test tests/`) run in CI.
+
 ## 1.24.0 — 2026-11-08
 
 ### Changed

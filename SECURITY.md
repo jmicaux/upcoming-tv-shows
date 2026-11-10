@@ -24,7 +24,9 @@ concept), and the affected version. You can expect an acknowledgement within a f
 ## Scope
 
 Upcoming TV Shows is a static, client-side app. It reads public data from TVMaze and TMDB and stores
-your preferences locally. A TMDB key, if configured for a public deployment, is exposed
+your preferences locally. The optional account feature stores an email address and a
+preferences record in Supabase, guarded by Row Level Security (each user can only reach their
+own row); the repo ships only the public project URL and `anon` key, never a privileged key. A TMDB key, if configured for a public deployment, is exposed
 client-side by design — proxy it behind a backend if that matters for your deployment
 (see the README's *Limitations*). Reports about TVMaze/TMDB services themselves are out
 of scope.

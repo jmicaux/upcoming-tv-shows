@@ -6,7 +6,7 @@ Australia and the Nordics**, plus French channels (**Canal+**, **Arte**, TF1, M6
 follow only the ones you care about, and filter by genre. No build step, no backend —
 just static files (plus a free TMDB key for the French channels).
 
-[![CI](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml/badge.svg)](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml) ![version](https://img.shields.io/badge/version-1.24.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
+[![CI](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml/badge.svg)](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml) ![version](https://img.shields.io/badge/version-1.25.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
 
 **🔗 Live preview: [jmicaux.github.io/upcoming-tv-shows](https://jmicaux.github.io/upcoming-tv-shows/)**
 
@@ -38,6 +38,8 @@ If you enjoy this app, you can support it:
 - **Detail view** per show: poster, channel, air date, season/episode, genres, summary.
 - **Favorites & Watchlist** — star any show; a dedicated Watchlist view lists your
   followed shows with their next upcoming episode.
+- **Optional account** — sign in with Google to find the same channels, watchlist and
+  settings on every device. See [Accounts](#accounts-optional).
 - **Export / import preferences** — save your favorites, followed channels and theme to a
   JSON file and load them on another machine. Point it at a cloud-synced folder
   (OneDrive/Dropbox/Drive) for cross-device sync without a backend.
@@ -73,6 +75,52 @@ Alternatively, paste the key directly in the app via **⚙ Settings → French c
 stored only in your browser's `localStorage` (never in the repo), which is how the hosted
 preview can enable Canal+ / Arte without shipping a key.
 
+## Accounts (optional)
+
+Click 👤 in the header and **Continue with Google**. From then on your followed channels,
+watchlist, watch redirects and theme are stored with your account and restored on any device
+you sign in from. Details:
+
+- Everything keeps working without an account; signing in is purely for sync.
+- The first time an account signs in on a device, local and account preferences are
+  **merged** so nothing is lost. After that the account wins, and changes are saved about a
+  second after you make them (and when you leave the page).
+- Your **TMDB key is never synced** — it stays on the device where you typed it.
+- **Sign out** keeps your preferences on the device. **Delete account** removes the account
+  and its stored preferences, with an option to clear the device too.
+- Email sign-in (magic link + 6-digit code) exists but is off until a custom email sender is
+  configured (`EMAIL_LOGIN` in `supabase-config.js`).
+- What is stored and why: [privacy.html](https://jmicaux.github.io/upcoming-tv-shows/privacy.html).
+
+### Self-hosting with accounts
+
+The hosted preview has its own Supabase project. For your own deployment (free tier is
+enough):
+
+1. Create a project at [supabase.com](https://supabase.com) — pick an **EU region** if you
+   care about GDPR locality.
+2. **SQL editor** → run [`supabase/schema.sql`](supabase/schema.sql) (table, Row Level
+   Security policies, `delete_my_account()` function).
+3. **Authentication → URL configuration**: Site URL = your deployment
+   (e.g. `https://<you>.github.io/upcoming-tv-shows/`); add it and
+   `http://localhost:8080/` to Redirect URLs.
+4. **Google sign-in**: in [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+   create an *OAuth client ID* (Web application) with authorized redirect URI
+   `https://<project-ref>.supabase.co/auth/v1/callback`; paste the client ID and secret in
+   Supabase **Authentication → Providers → Google**. Keep Supabase's default automatic
+   identity linking so Google and email with the same address share one account. Only the
+   email/profile scopes are requested, so no Google app verification is needed.
+5. Copy **Project Settings → API** → Project URL and `anon` key into `supabase-config.js`
+   (these are public by design; never put the `service_role` key anywhere in the repo).
+6. Email sign-in (optional): Supabase's built-in sender only delivers to project members and
+   is rate-limited, so keep `EMAIL_LOGIN: false` until you configure **custom SMTP** on your
+   own domain (e.g. Resend). Then edit the *Magic Link* email template to include
+   `{{ .Token }}` so the 6-digit code appears, and flip `EMAIL_LOGIN` to `true`.
+7. Free-tier projects **pause after about a week without traffic**. The
+   [`keepalive.yml`](.github/workflows/keepalive.yml) workflow pings the API weekly; if the
+   project still gets paused, restore it from the Supabase dashboard. While paused, the app
+   shows "Sync unavailable" and keeps working locally.
+
 ## Project structure
 
 ```
@@ -80,13 +128,20 @@ tv-us-upcoming/
 ├── index.html          # markup: header, filters, grid, detail modal
 ├── styles.css          # theming (dark/light via data-theme), responsive grid
 ├── app.js              # data fetching, caching, filtering, rendering
+├── auth.js             # optional account: Supabase sign-in + preference sync
+├── sync-core.js        # merge rules + sync engine (pure, unit-tested)
+├── supabase-config.js  # public Supabase URL + anon key (safe to commit)
+├── supabase/schema.sql # table, RLS policies, delete_my_account()
+├── privacy.html        # what an account stores and why
 ├── config.example.js   # template for your TMDB key
 ├── config.js           # your real key (git-ignored, create from the example)
 ├── presets/            # importable preferences snapshots (Export → Import)
+├── tests/              # node --test unit tests (run in CI)
 └── README.md
 ```
 
-No dependencies, no package.json — everything runs in the browser.
+No build step and no npm dependencies — everything runs in the browser. The only runtime
+dependency is a pinned `supabase-js` loaded from jsDelivr with Subresource Integrity.
 
 ## Data sources
 

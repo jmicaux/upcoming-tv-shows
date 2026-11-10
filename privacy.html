@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <title>Privacy — Upcoming TV Shows</title>
+  <meta name="description" content="What Upcoming TV Shows stores when you create an optional account, where it lives and how to delete it.">
+  <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+  <link rel="canonical" href="https://jmicaux.github.io/upcoming-tv-shows/privacy.html">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23e50914'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold' letter-spacing='-2'%3EUp%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css?v=1.25.0">
+  <style>
+    .page { max-width: 44rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; line-height: 1.55; }
+    .page h1 { font-size: 1.6rem; margin: 0 0 0.3rem; }
+    .page h2 { font-size: 1.1rem; margin: 1.6rem 0 0.4rem; }
+    .page p, .page li { color: var(--text); }
+    .page a { color: var(--accent-text); }
+    .page .lede { color: var(--muted); margin-bottom: 1.2rem; }
+    .page nav { margin-bottom: 1rem; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <nav aria-label="Breadcrumb"><a href="./">← Back to Upcoming TV Shows</a></nav>
+    <h1>Privacy</h1>
+    <p class="lede">Upcoming TV Shows works without an account: your channels, watchlist and settings stay in your browser. This page describes what changes if you choose to sign in.</p>
+
+    <h2>Without an account</h2>
+    <p>Nothing about you is sent to us. Preferences are kept in your browser's local storage. The app fetches public schedule data from TVMaze and TMDB, and page views are counted with Umami, a cookieless analytics service that does not identify you.</p>
+
+    <h2>With an account — what is stored</h2>
+    <ul>
+      <li><strong>Your email address</strong> (from Google, or the one you type in), used only to recognise you when you sign in.</li>
+      <li><strong>Your preferences</strong>: followed channels, watchlist, watch redirects and theme, as one small record.</li>
+    </ul>
+    <p>Your TMDB API key is never synced: it stays on the device where you entered it.</p>
+
+    <h2>Why</h2>
+    <p>So that you find the same channels, watchlist and settings on every device you sign in from. That is the only purpose.</p>
+
+    <h2>Where and for how long</h2>
+    <p>Accounts and preferences are stored by <a href="https://supabase.com/privacy" rel="noopener">Supabase</a> in a European Union data centre. Only you can read or change your record. It is kept until you delete your account.</p>
+
+    <h2>Sign-in providers</h2>
+    <p>"Continue with Google" asks Google for your email address and name only. Google's own <a href="https://policies.google.com/privacy" rel="noopener">privacy policy</a> applies to that step.</p>
+
+    <h2>Your rights</h2>
+    <p>You can delete your account at any time from <strong>Account → Delete account</strong> in the app. This removes your email address and your preferences immediately. For any other request, open an issue on <a href="https://github.com/jmicaux/upcoming-tv-shows/issues" rel="noopener">GitHub</a>.</p>
+
+    <h2>Third parties</h2>
+    <ul>
+      <li><a href="https://www.tvmaze.com/" rel="noopener">TVMaze</a> and <a href="https://www.themoviedb.org/" rel="noopener">TMDB</a> — schedule data (no account data is sent to them).</li>
+      <li><a href="https://umami.is/" rel="noopener">Umami</a> — cookieless page-view counts.</li>
+      <li><a href="https://supabase.com/" rel="noopener">Supabase</a> — account and preferences storage (only if you sign in).</li>
+      <li><a href="https://www.google.com/" rel="noopener">Google</a> — sign-in (only if you choose it).</li>
+    </ul>
+  </main>
+</body>
+</html>

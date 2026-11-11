@@ -3,6 +3,13 @@
 All notable changes to Upcoming TV Shows are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.28.4 — 2026-11-11
+
+### Added
+- **Logo in the header**: the "Up" favicon, inverted (white with red letters) to stand out
+  on the red header, inside the title link; decorative for screen readers (the link reads
+  "Upcoming TV Shows").
+
 ## 1.28.3 — 2026-11-11
 
 ### Fixed (automated accessibility scan of Watchlist and About)

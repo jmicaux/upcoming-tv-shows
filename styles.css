@@ -1364,3 +1364,7 @@ a.sheet-item { text-decoration: none; box-sizing: border-box; }
   .filters.is-open .dropdown-panel { z-index: 70; }
 }
 @media (prefers-reduced-motion: reduce) { .filters.is-open { animation: none; } }
+
+/* Footer links are at least 24 x 24 px, even very short names like "E!" (WCAG 2.5.8). */
+.footer-group a, .footer-links a { min-width: 24px; justify-content: center; }
+.footer-group a { justify-content: flex-start; }

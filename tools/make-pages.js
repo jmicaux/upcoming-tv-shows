@@ -203,7 +203,10 @@ function build(indexHtml, data) {
   // read it. Submit sitemap.xml in Google Search Console instead.
   return files;
 }
-module.exports = { build };
+// Hand-written pages that share the generated footer.
+const STATIC_PAGES = ["about.html", "privacy.html", "accessibility.html"];
+const fillStatic = (html) => region(html, "footer", footerHtml());
+module.exports = { build, fillStatic, STATIC_PAGES };
 
 // Snapshot reader for build(): { index, read(monthKey, slug), today }.
 function loadData(dir) {
@@ -224,5 +227,9 @@ if (require.main === module) {
   fs.rmSync(dir, { recursive: true, force: true }); // drop pages of removed channels
   fs.mkdirSync(dir);
   for (const [rel, html] of Object.entries(files)) fs.writeFileSync(path.join(root, rel), html);
+  for (const rel of STATIC_PAGES) {
+    const file = path.join(root, rel);
+    fs.writeFileSync(file, fillStatic(fs.readFileSync(file, "utf8")));
+  }
   console.log(`${Object.keys(files).length} pages written${data ? " (with schedule data)" : ""}`);
 }

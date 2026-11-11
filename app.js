@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.28.2"; // single source of truth — bump on each release
+const APP_VERSION = "1.28.3"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const CACHE_PREFIX = "tvmaze:sched:v4:"; // v4: US + streaming + FR + UK/AU/Nordic flagships

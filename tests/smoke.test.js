@@ -15,15 +15,15 @@ test("index.html wires accounts", () => {
   assert.match(html, /id="accountBtn"/);
   assert.match(html, /script-src 'self' https:\/\/cloud\.umami\.is https:\/\/cdn\.jsdelivr\.net/);
   assert.match(html, /supabase-js@2\.\d+\.\d+\/dist\/umd\/supabase\.js" integrity="sha384-/);
-  assert.match(html, /sync-core\.js\?v=1\.28\.2/);
-  assert.match(html, /auth\.js\?v=1\.28\.2/);
+  assert.match(html, /sync-core\.js\?v=1\.28\.3/);
+  assert.match(html, /auth\.js\?v=1\.28\.3/);
 });
 
 test("release 1.26.0 is consistent", () => {
-  assert.match(read("app.js"), /const APP_VERSION = "1\.28\.2"/);
-  assert.match(read("index.html"), /styles\.css\?v=1\.28\.2/);
-  assert.match(read("README.md"), /version-1\.28\.2-blue/);
-  assert.match(read("CHANGELOG.md"), /^## 1\.28\.2 — \d{4}-\d{2}-\d{2}/m);
+  assert.match(read("app.js"), /const APP_VERSION = "1\.28\.3"/);
+  assert.match(read("index.html"), /styles\.css\?v=1\.28\.3/);
+  assert.match(read("README.md"), /version-1\.28\.3-blue/);
+  assert.match(read("CHANGELOG.md"), /^## 1\.28\.3 — \d{4}-\d{2}-\d{2}/m);
 });
 
 test("privacy page exists and exposes no personal email", () => {
@@ -147,4 +147,15 @@ test("cards: no role=button wrapper, decorative posters, named controls", () => 
 test("styles: no text smaller than 0.75rem (12px, WAVE 'very small text')", () => {
   const sizes = [...read("styles.css").matchAll(/font-size:\s*([\d.]+)rem/g)].map((m) => Number(m[1]));
   assert.deepEqual(sizes.filter((n) => n < 0.75), []);
+});
+
+test("static pages: skip link, header, footer up to date (run node tools/make-pages.js)", () => {
+  const { fillStatic, STATIC_PAGES } = require("../tools/make-pages.js");
+  for (const rel of STATIC_PAGES) {
+    const html = read(rel);
+    assert.equal(html, fillStatic(html), rel + " footer is stale");
+    assert.match(html, /<a class="skip-link" href="#content">/, rel);
+    assert.match(html, /<main class="page" id="content"/, rel);
+    assert.match(html, /<footer class="site-footer">[\s\S]*Upcoming shows by channel/, rel);
+  }
 });

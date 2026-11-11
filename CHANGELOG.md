@@ -3,6 +3,14 @@
 All notable changes to Upcoming TV Shows are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.28.3 — 2026-11-11
+
+### Fixed (automated accessibility scan of Watchlist and About)
+- About, Privacy and Accessibility now have the same header (title linking home), skip
+  link and footer as the rest of the site (RGAA 12.6, 12.7, 12.2); the footer is filled
+  by `tools/make-pages.js` so it stays identical everywhere.
+- Footer links are at least 24 × 24 px, even very short channel names such as "E!".
+
 ## 1.28.2 — 2026-11-11
 
 ### Changed

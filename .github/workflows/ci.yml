@@ -24,6 +24,13 @@ jobs:
             exit 1
           fi
 
+      - name: Ensure no secrets or local notes are committed
+        run: |
+          bad=$(git ls-files | grep -iE '(credential|secret|password|\.env($|\.)|\.txt$|^docs/superpowers/)' | grep -v '^robots\.txt$' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::These files must not be committed:"; echo "$bad"; exit 1
+          fi
+
       - name: Check JS syntax
         run: |
           find . -name '*.js' -not -path './.git/*' -print0 \

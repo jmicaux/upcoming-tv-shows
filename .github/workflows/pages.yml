@@ -42,10 +42,20 @@ jobs:
       - name: Bake the upcoming shows into the channel pages
         run: node tools/make-pages.js --data data/schedule
 
+      # Publish only what the site needs (allow-list): never the repo's notes, tests,
+      # tools or any stray local file.
+      - name: Assemble the site
+        run: |
+          mkdir _site
+          cp index.html watchlist.html 404.html about.html privacy.html google*.html _site/
+          cp app.js auth.js sync-core.js networks.js feed-core.js supabase-config.js _site/
+          cp styles.css og-image.png sitemap.xml _site/
+          cp -r network data _site/
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
 
   deploy:
     needs: build

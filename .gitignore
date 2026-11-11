@@ -21,3 +21,12 @@ desktop.ini
 
 # SEO / accessibility audit reports (local only)
 /reports/
+
+# Never commit secrets or working notes: local credentials files, env files, AI planning docs
+*.txt
+!robots.txt
+.env
+.env.*
+*credentials*
+*secret*
+docs/superpowers/

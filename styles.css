@@ -1303,7 +1303,6 @@ a.sheet-item { text-decoration: none; box-sizing: border-box; }
 
 /* Brand = link home. */
 .brand-link { color: inherit; text-decoration: none; }
-.brand-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 /* Simplified breadcrumb "Home › current". */
 .breadcrumb { padding: 0.55rem 1.25rem; font-size: 0.85rem; border-bottom: 1px solid var(--border); }
@@ -1372,5 +1371,4 @@ a.sheet-item { text-decoration: none; box-sizing: border-box; }
 /* Logo (the favicon, inverted to stay visible on the red header). */
 .brand-link { display: inline-flex; align-items: center; gap: 0.55rem; }
 .brand-logo { flex: none; border-radius: 6px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); }
-.brand-link:hover .brand-logo { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6); }
 @media (max-width: 640px) { .brand-logo { width: 26px; height: 26px; } }

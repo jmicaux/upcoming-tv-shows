@@ -822,7 +822,7 @@ function toggleNetwork(name, on) {
 function filterToNetwork(name) {
   state.known.add(name);
   saveSet(KNOWN_KEY, state.known);
-  location.hash = "network=" + encodeURIComponent(name);
+  navigate(APP_BASE + "#network=" + encodeURIComponent(name));
   toast(`Showing ${name} only`);
 }
 
@@ -959,13 +959,22 @@ function toggleFav(id, showObj) {
   });
 }
 
-// URL routing via the hash: "#watchlist" or "#network=<name>" (bookmarkable).
+// URL routing (bookmarkable): "<base>watchlist" for the Watchlist (served by
+// watchlist.html on GitHub Pages), "<base>#network=<name>" for a one-channel feed.
+const WATCHLIST_PATH_RE = /watchlist(\.html)?\/?$/;
+const APP_BASE = location.pathname.replace(WATCHLIST_PATH_RE, "").replace(/index\.html$/, "");
 function parseHash() {
   const raw = location.hash.replace(/^#/, "");
-  if (raw === "watchlist") return { view: "watchlist", network: null };
   if (raw.startsWith("network=")) return { view: "month", network: decodeURIComponent(raw.slice(8)) };
-  return { view: "month", network: null };
+  return { view: WATCHLIST_PATH_RE.test(location.pathname) ? "watchlist" : "month", network: null };
 }
+// Navigate inside the app without a reload, then render the new route.
+function navigate(url) {
+  if (url !== location.pathname + location.hash) history.pushState(null, "", url);
+  applyRoute();
+}
+// Old "#watchlist" bookmarks → the clean /watchlist address.
+if (location.hash === "#watchlist") history.replaceState(null, "", APP_BASE + "watchlist");
 
 // A network in the URL filters the feed transiently — it reflects the link, it does not
 // overwrite the user's saved channel selection (that returns on a plain reload).
@@ -1720,7 +1729,7 @@ el.networkClear.addEventListener("click", () => {
   renderNetworkList();
   renderAllBlocks();
 });
-el.clearNetwork.addEventListener("click", () => { location.hash = ""; });
+el.clearNetwork.addEventListener("click", () => navigate(APP_BASE));
 el.networkPanel.addEventListener("click", (e) => e.stopPropagation());
 
 function setGenrePanel(open) {
@@ -1798,14 +1807,15 @@ function resetFilters() {
   collapseSearch();
   // If a transient network filter is active, exit it and restore the saved selection —
   // applyRoute() re-renders with the search/genre/premieres we just reset above.
-  if (location.hash.startsWith("#network=")) { location.hash = ""; return; }
+  if (location.hash.startsWith("#network=")) { navigate(APP_BASE); return; }
   renderAllBlocks();
 }
 
 el.viewBtn.addEventListener("click", () => {
-  location.hash = state.view === "watchlist" ? "" : "watchlist";
+  navigate(state.view === "watchlist" ? APP_BASE : APP_BASE + "watchlist");
 });
 window.addEventListener("hashchange", applyRoute);
+window.addEventListener("popstate", applyRoute);
 
 el.exportBtn.addEventListener("click", exportPrefs);
 el.importBtn.addEventListener("click", importPrefs);
@@ -1861,4 +1871,4 @@ updateViewButton();
 renderNetworkList(); // show the network list + pre-selection immediately (from the seed)
 renderGenreList();   // initialise the (empty) genre picker; fills in as months load
 scrollObserver.observe(sentinelEl);
-applyRoute(); // honor "#watchlist" or "#network=…" in a bookmarked URL
+applyRoute(); // honor /watchlist or "#network=…" in a bookmarked URL

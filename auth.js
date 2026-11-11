@@ -11,10 +11,10 @@
   const client = window.supabase.createClient(cfg.URL, cfg.ANON_KEY, {
     auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true },
   });
-  const redirectTo = location.origin + location.pathname;
+  const redirectTo = location.origin + APP_BASE; // the address registered in Supabase
   const RETURN_HASH_KEY = "tv:authReturnHash";
   function rememberRoute() {
-    try { sessionStorage.setItem(RETURN_HASH_KEY, location.hash); } catch (_) {}
+    try { sessionStorage.setItem(RETURN_HASH_KEY, location.pathname + location.hash); } catch (_) {}
   }
   const SYNCED_KEYS = ["tv:followedNetworks", "tv:knownNetworks", "tv:favorites", "tv:watchOverrides", "tv:theme", SyncCore.MARKER_KEY, SyncCore.STATE_KEY];
 
@@ -72,15 +72,14 @@
   });
 
   // After an OAuth / magic-link return, supabase-js exchanges ?code= for a session; then
-  // drop the query so a reload does not retry it. The #hash route (e.g. #watchlist) is kept.
-  // The redirect URL is registered without a #hash, so the route the user was on (e.g.
-  // #watchlist) is saved before leaving and restored here.
+  // drop the query so a reload does not retry it. The redirect URL is the app root, so the
+  // route the user was on (e.g. /watchlist) is saved before leaving and restored here.
   if (/[?&]code=/.test(location.search)) {
-    let hash = location.hash;
-    try { hash = hash || sessionStorage.getItem(RETURN_HASH_KEY) || ""; sessionStorage.removeItem(RETURN_HASH_KEY); } catch (_) {}
+    let back = location.pathname + location.hash;
+    try { back = sessionStorage.getItem(RETURN_HASH_KEY) || back; sessionStorage.removeItem(RETURN_HASH_KEY); } catch (_) {}
     client.auth.getSession().finally(() => {
-      history.replaceState(null, "", location.pathname + hash);
-      if (hash) window.dispatchEvent(new HashChangeEvent("hashchange"));
+      history.replaceState(null, "", back);
+      window.dispatchEvent(new PopStateEvent("popstate"));
     });
   }
 

@@ -61,3 +61,16 @@ test("README dev server port matches the documented redirect URL", () => {
   assert.match(md, new RegExp(`http://localhost:${port}/`));
   assert.doesNotMatch(md, /localhost:8080/);
 });
+
+test("watchlist.html is index.html + noindex (run node tools/make-watchlist.js)", () => {
+  const { build } = require("../tools/make-watchlist.js");
+  assert.equal(read("watchlist.html"), build(read("index.html")));
+});
+
+test("routing: clean /watchlist path, no '#' left behind", () => {
+  const src = read("app.js");
+  assert.match(src, /const APP_BASE = /);
+  assert.match(src, /addEventListener\("popstate", applyRoute\)/);
+  assert.doesNotMatch(src, /location\.hash = /);
+  assert.match(read("auth.js"), /const redirectTo = location\.origin \+ APP_BASE/);
+});

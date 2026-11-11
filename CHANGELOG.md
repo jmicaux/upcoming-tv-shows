@@ -9,6 +9,11 @@ All notable changes to Upcoming TV Shows are documented here. This project follo
 - **Continue with GitHub** next to Google in the account dialog. The same email address on
   both providers signs in to the same account.
 
+### Changed
+- The Watchlist has a clean address, `…/upcoming-tv-shows/watchlist` (was `#watchlist`; old
+  links still work). Back/Forward move between the feed and the Watchlist, and closing a
+  channel filter no longer leaves a bare `#` in the address.
+
 ### Fixed
 - **Sync could replace your favorites instead of merging them.** A tab that had not
   refreshed (or a device back online) pushed its whole, stale copy over the account, and

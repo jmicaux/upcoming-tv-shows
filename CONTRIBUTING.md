@@ -28,7 +28,7 @@ The French channels (Canal+, Arte…) need a free TMDB key — copy `config.exam
 1. Create a feature branch from `main`.
 2. Keep the change focused and describe the *why* in the PR.
 3. On a release, bump the version in the three places noted in the README's *Versioning*
-   section and add a `CHANGELOG.md` entry.
+   section.
 
 ## Reporting bugs
 

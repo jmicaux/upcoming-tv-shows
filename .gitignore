@@ -18,3 +18,6 @@ desktop.ini
 
 # Nightly schedule snapshot — built by .github/workflows/pages.yml, never committed
 /data/
+
+# Release notes are kept locally only (not published)
+/CHANGELOG.md

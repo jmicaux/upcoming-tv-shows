@@ -1324,42 +1324,6 @@ function closeModal() {
   lastFocused = null;
 }
 
-/* ---------- Changelog ---------- */
-// Minimal, safe Markdown → HTML for our own CHANGELOG.md (escape first, then format).
-function renderMarkdown(md) {
-  const inline = (s) => escapeHtml(s)
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-  let html = "";
-  let inList = false;
-  const closeList = () => { if (inList) { html += "</ul>"; inList = false; } };
-  for (const raw of md.split("\n")) {
-    const line = raw.trimEnd();
-    if (/^###\s+/.test(line)) { closeList(); html += `<h4>${inline(line.replace(/^###\s+/, ""))}</h4>`; }
-    else if (/^##\s+/.test(line)) { closeList(); html += `<h3>${inline(line.replace(/^##\s+/, ""))}</h3>`; }
-    else if (/^#\s+/.test(line)) { closeList(); html += `<h2>${inline(line.replace(/^#\s+/, ""))}</h2>`; }
-    else if (/^[-*]\s+/.test(line)) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${inline(line.replace(/^[-*]\s+/, ""))}</li>`; }
-    else if (line === "") { closeList(); }
-    else { closeList(); html += `<p>${inline(line)}</p>`; }
-  }
-  closeList();
-  return html;
-}
-
-async function showChangelog() {
-  state.navCard = null;
-  el.modalBody.innerHTML = '<div class="modal-summary">Loading…</div>';
-  revealModal("Changelog");
-  updateModalNav();
-  try {
-    const res = await fetch(`CHANGELOG.md?v=${APP_VERSION}`);
-    if (!res.ok) throw new Error(res.status);
-    el.modalBody.innerHTML = `<div class="changelog">${renderMarkdown(await res.text())}</div>`;
-  } catch {
-    el.modalBody.innerHTML = '<div class="modal-summary">Changelog unavailable.</div>';
-  }
-}
-
 /* ---------- Watch settings (channel → provider overrides) ---------- */
 function saveOverrides() {
   try { localStorage.setItem(OVERRIDES_KEY, JSON.stringify(state.watchOverrides)); }
@@ -1823,8 +1787,6 @@ console.log(`Upcoming TV Shows v${APP_VERSION}`);
 const versionEl = document.getElementById("appVersion");
 if (versionEl) {
   versionEl.textContent = `v${APP_VERSION}`;
-  versionEl.title = "View changelog";
-  versionEl.addEventListener("click", showChangelog);
 }
 normalizeFavorites(); // shrink any legacy full-snapshot favorites to { id, name }
 updateViewButton();

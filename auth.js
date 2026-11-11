@@ -105,6 +105,9 @@
 
   const GOOGLE_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.4z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.4 14a6 6 0 0 1 0-3.9V7.5H3.1a10 10 0 0 0 0 9z"/><path fill="#EA4335" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.8-2.8A10 10 0 0 0 3.1 7.5L6.4 10c.8-2.3 3-4.1 5.6-4.1z"/></svg>';
 
+  // GitHub mark, monochrome: currentColor follows the light/dark theme.
+  const GITHUB_SVG = '<svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>';
+
   function renderAccount() {
     const footer = `<p class="account-footer">What is stored and why: <a href="privacy.html">Privacy</a>. Your TMDB key never leaves this browser.</p>`;
     if (!user) {
@@ -124,7 +127,8 @@
           <h2 class="modal-title">Account</h2>
           <p class="settings-note">Sign in to keep your channels, watchlist and settings on every device. Optional — everything also works without an account.</p>
           <div class="account-row">
-            <button type="button" class="account-btn-primary" id="googleBtn">${GOOGLE_SVG} Continue with Google</button>
+            <button type="button" class="account-btn-primary" id="googleBtn" data-provider="google">${GOOGLE_SVG} Continue with Google</button>
+            <button type="button" class="account-btn-primary" id="githubBtn" data-provider="github">${GITHUB_SVG} Continue with GitHub</button>
           </div>
           ${emailBlock}
           <p class="account-status" id="accountStatus" role="status" aria-live="polite"></p>
@@ -165,11 +169,15 @@
   const errMsg = (e) => (e && e.message) ? e.message : "Something went wrong. Please try again.";
 
   function wireSignedOut() {
-    el.modalBody.querySelector("#googleBtn").addEventListener("click", async () => {
-      setStatus("Redirecting to Google…");
-      rememberRoute();
-      const { error } = await client.auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
-      if (error) setStatus(errMsg(error), "error");
+    const PROVIDER_NAME = { google: "Google", github: "GitHub" };
+    el.modalBody.querySelectorAll("[data-provider]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const provider = btn.dataset.provider;
+        setStatus(`Redirecting to ${PROVIDER_NAME[provider]}…`);
+        rememberRoute();
+        const { error } = await client.auth.signInWithOAuth({ provider, options: { redirectTo } });
+        if (error) setStatus(errMsg(error), "error");
+      });
     });
     const emailForm = el.modalBody.querySelector("#emailForm");
     if (!emailForm) return;

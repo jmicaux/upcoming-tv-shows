@@ -3,6 +3,22 @@
 All notable changes to Upcoming TV Shows are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.26.0 — 2026-11-11
+
+### Added
+- **Continue with GitHub** next to Google in the account dialog. The same email address on
+  both providers signs in to the same account.
+
+### Fixed
+- Watchlist cards lost their poster after an account sync (the show cache was emptied while
+  the next-episode cache was kept, so shows were never reloaded).
+- Signing in now brings you back to the view you were on (e.g. the Watchlist).
+
+### Changed
+- `supabase/schema.sql`: signed-out visitors can only read the preferences table (zero rows
+  under RLS) and can no longer call `delete_my_account()`.
+- The Supabase keep-alive runs twice a week.
+
 ## 1.25.0 — 2026-11-10
 
 ### Added

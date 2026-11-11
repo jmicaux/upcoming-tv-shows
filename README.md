@@ -6,7 +6,7 @@ Australia and the Nordics**, plus French channels (**Canal+**, **Arte**, TF1, M6
 follow only the ones you care about, and filter by genre. No build step, no backend —
 just static files (plus a free TMDB key for the French channels).
 
-[![CI](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml/badge.svg)](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml) ![version](https://img.shields.io/badge/version-1.25.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
+[![CI](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml/badge.svg)](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml) ![version](https://img.shields.io/badge/version-1.26.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
 
 **🔗 Live preview: [jmicaux.github.io/upcoming-tv-shows](https://jmicaux.github.io/upcoming-tv-shows/)**
 
@@ -38,7 +38,7 @@ If you enjoy this app, you can support it:
 - **Detail view** per show: poster, channel, air date, season/episode, genres, summary.
 - **Favorites & Watchlist** — star any show; a dedicated Watchlist view lists your
   followed shows with their next upcoming episode.
-- **Optional account** — sign in with Google to find the same channels, watchlist and
+- **Optional account** — sign in with Google or GitHub to find the same channels, watchlist and
   settings on every device. See [Accounts](#accounts-optional).
 - **Export / import preferences** — save your favorites, followed channels and theme to a
   JSON file and load them on another machine. Point it at a cloud-synced folder
@@ -77,7 +77,7 @@ preview can enable Canal+ / Arte without shipping a key.
 
 ## Accounts (optional)
 
-Click 👤 in the header and **Continue with Google**. From then on your followed channels,
+Click 👤 in the header and **Continue with Google** or **Continue with GitHub**. From then on your followed channels,
 watchlist, watch redirects and theme are stored with your account and restored on any device
 you sign in from. Details:
 
@@ -110,6 +110,11 @@ enough):
    Supabase **Authentication → Providers → Google**. Keep Supabase's default automatic
    identity linking so Google and email with the same address share one account. Only the
    email/profile scopes are requested, so no Google app verification is needed.
+   **GitHub sign-in** (optional): GitHub → Settings → Developer settings → *OAuth Apps* →
+   New OAuth App, with the same callback URL
+   `https://<project-ref>.supabase.co/auth/v1/callback`; paste the client ID and a generated
+   secret in Supabase **Authentication → Providers → GitHub**. Same address on Google and
+   GitHub = same account (automatic identity linking).
 5. Copy **Project Settings → API** → Project URL and `anon` key into `supabase-config.js`
    (these are public by design; never put the `service_role` key anywhere in the repo).
 6. Email sign-in (optional): Supabase's built-in sender only delivers to project members and

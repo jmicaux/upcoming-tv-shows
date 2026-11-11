@@ -22,7 +22,9 @@ All notable changes to Upcoming TV Shows are documented here. This project follo
 - **Mobile layout (≤ 640px)**: a bottom tab bar (Upcoming · Watchlist · Search · More)
   within thumb reach; a compact header that scrolls away; filters as one swipeable row of
   chips whose channel and genre pickers open as bottom sheets; a "More" sheet with labelled
-  Account, Settings and Theme. Desktop is unchanged.
+  Account, Settings and Theme. Show cards are denser with 44px touch targets (star,
+  "Watch on"), and a show opens as a bottom sheet that closes by dragging it down, with
+  ×, or with the phone's Back button. Desktop is unchanged.
 - **Export / Import moved into Settings** ("Your preferences"), on every screen size.
 - Channel and genre buttons are now announced with their label ("Networks: Selected 1").
 - The version next to the title is plain text; the in-app changelog is gone (release

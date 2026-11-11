@@ -88,7 +88,7 @@ test("routing: clean /watchlist path, no '#' left behind", () => {
   const src = read("app.js");
   assert.match(src, /const APP_BASE = new URL\("\.", document\.baseURI\)\.pathname/);
   assert.match(src, /navigate\(networkUrl\(name\)\)/);
-  assert.match(src, /addEventListener\("popstate", applyRoute\)/);
+  assert.match(src, /addEventListener\("popstate", \(\) => \{\s*if \(!el\.modal\.hidden\) \{ hideModal\(\); return; \}[^\n]*\n\s*applyRoute\(\);/);
   assert.doesNotMatch(src, /location\.hash = /);
   assert.match(read("auth.js"), /const redirectTo = location\.origin \+ APP_BASE/);
 });

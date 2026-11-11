@@ -880,6 +880,7 @@ function parseRoute() {
 const networkUrl = (name) => APP_BASE + "network/" + networkSegment(name);
 // Navigate inside the app without a reload, then render the new route.
 function navigate(url) {
+  if (!el.modal.hidden) hideModal(); // e.g. a channel link inside the show dialog
   if (url !== location.pathname + location.hash) history.pushState(null, "", url);
   applyRoute();
 }
@@ -1343,6 +1344,9 @@ function revealModal(label) {
   if (!el.modal.hidden) return; // already open (carousel navigation swapped content in place)
   lastFocused = document.activeElement;
   el.modal.hidden = false;
+  // A history entry for the open dialog, so the phone's Back button (or gesture) closes it
+  // instead of leaving the page. Same URL: the route does not change.
+  history.pushState({ modal: true }, "", location.href);
   const closeBtn = el.modal.querySelector(".modal-close");
   (closeBtn || el.modalCard).focus();
 }
@@ -1399,8 +1403,16 @@ function showModal(s, ep) {
   revealModal(s.name);
 }
 
+// Close from the UI (×, backdrop, Escape, swipe): step back over the dialog's history
+// entry; the popstate handler then hides it. hideModal() closes without touching history.
 function closeModal() {
+  if (el.modal.hidden) return;
+  if (history.state && history.state.modal) history.back();
+  else hideModal();
+}
+function hideModal() {
   el.modal.hidden = true;
+  el.modalCard.style.transform = "";
   state.navCard = null;
   if (lastFocused && typeof lastFocused.focus === "function") lastFocused.focus();
   lastFocused = null;
@@ -1832,7 +1844,10 @@ el.viewBtn.addEventListener("click", () => {
   navigate(state.view === "watchlist" ? APP_BASE : APP_BASE + "watchlist");
 });
 window.addEventListener("hashchange", applyRoute);
-window.addEventListener("popstate", applyRoute);
+window.addEventListener("popstate", () => {
+  if (!el.modal.hidden) { hideModal(); return; } // Back closes an open dialog first
+  applyRoute();
+});
 
 el.settingsBtn.addEventListener("click", showSettings);
 el.importFile.addEventListener("change", async (e) => {
@@ -1853,6 +1868,31 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "ArrowLeft") modalNav(-1);
   else if (e.key === "ArrowRight") modalNav(1);
 });
+
+// Mobile: drag the dialog down by its top area (grip, poster, title) to close it.
+(() => {
+  const mobile = window.matchMedia("(max-width: 640px)");
+  let startY = null, dy = 0;
+  el.modalCard.addEventListener("touchstart", (e) => {
+    if (!mobile.matches || e.touches.length !== 1) return;
+    const top = el.modalCard.getBoundingClientRect().top;
+    if (e.touches[0].clientY - top > 140) return; // leave the scrolling summary alone
+    startY = e.touches[0].clientY; dy = 0;
+    el.modalCard.style.transition = "none";
+  }, { passive: true });
+  el.modalCard.addEventListener("touchmove", (e) => {
+    if (startY === null) return;
+    dy = Math.max(0, e.touches[0].clientY - startY);
+    el.modalCard.style.transform = `translateY(${dy}px)`;
+  }, { passive: true });
+  el.modalCard.addEventListener("touchend", () => {
+    if (startY === null) return;
+    startY = null;
+    el.modalCard.style.transition = "";
+    if (dy > 110) closeModal();
+    else el.modalCard.style.transform = "";
+  });
+})();
 
 // Keep Tab focus cycling inside the open dialog.
 el.modal.addEventListener("keydown", (e) => {

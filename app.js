@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.28.1"; // single source of truth — bump on each release
+const APP_VERSION = "1.28.2"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const CACHE_PREFIX = "tvmaze:sched:v4:"; // v4: US + streaming + FR + UK/AU/Nordic flagships
@@ -432,7 +432,7 @@ async function loadNextMonth() {
   const plan = planMonth(state.followed, await loadSnapshotIndex(), monthKey, Date.now());
   if (plan.files.length) {
     const snap = await loadSnapshotFiles(monthKey, plan.files);
-    if (snap) { block.items.push(...snap); live = plan.live; renderBlock(block); }
+    if (snap) { block.items.push(...snap); live = plan.live; rebuildFilterOptions(); renderBlock(block); updateResultCount(); }
   }
 
   const days = [...live].some((s) => s !== "FR") ? monthDays(month) : [];
@@ -637,6 +637,7 @@ function updateGenreButton() {
   el.genreBtn.childNodes[0].nodeValue = n === 0 ? "All " : "Selected ";
   el.genreBtnCount.textContent = n > 0 ? String(n) : "";
   el.genreBtnCount.classList.toggle("show", n > 0);
+  if (document.getElementById("filtersToggle") && typeof updateFiltersCount === "function") updateFiltersCount();
 }
 
 function renderNetworkList() {
@@ -758,7 +759,7 @@ function setSentinel(text) { sentinelEl.textContent = text; }
 const viewTitleEl = document.createElement("h1");
 viewTitleEl.className = "view-title";
 function feedTitle(network) {
-  return network ? `Upcoming ${window.UpcomingNetworks.displayName(network)} shows` : "New and returning TV series, by premiere date";
+  return network ? `Upcoming ${window.UpcomingNetworks.displayName(network)} shows` : "Upcoming TV premieres";
 }
 
 function enterMonthView() {
@@ -1032,6 +1033,7 @@ function setView(v) {
   const f = toggleState();
   el.premieresOnly.checked = f.premieresOnly;
   el.hidePast.checked = f.hidePast;
+  updateFiltersCount();
   updateViewButton();
   window.scrollTo(0, 0);
   if (v === "watchlist") renderWatchlist();
@@ -1903,10 +1905,44 @@ document.addEventListener("error", (e) => {
 
 document.addEventListener("click", () => { setNetworkPanel(false); setGenrePanel(false); });
 
+/* ---------- Mobile: filters in a bottom sheet behind one "Filters" button ---------- */
+const filtersEl = document.getElementById("filters");
+const filtersToggle = document.getElementById("filtersToggle");
+function updateFiltersCount() {
+  const f = toggleState();
+  const n = (state.view === "watchlist" ? 0 : state.genres.size) + (f.premieresOnly ? 1 : 0) + (f.hidePast ? 1 : 0);
+  const pill = document.getElementById("filtersCount");
+  pill.textContent = n ? String(n) : "";
+  pill.classList.toggle("show", n > 0);
+  filtersToggle.setAttribute("aria-label", n ? `Filters, ${n} active` : "Filters");
+}
+function setFiltersSheet(open) {
+  filtersEl.classList.toggle("is-open", open);
+  filtersToggle.setAttribute("aria-expanded", String(open));
+  document.body.classList.toggle("sheet-open", open);
+  if (open) {
+    const first = filtersEl.querySelector(".dropdown-btn:not([hidden]), .switch input");
+    (first && first.offsetParent ? first : document.getElementById("filtersDone")).focus();
+  } else {
+    setNetworkPanel(false); setGenrePanel(false);
+    filtersToggle.focus();
+  }
+}
+filtersToggle.addEventListener("click", (e) => { e.stopPropagation(); setFiltersSheet(true); });
+document.getElementById("filtersDone").addEventListener("click", () => setFiltersSheet(false));
+filtersEl.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && filtersEl.classList.contains("is-open") && el.networkPanel.hidden && el.genrePanel.hidden) {
+    e.stopPropagation(); setFiltersSheet(false);
+  }
+});
+filtersEl.addEventListener("click", (e) => e.stopPropagation());
+document.addEventListener("click", () => { if (filtersEl.classList.contains("is-open")) setFiltersSheet(false); });
+
 // "Premieres only" / "Hide past" apply to the feed, or to the Watchlist with its own values.
 function toggleState() { return state.view === "watchlist" ? state.watchFilters : state; }
 function onToggle(key, value) {
   toggleState()[key] = value;
+  updateFiltersCount();
   if (state.view === "watchlist") renderWatchlist(); else renderAllBlocks();
 }
 el.premieresOnly.addEventListener("change", (e) => onToggle("premieresOnly", e.target.checked));

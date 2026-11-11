@@ -3,6 +3,19 @@
 All notable changes to Upcoming TV Shows are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.28.2 — 2026-11-11
+
+### Changed
+- **Mobile: shows on the first screen.** The filters fold into one "Filters" button (with
+  the number of active filters) next to the result count, and open as a bottom sheet with
+  a "Show results" button; Escape or a tap outside closes it. The first card moves from
+  about 400 px down to about 210 px.
+- Shorter page title on the home feed: "Upcoming TV premieres".
+
+### Fixed
+- The result count updates as soon as the snapshot shows its cards (it read "0 results").
+- Space between the arrow and "Watch on …".
+
 ## 1.28.1 — 2026-11-11
 
 ### Fixed (automated accessibility scan)

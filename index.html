@@ -42,7 +42,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="styles.css?v=1.28.1">
+  <link rel="stylesheet" href="styles.css?v=1.28.2">
 
   <!-- Umami analytics (privacy-friendly, cookieless) -->
   <script defer src="https://cloud.umami.is/script.js" data-website-id="c762aadf-9152-4e82-ab9a-cd19552819b6"></script>
@@ -74,7 +74,11 @@
 
   <nav class="breadcrumb" id="breadcrumb" aria-label="Breadcrumb" hidden><!-- breadcrumb:start --><!-- breadcrumb:end --></nav>
 
-  <section class="filters">
+  <section class="filters" id="filters">
+    <button type="button" class="filters-toggle" id="filtersToggle" aria-expanded="false" aria-controls="filters">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+      Filters <span class="pill" id="filtersCount"></span>
+    </button>
     <div class="field dropdown" id="networkDropdown">
       <span class="field-label" id="networkLabel">Networks</span>
       <button type="button" id="networkBtn" class="dropdown-btn" aria-controls="networkPanel" aria-expanded="false" aria-labelledby="networkLabel networkBtn">All <span id="networkBtnCount" class="pill"></span> <span aria-hidden="true">▾</span></button>
@@ -108,11 +112,12 @@
     <button type="button" id="resetFilters" class="reset-btn">Reset filters</button>
     <button type="button" id="clearNetwork" class="active-network" aria-label="Clear channel filter" hidden>Clear channel filter</button>
     <span id="resultCount" class="result-count" role="status" aria-live="polite"></span>
+    <button type="button" class="filters-done" id="filtersDone">Show results</button>
   </section>
 
   <main id="grid" class="grid" tabindex="-1"><!-- prerender:start -->
     <section class="prerender" aria-labelledby="prerender-title">
-      <h1 id="prerender-title">New and returning TV series, by premiere date</h1>
+      <h1 id="prerender-title">Upcoming TV premieres</h1>
       <p class="prerender-intro">Upcoming TV Shows lists new and returning series month by month across 84 US, UK, Australian, Nordic, French and streaming channels, with premiere dates, seasons and where to watch. Free, no account needed.</p>
     </section>
   <!-- prerender:end --></main>
@@ -175,12 +180,12 @@
   </div>
 
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
-  <script defer src="supabase-config.js?v=1.28.1"></script>
-  <script defer src="sync-core.js?v=1.28.1"></script>
+  <script defer src="supabase-config.js?v=1.28.2"></script>
+  <script defer src="sync-core.js?v=1.28.2"></script>
   <script defer src="config.js"></script>
-  <script defer src="networks.js?v=1.28.1"></script>
-  <script defer src="feed-core.js?v=1.28.1"></script>
-  <script defer src="app.js?v=1.28.1"></script>
-  <script defer src="auth.js?v=1.28.1"></script>
+  <script defer src="networks.js?v=1.28.2"></script>
+  <script defer src="feed-core.js?v=1.28.2"></script>
+  <script defer src="app.js?v=1.28.2"></script>
+  <script defer src="auth.js?v=1.28.2"></script>
 </body>
 </html>

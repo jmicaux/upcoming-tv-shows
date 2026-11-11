@@ -1325,3 +1325,42 @@ a.sheet-item { text-decoration: none; box-sizing: border-box; }
 .card-body { display: flex; flex-direction: column; align-items: flex-start; }
 .card-body > .card-date, .card-body > .card-status { order: -1; }
 @media (max-width: 640px) { .card-watch { align-self: stretch; } }
+
+/* "▸ Watch on" arrow spacing (the arrow is aria-hidden). */
+.card-watch > span[aria-hidden="true"] { margin-right: 0.3rem; }
+
+/* Filters toggle + sheet: desktop shows the bar as before. */
+.filters-toggle, .filters-done { display: none; }
+@media (max-width: 640px) {
+  .view-title { font-size: 1.15rem; }
+  .prerender h1 { font-size: 1.15rem; }
+
+  /* Closed: one compact row "Filters (n) · 73 results". */
+  .filters:not(.is-open) > :not(.filters-toggle):not(.result-count) { display: none !important; }
+  .filters:not(.is-open) { flex-wrap: nowrap; padding: 0.5rem 1rem; gap: 0.75rem; }
+  .filters:not(.is-open) .result-count { flex-basis: auto; margin-left: auto; min-height: 0; }
+  .filters-toggle {
+    display: inline-flex; align-items: center; gap: 0.4rem; min-height: 44px; padding: 0 1rem;
+    border: 1px solid var(--border); border-radius: 999px; background: var(--surface-2);
+    color: var(--text); font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+  }
+  .filters-toggle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+
+  /* Open: the whole filter set as a bottom sheet over a dimmed page. */
+  .filters.is-open {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 65;
+    max-height: 85vh; overflow-y: auto;
+    background: var(--surface); border-radius: 16px 16px 0 0; border-bottom: none;
+    padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.45);
+    animation: sheet-up 0.22s ease-out;
+  }
+  .filters.is-open .filters-toggle { display: none; }
+  .filters.is-open .filters-done {
+    display: block; flex-basis: 100%; min-height: 48px; margin-top: 0.5rem;
+    background: var(--accent); color: #fff; border: none; border-radius: var(--radius);
+    font: inherit; font-weight: 700; cursor: pointer;
+  }
+  .filters.is-open .dropdown-panel { z-index: 70; }
+}
+@media (prefers-reduced-motion: reduce) { .filters.is-open { animation: none; } }

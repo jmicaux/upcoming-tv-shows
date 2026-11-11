@@ -102,7 +102,7 @@ function homeHtml(data) {
     if (rows.length) body += `\n      <h2>Next premieres</h2>\n      <ul>\n        ${rows.join("\n        ")}\n      </ul>`;
     body += "\n      " + updatedLine(data);
   }
-  return `\n    <section class="prerender" aria-labelledby="prerender-title">\n      <h1 id="prerender-title">New and returning TV series, by premiere date</h1>\n      ${body}\n    </section>\n  `;
+  return `\n    <section class="prerender" aria-labelledby="prerender-title">\n      <h1 id="prerender-title">Upcoming TV premieres</h1>\n      ${body}\n    </section>\n  `;
 }
 
 // Channel page body: h1, a factual opening sentence, then the list by month.

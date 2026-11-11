@@ -16,7 +16,7 @@
   function rememberRoute() {
     try { sessionStorage.setItem(RETURN_HASH_KEY, location.hash); } catch (_) {}
   }
-  const SYNCED_KEYS = ["tv:followedNetworks", "tv:knownNetworks", "tv:favorites", "tv:watchOverrides", "tv:theme", SyncCore.MARKER_KEY];
+  const SYNCED_KEYS = ["tv:followedNetworks", "tv:knownNetworks", "tv:favorites", "tv:watchOverrides", "tv:theme", SyncCore.MARKER_KEY, SyncCore.STATE_KEY];
 
   let user = null;          // { id, email } | null
   let syncStatus = "idle";
@@ -207,7 +207,7 @@
   function wireSignedIn() {
     el.modalBody.querySelector("#signOutBtn").addEventListener("click", async () => {
       await sync.flush();
-      const { error } = await client.auth.signOut();
+      const { error } = await client.auth.signOut({ scope: "local" }); // this device only
       if (error) setStatus(errMsg(error), "error");
       else toast("Signed out — your preferences stay on this device");
     });

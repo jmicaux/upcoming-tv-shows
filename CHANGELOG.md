@@ -10,6 +10,12 @@ All notable changes to Upcoming TV Shows are documented here. This project follo
   both providers signs in to the same account.
 
 ### Fixed
+- **Sync could replace your favorites instead of merging them.** A tab that had not
+  refreshed (or a device back online) pushed its whole, stale copy over the account, and
+  changes made while signed out were dropped at the next sign-in. Each favorite, followed
+  channel, watch redirect and the theme now carry the time of their last change (removals
+  included); every save is fetch → merge → push, and the newest change of each item wins.
+- **Sign out** only signs out the current device, not all of them.
 - Watchlist cards lost their poster after an account sync (the show cache was emptied while
   the next-episode cache was kept, so shows were never reloaded).
 - Signing in now brings you back to the view you were on (e.g. the Watchlist).

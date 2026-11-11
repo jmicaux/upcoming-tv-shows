@@ -3,6 +3,15 @@
 All notable changes to Upcoming TV Shows are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.28.0 — 2026-11-11
+
+### Changed
+- **Keyboard focus you cannot miss**: a 4 px bright yellow band framed in black on both
+  sides (GOV.UK style), on every interactive element, including the red header, cards,
+  posters, tabs and the skip link.
+- Version bump so browsers reload every file changed since 1.27.0 (accessibility fixes,
+  breadcrumb, Page not found, footer, mobile).
+
 ## 1.27.0 — 2026-11-11
 
 ### Added

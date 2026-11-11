@@ -1372,3 +1372,12 @@ a.sheet-item { text-decoration: none; box-sizing: border-box; }
 .brand-link { display: inline-flex; align-items: center; gap: 0.55rem; }
 .brand-logo { flex: none; border-radius: 6px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); }
 @media (max-width: 640px) { .brand-logo { width: 26px; height: 26px; } }
+
+/* Version number at the far right of the header (after the actions; on mobile, facing
+   the title, with the search field on the next line when open). */
+.topbar .actions { margin-left: auto; }
+.topbar .brand-ver { margin-left: -0.25rem; white-space: nowrap; }
+@media (max-width: 640px) {
+  .topbar .brand-ver { order: 1; margin-left: auto; }
+  .topbar .actions { order: 2; }
+}

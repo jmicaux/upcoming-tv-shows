@@ -13,23 +13,9 @@ const KNOWN_KEY = "tv:knownNetworks";
 // Channel lists and URL slugs live in networks.js (shared with tools/make-pages.js).
 const {
   UK_NETWORKS, AU_NETWORKS, SE_NETWORKS, NO_NETWORKS, DK_NETWORKS, FI_NETWORKS, IS_NETWORKS, COUNTRY_NETWORKS, NORDIC_NETWORKS, FLAGSHIP_RE, US_BROADCAST, STREAMING_NETWORKS, FR_NETWORKS, SEED_NETWORKS,
-  networkSegment, networkFromSegment,
+  networkSegment, networkFromSegment, NETWORK_GROUPS,
 } = window.UpcomingNetworks;
 
-// Grouped view for the channel picker (label + the channels that belong to each group),
-// so the user can select/clear a whole country at once.
-const NETWORK_GROUPS = [
-  { label: "🇺🇸 United States", names: US_BROADCAST },
-  { label: "📺 Streaming", names: STREAMING_NETWORKS },
-  { label: "🇫🇷 France", names: FR_NETWORKS },
-  { label: "🇬🇧 United Kingdom", names: UK_NETWORKS },
-  { label: "🇦🇺 Australia", names: AU_NETWORKS },
-  { label: "🇸🇪 Sweden", names: SE_NETWORKS },
-  { label: "🇳🇴 Norway", names: NO_NETWORKS },
-  { label: "🇩🇰 Denmark", names: DK_NETWORKS },
-  { label: "🇫🇮 Finland", names: FI_NETWORKS },
-  { label: "🇮🇸 Iceland", names: IS_NETWORKS },
-];
 
 // Big networks pre-selected on the very first visit (until the user changes it).
 const DEFAULT_FOLLOWED = [
@@ -515,12 +501,12 @@ async function runCatalogSearch() {
 function renderSearchResults(shows, q) {
   el.resultCount.textContent = `${shows.length} result${shows.length !== 1 ? "s" : ""}`;
   if (!shows.length) {
-    el.grid.innerHTML = `<p class="empty">No shows found for “${escapeHtml(q)}”.</p>`;
+    el.grid.innerHTML = `<h1 class="view-title">Search results for “${escapeHtml(q)}”</h1><p class="empty">No shows found for “${escapeHtml(q)}”.</p>`;
     return;
   }
   el.grid.innerHTML =
-    `<section class="month-block"><h2 class="month-heading">Search results</h2>` +
-    `<div class="month-grid">${shows.map(searchCardHtml).join("")}</div></section>`;
+    `<h1 class="view-title">Search results for “${escapeHtml(q)}”</h1>` +
+    `<section class="month-block"><div class="month-grid">${shows.map(searchCardHtml).join("")}</div></section>`;
   wireCards(el.grid);
 }
 
@@ -745,8 +731,18 @@ const scrollObserver = new IntersectionObserver((entries) => {
 function setSentinel(text) { sentinelEl.textContent = text; }
 
 // (Re)build the month view from state.blocks — used on boot and when returning from watchlist.
+// Each view has its own <h1> at the top of <main> (the header brand is not a heading),
+// matching the one baked into the generated page of that address.
+const viewTitleEl = document.createElement("h1");
+viewTitleEl.className = "view-title";
+function feedTitle(network) {
+  return network ? `Upcoming ${network} shows` : "New and returning TV series, by premiere date";
+}
+
 function enterMonthView() {
   el.grid.innerHTML = "";
+  viewTitleEl.textContent = feedTitle(parseRoute().network);
+  el.grid.appendChild(viewTitleEl);
   el.grid.appendChild(sentinelEl);
   for (const b of state.blocks) { b.el = createBlockEl(b); renderBlock(b); }
   updateResultCount();
@@ -1083,7 +1079,7 @@ if (tabbar) {
 function renderNotFound() {
   el.resultCount.textContent = "";
   el.grid.innerHTML = `<div class="empty not-found">
-      <h2>Page not found</h2>
+      <h1>Page not found</h1>
       <p>This address does not match any page of Upcoming TV Shows.</p>
       <p><a href="${escapeAttr(APP_BASE)}">See upcoming shows</a></p>
     </div>`;
@@ -1096,7 +1092,7 @@ function renderNotFound() {
 function watchlistTitleHtml(n, shown = n) {
   const label = shown < n ? `${shown} of ${n} shows` : `${n} show${n > 1 ? "s" : ""}`;
   const count = n ? ` <span class="view-title-count">${label}</span>` : "";
-  return `<h2 class="view-title">Watchlist${count}</h2>`;
+  return `<h1 class="view-title">Watchlist${count}</h1>`;
 }
 
 async function renderWatchlist() {
@@ -1152,7 +1148,7 @@ async function renderWatchlist() {
           a.name.localeCompare(b.name);
       })
       .map(watchlistCardHtml).join("");
-    return `<section class="month-block"><h3 class="month-heading">${escapeHtml(g.label)}</h3><div class="month-grid">${cards}</div></section>`;
+    return `<section class="month-block"><h2 class="month-heading">${escapeHtml(g.label)}</h2><div class="month-grid">${cards}</div></section>`;
   }).join("");
   wireCards(el.grid);
 }
@@ -1902,6 +1898,13 @@ el.viewBtn.addEventListener("click", () => {
   navigate(state.view === "watchlist" ? APP_BASE : APP_BASE + "watchlist");
 });
 window.addEventListener("hashchange", applyRoute);
+// Footer channel links are plain links (crawlable); in the app they navigate in place.
+document.querySelector(".site-footer")?.addEventListener("click", (e) => {
+  const a = e.target.closest('a[href^="network/"]');
+  if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button) return;
+  e.preventDefault();
+  navigate(APP_BASE + a.getAttribute("href"));
+});
 window.addEventListener("popstate", () => {
   if (!el.modal.hidden) { hideModal(); return; } // Back closes an open dialog first
   applyRoute();

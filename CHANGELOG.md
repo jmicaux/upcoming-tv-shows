@@ -33,6 +33,14 @@ All notable changes to Upcoming TV Shows are documented here. This project follo
 - **Skeleton cards while loading**: a month that is still loading (and the Watchlist)
   shows shimmering placeholder cards instead of an empty space or "no shows"; static
   when the system asks for reduced motion.
+- **SEO / GEO (from the full audit)**: every page links to every channel page (footer
+  "Upcoming shows by channel"); each view has its own `<h1>` ("Upcoming Netflix shows",
+  "Watchlist"…) and the header brand is no longer a heading; channel pages open with a
+  factual sentence (number of series, next premiere) and show the update date and
+  sources; the home page carries an intro and "Next premieres" in plain HTML; channel
+  descriptions are unique per day; channels with nothing upcoming are `noindex` and left
+  out of the sitemap; JSON-LD gets `dateModified`. New About page (sources, terms,
+  accessibility, contact) linked from the footer with Privacy.
 - **Red header** (#c1121f, white text at 6.2:1), also colouring the mobile browser bar.
 - **"Premieres only" and "Hide past" in the Watchlist**, with their own values (off by
   default): only shows whose next episode opens a season, and hide shows with nothing

@@ -67,8 +67,9 @@ body {
   z-index: 10;
 }
 
-.topbar h1 {
+.topbar .brand {
   font-size: 1.25rem;
+  font-weight: 700;
   margin: 0;
   letter-spacing: -0.02em;
   display: flex;
@@ -961,7 +962,7 @@ body[data-view="notfound"] .search { display: none; }
     padding-top: max(0.7rem, env(safe-area-inset-top));
     gap: 0.5rem;
   }
-  .topbar h1 { font-size: 1.05rem; }
+  .topbar .brand { font-size: 1.05rem; }
   .actions > :not(.search) { display: none !important; }
   .actions { flex: 1 1 100%; }
   .search:not(.open) { display: none; }
@@ -1152,7 +1153,7 @@ body[data-view="notfound"] .search { display: none; }
   color: var(--header-fg);
   border-bottom-color: transparent;
 }
-.topbar h1, .topbar .brand-ver { color: var(--header-fg); }
+.topbar .brand, .topbar .brand-ver { color: var(--header-fg); }
 .topbar .brand-ver { opacity: 1; }
 /* Buttons: solid white outline (6.2:1, WCAG 1.4.11 asks 3:1 for a control's boundary).
    Hover darkens the fill — lightening it would drop white text to 4.4:1. */
@@ -1215,3 +1216,38 @@ body[data-view="notfound"] .search { display: none; }
 }
 .skip-link:focus { top: 0.6rem; outline: 3px solid #1a1d24; outline-offset: 2px; }
 #grid:focus { outline: none; }
+
+/* .not-found heading is now the page h1 */
+.not-found h1 { margin: 0 0 0.5rem; font-size: 1.3rem; color: var(--text); }
+
+/* ======================================================================
+   Static content baked in by tools/make-pages.js (shown until the app
+   renders; always readable by crawlers) and the site footer.
+   ====================================================================== */
+.prerender { padding: 1rem 1.25rem; }
+.prerender h1 { font-size: 1.4rem; margin: 0 0 0.5rem; }
+.prerender h2 { font-size: 1.1rem; margin: 1.25rem 0 0.5rem; }
+.prerender-intro { max-width: 46rem; color: var(--text); line-height: 1.5; margin: 0 0 0.5rem; }
+.prerender-meta { color: var(--muted); font-size: 0.85rem; margin-top: 1.25rem; }
+.prerender a, .prerender-meta a { color: var(--accent-text); }
+main > .view-title:first-child { padding-top: 1rem; }
+
+.site-footer {
+  margin-top: 2rem;
+  padding: 1.5rem 1.25rem 2rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 0.85rem;
+}
+.footer-channels h2 { font-size: 1rem; margin: 0 0 0.75rem; }
+.footer-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 1rem 1.5rem; }
+.footer-group h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 0 0 0.35rem; }
+.footer-group ul { list-style: none; margin: 0; padding: 0; }
+.footer-group li { padding: 0.15rem 0; }
+.site-footer a { color: var(--text); text-decoration: none; }
+.site-footer a:hover { color: var(--accent-text); text-decoration: underline; }
+.footer-links { margin: 1.5rem 0 0; color: var(--muted); }
+.footer-links a { color: var(--accent-text); }
+@media (max-width: 640px) {
+  .footer-group li a { display: inline-block; padding: 0.35rem 0; } /* ≥ 24px targets */
+}

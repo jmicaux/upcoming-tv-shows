@@ -59,29 +59,55 @@ test("planMonth: stale snapshot, missing month or no snapshot → everything liv
   assert.deepEqual([...F.planMonth(followed, null, "2026-11", NOW).live].sort(), ["US", "web"]);
 });
 
-test("make-pages --data bakes the upcoming list into channel pages only", () => {
+test("make-pages --data bakes lists, intro and premieres into the pages", () => {
   const { build } = require("../tools/make-pages.js");
   const fs = require("node:fs");
   const indexHtml = fs.readFileSync(__dirname + "/../index.html", "utf8");
-  const item = (id, name, airdate, season, number) => ({ id, season, number, airdate, show: { id: name, name, channel: { name: "Netflix" } } });
-  const data = {
-    index: { months: ["2026-11"], channels: { Netflix: "netflix" } },
-    read: () => [
+  const item = (id, name, airdate, season, number, chan = "Netflix") =>
+    ({ id, season, number, airdate, show: { id: name, name, channel: { name: chan } } });
+  const lists = {
+    netflix: [
       item(1, "Old Show", "2026-11-01", 2, 1),           // before today → dropped
       item(2, "New <Show>", "2026-11-20", 1, 1),
       item(3, "New <Show>", "2026-11-27", 1, 2),         // same show again → first only
       item(4, "Returning", "2026-11-15", 3, 1),
     ],
+    hulu: [],
+  };
+  const data = {
+    index: { generatedAt: "2026-11-11T04:00:00Z", months: ["2026-11"], channels: { Netflix: "netflix", Hulu: "hulu" } },
+    read: (_, slug) => lists[slug] || [],
     today: "2026-11-11",
   };
   const files = build(indexHtml, data);
   const page = files["network/netflix.html"];
-  assert.match(page, /<h2 id="prerender-title">Upcoming on Netflix<\/h2>/);
+  assert.match(page, /<h1 id="prerender-title">Upcoming Netflix shows<\/h1>/);
+  assert.match(page, /Netflix has 2 new and returning series scheduled from November 11, 2026 through the end of November 2026\. Next premiere: <strong>Returning<\/strong> \(season premiere, November 15, 2026\)\./);
   assert.match(page, /<time datetime="2026-11-15">Nov 15<\/time> · <strong>Returning<\/strong> · S3E1 — season premiere/);
   assert.match(page, /<strong>New &lt;Show&gt;<\/strong> · S1E1 — series premiere/);
   assert.doesNotMatch(page, /Old Show/);
-  assert.equal((page.match(/New &lt;Show&gt;/g) || []).length, 1);
-  assert.ok(page.indexOf("Returning") < page.indexOf("New &lt;Show&gt;"), "sorted by date");
-  assert.doesNotMatch(files["network/hulu.html"], /class="prerender"/);
+  assert.equal((page.match(/<li><time[^>]*>[^<]*<\/time> · <strong>New &lt;Show&gt;/g) || []).length, 1);
+  assert.match(page, /<meta name="description" content="2 new and returning Netflix series scheduled; next premiere: Returning \(Nov 15\)\./);
+  assert.match(page, /Updated <time datetime="2026-11-11T04:00:00Z">November 11, 2026<\/time>/);
+  // A channel with nothing upcoming is noindex and left out of the sitemap.
+  assert.match(files["network/hulu.html"], /<meta name="robots" content="noindex">/);
+  assert.doesNotMatch(files["sitemap.xml"], /network\/hulu</);
+  assert.match(files["sitemap.xml"], /network\/netflix</);
+  // Home: h1, next premieres linking to the channel, dateModified.
+  assert.match(files["index.html"], /<h2>Next premieres<\/h2>/);
+  assert.match(files["index.html"], /<strong>Returning<\/strong> · <a href="network\/netflix">Netflix<\/a> — season premiere/);
+  assert.match(files["index.html"], /"dateModified": "2026-11-11T04:00:00Z"/);
+  // Every page links to every channel page (footer).
+  assert.match(files["watchlist.html"], /<a href="network\/bbc-one">BBC One<\/a>/);
   assert.doesNotMatch(files["watchlist.html"], /class="prerender"/);
+});
+
+test("make-pages is idempotent with and without data", () => {
+  const { build } = require("../tools/make-pages.js");
+  const fs = require("node:fs");
+  const indexHtml = fs.readFileSync(__dirname + "/../index.html", "utf8");
+  const data = { index: { generatedAt: "2026-11-11T04:00:00Z", months: ["2026-11"], channels: {} }, read: () => [], today: "2026-11-11" };
+  const withData = build(indexHtml, data)["index.html"];
+  assert.equal(build(withData)["index.html"], build(indexHtml)["index.html"]);
+  assert.equal(build(build(indexHtml)["index.html"])["index.html"], build(indexHtml)["index.html"]);
 });

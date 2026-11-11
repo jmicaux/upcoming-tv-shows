@@ -46,6 +46,21 @@
     ...UK_NETWORKS, ...AU_NETWORKS, ...NORDIC_NETWORKS,
   ];
 
+// Grouped view for the channel picker (label + the channels that belong to each group),
+  // so the user can select/clear a whole country at once.
+  const NETWORK_GROUPS = [
+    { label: "🇺🇸 United States", names: US_BROADCAST },
+    { label: "📺 Streaming", names: STREAMING_NETWORKS },
+    { label: "🇫🇷 France", names: FR_NETWORKS },
+    { label: "🇬🇧 United Kingdom", names: UK_NETWORKS },
+    { label: "🇦🇺 Australia", names: AU_NETWORKS },
+    { label: "🇸🇪 Sweden", names: SE_NETWORKS },
+    { label: "🇳🇴 Norway", names: NO_NETWORKS },
+    { label: "🇩🇰 Denmark", names: DK_NETWORKS },
+    { label: "🇫🇮 Finland", names: FI_NETWORKS },
+    { label: "🇮🇸 Iceland", names: IS_NETWORKS },
+  ];
+
   // URL segment for a channel: a readable slug for the seed channels (served by a generated
   // page), the encoded name for any other channel (served by 404.html).
   function networkSlug(name) {
@@ -86,7 +101,7 @@
 
   const api = {
     UK_NETWORKS, AU_NETWORKS, SE_NETWORKS, NO_NETWORKS, DK_NETWORKS, FI_NETWORKS, IS_NETWORKS, COUNTRY_NETWORKS, NORDIC_NETWORKS, FLAGSHIP_RE, US_BROADCAST, STREAMING_NETWORKS, FR_NETWORKS, SEED_NETWORKS,
-    networkSlug, networkSegment, networkFromSegment, SITE_META, networkMeta,
+    networkSlug, networkSegment, networkFromSegment, SITE_META, networkMeta, NETWORK_GROUPS,
   };
   root.UpcomingNetworks = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;

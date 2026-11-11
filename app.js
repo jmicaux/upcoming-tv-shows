@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.28.0"; // single source of truth — bump on each release
+const APP_VERSION = "1.28.1"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const CACHE_PREFIX = "tvmaze:sched:v4:"; // v4: US + streaming + FR + UK/AU/Nordic flagships
@@ -548,14 +548,14 @@ function searchCardHtml(show) {
   const chan = show.channel ? show.channel.name : "—";
   return `
     <article class="card" data-show-id="${escapeAttr(String(show.id))}">
-      ${favBtnHtml(show.id)}
-      ${imageHtml(show)}
       <div class="card-body">
-        <div class="card-status">${escapeHtml(statusLabel(show))}</div>
         ${cardTitleHtml(show.name)}
+        <div class="card-status">${escapeHtml(statusLabel(show))}</div>
         <div class="card-meta">${chanMetaHtml(show.channel)}</div>
         ${watchLinkHtml(show.channel && show.channel.name, show.name, "card-watch")}
       </div>
+      ${imageHtml(show)}
+      ${favBtnHtml(show.id)}
     </article>`;
 }
 
@@ -664,7 +664,7 @@ function renderNetworkList() {
     const allOn = g.all.length > 0 && g.all.every((n) => state.followed.has(n));
     const rows = g.names.map((n) => {
       const checked = state.followed.has(n) ? "checked" : "";
-      return `<label><input type="checkbox" value="${escapeAttr(n)}" ${checked}>${escapeHtml(n)}</label>`;
+      return `<label><input type="checkbox" value="${escapeAttr(n)}" ${checked}>${escapeHtml(window.UpcomingNetworks.displayName(n))}</label>`;
     }).join("");
     // One labelled group per country (RGAA 11.5); the All/Clear button names its group.
     const plain = g.label.replace(/^\S+\s/, "");
@@ -758,7 +758,7 @@ function setSentinel(text) { sentinelEl.textContent = text; }
 const viewTitleEl = document.createElement("h1");
 viewTitleEl.className = "view-title";
 function feedTitle(network) {
-  return network ? `Upcoming ${network} shows` : "New and returning TV series, by premiere date";
+  return network ? `Upcoming ${window.UpcomingNetworks.displayName(network)} shows` : "New and returning TV series, by premiere date";
 }
 
 function enterMonthView() {
@@ -959,7 +959,7 @@ function updateBreadcrumb(current) {
   nav.innerHTML = current ? window.UpcomingNetworks.breadcrumbHtml(current, APP_BASE) : "";
 }
 function crumbFor(view, network) {
-  if (network) return network;
+  if (network) return window.UpcomingNetworks.displayName(network);
   return view === "watchlist" ? "Watchlist" : view === "notfound" ? "Page not found" : "";
 }
 // The brand and the breadcrumb's Home link go home without reloading the app.
@@ -1208,14 +1208,14 @@ function watchlistCardHtml(fav) {
   const chan = show.channel ? show.channel.name : "—";
   return `
     <article class="card" data-show-id="${escapeAttr(String(show.id))}">
-      ${favBtnHtml(show.id)}
-      ${imageHtml(show)}
       <div class="card-body">
-        <div class="card-date">${escapeHtml(nextEpLabel(state.nextEp[show.id]))}</div>
         ${cardTitleHtml(show.name)}
+        <div class="card-date">${escapeHtml(nextEpLabel(state.nextEp[show.id]))}</div>
         <div class="card-meta">${chanMetaHtml(show.channel)}</div>
         ${watchLinkHtml(show.channel && show.channel.name, show.name, "card-watch")}
       </div>
+      ${imageHtml(show)}
+      ${favBtnHtml(show.id)}
     </article>`;
 }
 
@@ -1375,7 +1375,7 @@ function watchLinkHtml(channelName, title, cls) {
 function chanMetaHtml(channel) {
   if (!channel) return "—";
   const stream = channel.streaming ? ' <span class="tag-stream">streaming</span>' : "";
-  return `<a class="chan-link" href="${escapeAttr(networkUrl(channel.name))}" data-chan="${escapeAttr(channel.name)}">${escapeHtml(channel.name)}</a>${stream}`;
+  return `<a class="chan-link" href="${escapeAttr(networkUrl(channel.name))}" data-chan="${escapeAttr(channel.name)}">${escapeHtml(window.UpcomingNetworks.displayName(channel.name))}</a>${stream}`;
 }
 
 function cardHtml(it) {
@@ -1386,16 +1386,16 @@ function cardHtml(it) {
     : `S${it.season}E${it.number}`;
   return `
     <article class="card${past ? " past" : ""}" data-show-id="${escapeAttr(String(it.show.id))}" data-airdate="${escapeAttr(it.airdate)}">
-      ${favBtnHtml(it.show.id)}
-      ${past ? '<span class="aired-flag">Aired</span>' : ""}
-      ${imageHtml(it.show)}
       <div class="card-body">
-        <div class="card-date">${formatDay(it.airdate)}</div>
         ${cardTitleHtml(it.show.name)}
+        <div class="card-date">${formatDay(it.airdate)}</div>
         <div class="card-meta">${chanMetaHtml(it.show.channel)}</div>
         <span class="badge">${escapeHtml(premiere)}</span>
         ${watchLinkHtml(it.show.channel && it.show.channel.name, it.show.name, "card-watch")}
       </div>
+      ${imageHtml(it.show)}
+      ${past ? '<span class="aired-flag">Aired</span>' : ""}
+      ${favBtnHtml(it.show.id)}
     </article>`;
 }
 

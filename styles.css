@@ -218,7 +218,8 @@ body[data-view="notfound"] .search { display: none; }
 }
 
 .filters select,
-.filters input[type="search"] {
+.filters input[type="search"],
+.dropdown-actions input[type="text"] {
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
@@ -873,7 +874,6 @@ body[data-view="notfound"] .search { display: none; }
   box-shadow: 0 0 0 2px var(--focus-black), 0 0 0 8px var(--focus-black);
 }
 .card:focus-visible { outline: 4px solid var(--focus-yellow); outline-offset: 2px; box-shadow: 0 0 0 2px var(--focus-black), 0 0 0 8px var(--focus-black); }
-.modal-card:focus-visible { outline: none; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -1074,7 +1074,6 @@ body[data-view="notfound"] .search { display: none; }
     box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.35);
     animation: sheet-up 0.22s ease-out;
   }
-  .sheet-panel:focus { outline: none; }
   .sheet-grip { width: 2.5rem; height: 4px; border-radius: 2px; background: var(--border); margin: 0.2rem auto 0.6rem; }
   .sheet-title { font-size: 1rem; margin: 0 0 0.4rem; }
   .sheet-list { list-style: none; margin: 0; padding: 0; }
@@ -1194,7 +1193,7 @@ body[data-view="notfound"] .search { display: none; }
    tap anywhere opens it. Other controls sit above that layer. */
 .card-open { all: unset; cursor: pointer; color: inherit; font: inherit; }
 .card-open::after { content: ""; position: absolute; inset: 0; z-index: 1; }
-.card-open:focus-visible { outline: none; }
+.card-open:focus-visible { outline: 2px solid transparent; box-shadow: none; } /* the card draws the ring; transparent keeps an outline in forced-colors mode */
 .card:has(.card-open:focus-visible) { outline: 4px solid var(--focus-yellow); outline-offset: 2px; box-shadow: 0 0 0 2px var(--focus-black), 0 0 0 8px var(--focus-black); }
 /* Buttons on posters (star): the halo keeps the ring visible on light and dark images. */
 .fav-btn:focus-visible { outline: 3px solid var(--focus-yellow); outline-offset: 1px; box-shadow: 0 0 0 1px var(--focus-black), 0 0 0 6px var(--focus-black); } /* fits inside the card */
@@ -1225,7 +1224,6 @@ body[data-view="notfound"] .search { display: none; }
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 .skip-link:focus { top: 0.6rem; outline: 4px solid var(--focus-yellow); outline-offset: 2px; box-shadow: 0 0 0 2px var(--focus-black), 0 0 0 8px var(--focus-black); }
-#grid:focus { outline: none; }
 
 /* .not-found heading is now the page h1 */
 .not-found h1 { margin: 0 0 0.5rem; font-size: 1.3rem; color: var(--text); }
@@ -1316,3 +1314,14 @@ a.sheet-item { text-decoration: none; box-sizing: border-box; }
 .breadcrumb [aria-current="page"] { color: var(--text); font-weight: 600; }
 .page .breadcrumb { padding: 0 0 1rem; border: none; }
 @media (max-width: 640px) { .breadcrumb { padding: 0.5rem 1rem; } }
+
+/* Target size (WCAG 2.5.8): every small control is at least 24 px tall. */
+.card-open { display: block; min-height: 24px; }
+.chan-link, .card-watch { display: inline-flex; align-items: center; min-height: 24px; }
+.footer-group a, .footer-links a { display: inline-flex; align-items: center; min-height: 24px; }
+
+/* Cards: title first in the markup (reading order), image and date shown first by CSS. */
+.card > .card-img, .card > .card-no-img { order: -1; }
+.card-body { display: flex; flex-direction: column; align-items: flex-start; }
+.card-body > .card-date, .card-body > .card-status { order: -1; }
+@media (max-width: 640px) { .card-watch { align-self: stretch; } }

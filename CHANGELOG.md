@@ -3,6 +3,19 @@
 All notable changes to Upcoming TV Shows are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.28.1 — 2026-11-11
+
+### Fixed (automated accessibility scan)
+- No focus outline is removed any more (transparent outline where the card draws the
+  ring, which also keeps it in Windows high-contrast mode).
+- The header search is a search landmark; the channel and genre list filters are plain
+  text fields, not searches.
+- Small controls (card title, channel link, "Watch on", footer links) are at least
+  24 px tall (WCAG 2.5.8).
+- Cards read title first: the markup now goes title, date, channel, watch link, then the
+  image and the star; CSS keeps the visual order.
+- TVmaze's channel "5" is shown as "Channel 5" (titles, footer, cards, breadcrumb).
+
 ## 1.28.0 — 2026-11-11
 
 ### Changed

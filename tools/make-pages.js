@@ -14,7 +14,7 @@
 // script is idempotent: running it again (with or without data) rewrites them in place.
 const fs = require("node:fs");
 const path = require("node:path");
-const { SEED_NETWORKS, NETWORK_GROUPS, networkSlug, networkMeta, notFoundHtml, breadcrumbHtml } = require("../networks.js");
+const { SEED_NETWORKS, NETWORK_GROUPS, networkSlug, networkMeta, notFoundHtml, breadcrumbHtml, displayName } = require("../networks.js");
 const root = path.join(__dirname, "..");
 
 const NOTE = "<!-- Generated from index.html by tools/make-pages.js — do not edit by hand. -->";
@@ -76,7 +76,7 @@ const updatedLine = (data) =>
 /* ---------- Generated regions ---------- */
 function footerHtml() {
   const groups = NETWORK_GROUPS.map((g) => {
-    const links = [...new Set(g.names)].map((n) => `<li><a href="network/${networkSlug(n)}">${esc(n)}</a></li>`).join("");
+    const links = [...new Set(g.names)].map((n) => `<li><a href="network/${networkSlug(n)}">${esc(displayName(n))}</a></li>`).join("");
     const label = g.label.replace(/^\S+\s/, ""); // drop the flag emoji
     return `<div class="footer-group"><h3>${esc(label)}</h3><ul>${links}</ul></div>`;
   }).join("");
@@ -97,7 +97,7 @@ function homeHtml(data) {
       .sort((a, b) => a.airdate.localeCompare(b.airdate) || a.show.name.localeCompare(b.show.name));
     const rows = firstPerShow(premieres).slice(0, MAX_HOME).map((it) => {
       const chan = it.show.channel.name;
-      return `<li><time datetime="${esc(it.airdate)}">${esc(fmtDay(it.airdate))}</time> · <strong>${esc(it.show.name)}</strong> · <a href="network/${networkSlug(chan)}">${esc(chan)}</a> — ${esc(premiereTag(it))}</li>`;
+      return `<li><time datetime="${esc(it.airdate)}">${esc(fmtDay(it.airdate))}</time> · <strong>${esc(it.show.name)}</strong> · <a href="network/${networkSlug(chan)}">${esc(displayName(chan))}</a> — ${esc(premiereTag(it))}</li>`;
     });
     if (rows.length) body += `\n      <h2>Next premieres</h2>\n      <ul>\n        ${rows.join("\n        ")}\n      </ul>`;
     body += "\n      " + updatedLine(data);
@@ -106,9 +106,10 @@ function homeHtml(data) {
 }
 
 // Channel page body: h1, a factual opening sentence, then the list by month.
-function networkHtml(name, data) {
+function networkHtml(raw, data) {
+  const name = displayName(raw);
   const h1 = `<h1 id="prerender-title">Upcoming ${esc(name)} shows</h1>`;
-  const items = channelItems(name, data);
+  const items = channelItems(raw, data);
   if (!items) {
     return `\n    <section class="prerender" aria-labelledby="prerender-title">\n      ${h1}\n      <p class="prerender-intro">New and returning ${esc(name)} series, month by month: premiere dates, seasons and episodes.</p>\n    </section>\n  `;
   }
@@ -137,7 +138,7 @@ function networkPage(indexHtml, name, data) {
   const next = items && items.find((it) => it.number === 1);
   // A fact of the day makes each channel's description unique.
   const desc = items && items.length
-    ? `${firstPerShow(items).length} new and returning ${name} series scheduled${next ? `; next premiere: ${next.show.name} (${fmtDay(next.airdate)})` : ""}. Premiere dates, seasons and episodes, updated daily.`
+    ? `${firstPerShow(items).length} new and returning ${displayName(name)} series scheduled${next ? `; next premiere: ${next.show.name} (${fmtDay(next.airdate)})` : ""}. Premiere dates, seasons and episodes, updated daily.`
     : m.description;
   const json = (v) => JSON.stringify(v).slice(1, -1); // string body, safe inside "…" in JSON-LD
   let html = derive(indexHtml, { base: "../", noindex: !hasUpcoming(name, data) });
@@ -151,8 +152,8 @@ function networkPage(indexHtml, name, data) {
   html = swap(html, /(<meta name="twitter:description" content=")[^"]*(">)/, esc(desc));
   // Structured data: same description as the page, plus its own address.
   html = swap(html, /("description": ")[^"]*(",)/, json(desc) + '",\n    "url": "' + json(m.url));
-  html = html.replace("</head>", crumbJsonLd(siteUrl(indexHtml), name, m.url) + "\n</head>");
-  return withCrumb(region(html, "prerender", networkHtml(name, data)), name);
+  html = html.replace("</head>", crumbJsonLd(siteUrl(indexHtml), displayName(name), m.url) + "\n</head>");
+  return withCrumb(region(html, "prerender", networkHtml(name, data)), displayName(name));
 }
 
 // Index with its regions filled; dateModified added to the JSON-LD when data is present.

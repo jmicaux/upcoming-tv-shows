@@ -81,6 +81,10 @@
     try { return decodeURIComponent(s); } catch { return s; }
   }
 
+  // Names shown to people, when TVmaze's own name would be cryptic ("5").
+  const DISPLAY_NAMES = { "5": "Channel 5" };
+  const displayName = (name) => DISPLAY_NAMES[name] || name;
+
   // Page texts. SITE_META must match index.html (checked by tests/smoke.test.js).
   const SITE_URL = "https://jmicaux.github.io/upcoming-tv-shows/";
   const SITE_META = {
@@ -90,12 +94,13 @@
     url: SITE_URL,
   };
   // Title, description and URL of a channel page (generated page and in-app navigation alike).
-  function networkMeta(name) {
+  function networkMeta(raw) {
+    const name = displayName(raw);
     const description = `New and returning ${name} series, month by month: premiere dates, seasons and episodes. Free, no account needed.`;
     return {
       title: `Upcoming ${name} shows and premieres — Upcoming TV Shows`,
       description, twitterDescription: description,
-      url: SITE_URL + "network/" + networkSegment(name),
+      url: SITE_URL + "network/" + networkSegment(raw),
     };
   }
 
@@ -132,7 +137,7 @@
 
   const api = {
     UK_NETWORKS, AU_NETWORKS, SE_NETWORKS, NO_NETWORKS, DK_NETWORKS, FI_NETWORKS, IS_NETWORKS, COUNTRY_NETWORKS, NORDIC_NETWORKS, FLAGSHIP_RE, US_BROADCAST, STREAMING_NETWORKS, FR_NETWORKS, SEED_NETWORKS,
-    networkSlug, networkSegment, networkFromSegment, SITE_META, networkMeta, NETWORK_GROUPS, notFoundHtml, breadcrumbHtml,
+    networkSlug, networkSegment, networkFromSegment, SITE_META, networkMeta, NETWORK_GROUPS, notFoundHtml, breadcrumbHtml, displayName,
   };
   root.UpcomingNetworks = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;

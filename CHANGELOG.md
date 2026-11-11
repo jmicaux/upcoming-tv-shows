@@ -25,6 +25,7 @@ All notable changes to Upcoming TV Shows are documented here. This project follo
   Account, Settings and Theme. Show cards are denser with 44px touch targets (star,
   "Watch on"), and a show opens as a bottom sheet that closes by dragging it down, with
   ×, or with the phone's Back button. Desktop is unchanged.
+- **Red header** (#c1121f, white text at 6.2:1), also colouring the mobile browser bar.
 - **"Premieres only" and "Hide past" in the Watchlist**, with their own values (off by
   default): only shows whose next episode opens a season, and hide shows with nothing
   upcoming. The title shows "12 of 52 shows" when a filter is on.

@@ -1141,3 +1141,32 @@ body[data-view="notfound"] .search { display: none; }
   .modal-summary { padding-bottom: calc(3.6rem + env(safe-area-inset-bottom)); }
 }
 @media (prefers-reduced-motion: reduce) { .modal-card { animation: none; transition: none; } }
+
+/* ======================================================================
+   Red header (both themes). #c1121f keeps white text at 6.2:1 (WCAG AA);
+   the brighter --accent (#e50914) would only reach 4.8:1.
+   ====================================================================== */
+:root { --header-bg: #c1121f; --header-fg: #ffffff; }
+.topbar {
+  background: var(--header-bg);
+  color: var(--header-fg);
+  border-bottom-color: transparent;
+}
+.topbar h1, .topbar .brand-ver { color: var(--header-fg); }
+.topbar .brand-ver { opacity: 1; }
+.topbar .icon-btn,
+.topbar .view-btn,
+.topbar .theme-btn {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  color: var(--header-fg);
+}
+.topbar .icon-btn:hover,
+.topbar .view-btn:hover,
+.topbar .theme-btn:hover { background: rgba(255, 255, 255, 0.24); border-color: #fff; }
+.topbar .view-btn .count { color: var(--header-fg); }
+.topbar :focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.topbar .search-input { background: #fff; color: #1a1d24; }
+.topbar .search-input::placeholder { color: #5f6368; }
+.topbar .search-clear { color: #fff; }
+.topbar .account-btn[data-sync]::after { border-color: var(--header-bg); }

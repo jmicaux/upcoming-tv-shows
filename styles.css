@@ -863,9 +863,18 @@ body[data-view="notfound"] .search { display: none; }
 .tmdb-save:hover { border-color: var(--accent); }
 
 /* ---------- Accessibility ---------- */
-/* Clear keyboard-focus ring for interactive elements (cards are role="button"). */
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.card:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+/* Keyboard focus: a two-tone ring that stands out on any background (page, red accent,
+   header, posters). The ring contrasts with the page (> 15:1), the halo separates it
+   from the focused element whatever its colour (WCAG 2.4.7 / 2.4.11, RGAA 10.7). */
+:root { --focus-ring: #ffffff; --focus-halo: #0f1115; }
+:root[data-theme="light"] { --focus-ring: #1a1d24; --focus-halo: #ffffff; }
+@media (prefers-color-scheme: light) { :root:not([data-theme]) { --focus-ring: #1a1d24; --focus-halo: #ffffff; } }
+:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--focus-halo);
+}
+.card:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; box-shadow: 0 0 0 3px var(--focus-halo); }
 .modal-card:focus-visible { outline: none; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1046,7 +1055,7 @@ body[data-view="notfound"] .search { display: none; }
   .tab svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .tab[aria-current="page"] { color: var(--accent-text); font-weight: 600; }
   .tab[aria-current="page"] svg { stroke-width: 2.2; }
-  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 10px; }
+  .tab:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: -5px; box-shadow: inset 0 0 0 7px var(--focus-halo); border-radius: 10px; }
   .tab-badge {
     position: absolute; top: 0.35rem; left: calc(50% + 0.45rem);
     min-width: 1.1rem; height: 1.1rem; padding: 0 0.3rem;
@@ -1169,7 +1178,8 @@ body[data-view="notfound"] .search { display: none; }
 .topbar .view-btn:hover,
 .topbar .theme-btn:hover { background: rgba(0, 0, 0, 0.18); border-color: #fff; }
 .topbar .view-btn .count { color: var(--header-fg); }
-.topbar :focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+/* On the red header: white ring (6.2:1 on red) with a dark halo. */
+.topbar :focus-visible { outline: 3px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 2px #1a1d24; }
 .topbar .search-input { background: #fff; color: #1a1d24; }
 .topbar .search-input::placeholder { color: #5f6368; }
 .topbar .search-clear { color: #fff; }
@@ -1188,7 +1198,9 @@ body[data-view="notfound"] .search { display: none; }
 .card-open { all: unset; cursor: pointer; color: inherit; font: inherit; }
 .card-open::after { content: ""; position: absolute; inset: 0; z-index: 1; }
 .card-open:focus-visible { outline: none; }
-.card:has(.card-open:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
+.card:has(.card-open:focus-visible) { outline: 3px solid var(--focus-ring); outline-offset: 3px; box-shadow: 0 0 0 3px var(--focus-halo); }
+/* Buttons on posters (star): the halo keeps the ring visible on light and dark images. */
+.fav-btn:focus-visible { outline: 3px solid #fff; outline-offset: 1px; box-shadow: 0 0 0 1px #000, 0 0 0 6px #000; } /* white ring between black edges; fits inside the card */
 .chan-link, .card-watch { position: relative; z-index: 2; }
 
 /* ======================================================================
@@ -1264,7 +1276,7 @@ a.sheet-item { text-decoration: none; box-sizing: border-box; }
   font: inherit; font-weight: 600; cursor: pointer;
 }
 .load-more:hover { border-color: var(--accent); }
-.month-heading:focus { outline: 3px solid var(--accent); outline-offset: -3px; }
+.month-heading:focus { outline: 3px solid var(--focus-ring); outline-offset: -4px; box-shadow: inset 0 0 0 6px var(--focus-halo); }
 
 /* Short lists of links shown inline (footer, page bottoms): a real list, CSS separators. */
 .inline-links { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.25rem 0; }

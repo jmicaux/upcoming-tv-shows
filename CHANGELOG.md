@@ -48,6 +48,9 @@ All notable changes to Upcoming TV Shows are documented here. This project follo
   page has an end, so the footer is reachable, and focus moves to the newly loaded month.
 - **"Buy me a coffee"** link in the footer, the About page and the mobile "More" sheet
   (which also links to About).
+- **Stronger keyboard focus**: a 3 px two-tone ring (dark on light theme, white on dark
+  theme, with a contrasting halo; white between black edges on posters) instead of a thin
+  red outline that got lost on the red accent and images.
 - **Red header** (#c1121f, white text at 6.2:1), also colouring the mobile browser bar.
 - **"Premieres only" and "Hide past" in the Watchlist**, with their own values (off by
   default): only shows whose next episode opens a season, and hide shows with nothing

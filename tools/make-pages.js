@@ -85,7 +85,7 @@ function footerHtml() {
       <h2 id="footer-channels-title">Upcoming shows by channel</h2>
       <div class="footer-groups">${groups}</div>
     </nav>
-    <p class="footer-links"><a href="./">Home</a> · <a href="about.html">About</a> · <a href="privacy.html">Privacy</a> · <a href="${REPO}/issues">Contact &amp; feedback</a> · <a href="${REPO}">Source on GitHub</a> · <a href="${BMC}">☕ Buy me a coffee</a></p>
+    <p class="footer-links"><a href="./">Home</a> · <a href="about.html">About</a> · <a href="privacy.html">Privacy</a> · <a href="accessibilite.html" lang="fr">Accessibilité : non conforme</a> · <a href="${REPO}/issues">Contact &amp; feedback</a> · <a href="${REPO}">Source on GitHub</a> · <a href="${BMC}">☕ Buy me a coffee</a></p>
   `;
 }
 
@@ -179,7 +179,7 @@ function build(indexHtml, data) {
   }
   const site = siteUrl(index);
   const indexable = [...seen].filter(([, name]) => hasUpcoming(name, data)).map(([slug]) => site + "network/" + slug);
-  const urls = [site, site + "about.html", ...indexable];
+  const urls = [site, site + "about.html", site + "accessibilite.html", ...indexable];
   files["sitemap.xml"] = '<?xml version="1.0" encoding="UTF-8"?>\n' +
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
     urls.map((u) => `  <url><loc>${esc(u)}</loc></url>`).join("\n") + "\n</urlset>\n";

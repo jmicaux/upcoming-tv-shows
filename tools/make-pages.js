@@ -14,7 +14,7 @@
 // script is idempotent: running it again (with or without data) rewrites them in place.
 const fs = require("node:fs");
 const path = require("node:path");
-const { SEED_NETWORKS, NETWORK_GROUPS, networkSlug, networkMeta, notFoundHtml } = require("../networks.js");
+const { SEED_NETWORKS, NETWORK_GROUPS, networkSlug, networkMeta, notFoundHtml, breadcrumbHtml } = require("../networks.js");
 const root = path.join(__dirname, "..");
 
 const NOTE = "<!-- Generated from index.html by tools/make-pages.js — do not edit by hand. -->";
@@ -151,7 +151,8 @@ function networkPage(indexHtml, name, data) {
   html = swap(html, /(<meta name="twitter:description" content=")[^"]*(">)/, esc(desc));
   // Structured data: same description as the page, plus its own address.
   html = swap(html, /("description": ")[^"]*(",)/, json(desc) + '",\n    "url": "' + json(m.url));
-  return region(html, "prerender", networkHtml(name, data));
+  html = html.replace("</head>", crumbJsonLd(siteUrl(indexHtml), name, m.url) + "\n</head>");
+  return withCrumb(region(html, "prerender", networkHtml(name, data)), name);
 }
 
 // Index with its regions filled; dateModified added to the JSON-LD when data is present.
@@ -162,13 +163,27 @@ function buildIndex(indexHtml, data) {
   return html;
 }
 
+// Show the breadcrumb on a derived page ("Home › <current>").
+function withCrumb(html, current) {
+  return region(html, "breadcrumb", breadcrumbHtml(current))
+    .replace('<nav class="breadcrumb" id="breadcrumb" aria-label="Breadcrumb" hidden>', '<nav class="breadcrumb" id="breadcrumb" aria-label="Breadcrumb">');
+}
+// schema.org BreadcrumbList for a channel page.
+function crumbJsonLd(site, name, url) {
+  const data = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: site },
+    { "@type": "ListItem", position: 2, name, item: url },
+  ] };
+  return `\n  <script type="application/ld+json">${JSON.stringify(data)}</script>`;
+}
+
 // { relativePath: content } for every generated file (index.html included).
 function build(indexHtml, data) {
   const index = buildIndex(indexHtml, data);
   const files = {
     "index.html": index,
-    "watchlist.html": derive(region(index, "prerender", ""), { noindex: true }),
-    "404.html": derive(region(index, "prerender", notFoundHtml()), { base: new URL(siteUrl(index)).pathname, noindex: true }),
+    "watchlist.html": withCrumb(derive(region(index, "prerender", ""), { noindex: true }), "Watchlist"),
+    "404.html": withCrumb(derive(region(index, "prerender", notFoundHtml()), { base: new URL(siteUrl(index)).pathname, noindex: true }), "Page not found"),
   };
   const seen = new Map();
   for (const name of new Set(SEED_NETWORKS)) {

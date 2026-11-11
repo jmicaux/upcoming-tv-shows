@@ -124,9 +124,15 @@
   `;
   }
 
+  // Simplified breadcrumb "Home › <current>" (app views, generated and static pages).
+  function breadcrumbHtml(current, base = "") {
+    const e = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    return `<ol><li><a href="${e(base) || "./"}">Home</a></li><li aria-current="page">${e(current)}</li></ol>`;
+  }
+
   const api = {
     UK_NETWORKS, AU_NETWORKS, SE_NETWORKS, NO_NETWORKS, DK_NETWORKS, FI_NETWORKS, IS_NETWORKS, COUNTRY_NETWORKS, NORDIC_NETWORKS, FLAGSHIP_RE, US_BROADCAST, STREAMING_NETWORKS, FR_NETWORKS, SEED_NETWORKS,
-    networkSlug, networkSegment, networkFromSegment, SITE_META, networkMeta, NETWORK_GROUPS, notFoundHtml,
+    networkSlug, networkSegment, networkFromSegment, SITE_META, networkMeta, NETWORK_GROUPS, notFoundHtml, breadcrumbHtml,
   };
   root.UpcomingNetworks = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;

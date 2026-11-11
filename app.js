@@ -514,6 +514,7 @@ async function runCatalogSearch() {
 }
 
 function renderSearchResults(shows, q) {
+  updateBreadcrumb("Search results");
   el.resultCount.textContent = `${shows.length} result${shows.length !== 1 ? "s" : ""}`;
   if (!shows.length) {
     el.grid.innerHTML = `<h1 class="view-title">Search results for “${escapeHtml(q)}”</h1><p class="empty">No shows found for “${escapeHtml(q)}”.</p>`;
@@ -530,6 +531,7 @@ function exitSearch() {
   if (!state.searching) return;
   state.searching = false;
   state.searchShows = {};
+  updateBreadcrumb(crumbFor(state.view, parseRoute().network));
   enterMonthView();
 }
 
@@ -949,7 +951,28 @@ function applyRoute() {
 
 // Title (WCAG 2.4.2), description, canonical and social tags follow the view, matching
 // what the generated page of that address serves, so a shared or saved page is consistent.
+// "Home › …" under the header on every view but the home feed.
+function updateBreadcrumb(current) {
+  const nav = document.getElementById("breadcrumb");
+  if (!nav) return;
+  nav.hidden = !current;
+  nav.innerHTML = current ? window.UpcomingNetworks.breadcrumbHtml(current, APP_BASE) : "";
+}
+function crumbFor(view, network) {
+  if (network) return network;
+  return view === "watchlist" ? "Watchlist" : view === "notfound" ? "Page not found" : "";
+}
+// The brand and the breadcrumb's Home link go home without reloading the app.
+document.addEventListener("click", (e) => {
+  const a = e.target.closest(".brand-link, #breadcrumb a");
+  if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button) return;
+  e.preventDefault();
+  collapseSearch();
+  navigate(APP_BASE);
+});
+
 function updateHeadMeta(view, network) {
+  updateBreadcrumb(crumbFor(view, network));
   const { SITE_META, networkMeta } = window.UpcomingNetworks;
   const m = network ? networkMeta(network) : SITE_META;
   const title = view === "watchlist" ? "Watchlist — " + SITE_META.title

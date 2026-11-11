@@ -48,6 +48,10 @@ All notable changes to Upcoming TV Shows are documented here. This project follo
   page has an end, so the footer is reachable, and focus moves to the newly loaded month.
 - **"Buy me a coffee"** link in the footer, the About page and the mobile "More" sheet
   (which also links to About).
+- **The app title links home**, and a **simplified breadcrumb** ("Home › Netflix",
+  "Home › Watchlist", "Home › Search results"…) sits under the header on every view but
+  the home feed, on the generated pages and on About / Privacy / Accessibility; channel
+  pages also declare a schema.org `BreadcrumbList`.
 - **Richer "Page not found"**: the address asked for, next steps (upcoming shows,
   Watchlist, search), popular channel chips and a link to report a broken link; the same
   content is in the static 404.html for visitors without JavaScript.

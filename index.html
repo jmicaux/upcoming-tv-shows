@@ -53,7 +53,7 @@
   </noscript>
   <a class="skip-link" href="#grid">Skip to shows</a>
   <header class="topbar">
-    <p class="brand">Upcoming TV Shows <span class="brand-ver" id="appVersion"></span></p>
+    <p class="brand"><a class="brand-link" href="./">Upcoming TV Shows</a> <span class="brand-ver" id="appVersion"></span></p>
     <div class="actions">
       <div class="search" id="search">
         <input type="search" id="searchInput" class="search-input" placeholder="Search shows…" aria-label="Search shows" autocomplete="off">
@@ -71,6 +71,8 @@
       <button id="themeBtn" class="theme-btn" aria-label="Switch to dark mode">☾</button>
     </div>
   </header>
+
+  <nav class="breadcrumb" id="breadcrumb" aria-label="Breadcrumb" hidden><!-- breadcrumb:start --><!-- breadcrumb:end --></nav>
 
   <section class="filters">
     <div class="field dropdown" id="networkDropdown">

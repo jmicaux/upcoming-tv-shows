@@ -76,7 +76,7 @@ function networkPage(indexHtml, name, data) {
   // Structured data: same description as the page, plus its own address.
   html = swap(html, /("description": ")[^"]*(",)/, json(m.description) + '",\n    "url": "' + json(m.url));
   const list = prerender(name, data);
-  if (list) html = swap(html, /(<main id="grid" class="grid">)(<\/main>)/, list);
+  if (list) html = swap(html, /(<main id="grid"[^>]*>)(<\/main>)/, list);
   return html;
 }
 

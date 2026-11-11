@@ -54,6 +54,7 @@
   <noscript>
     <p style="padding:1rem;text-align:center">Upcoming TV Shows needs JavaScript to load the upcoming TV and streaming schedule.</p>
   </noscript>
+  <a class="skip-link" href="#grid">Skip to shows</a>
   <header class="topbar">
     <h1 class="brand">Upcoming TV Shows <span class="brand-ver" id="appVersion"></span></h1>
     <div class="actions">
@@ -110,7 +111,7 @@
     <span id="resultCount" class="result-count" role="status" aria-live="polite"></span>
   </section>
 
-  <main id="grid" class="grid"></main>
+  <main id="grid" class="grid" tabindex="-1"></main>
 
   <!-- Mobile only (≤ 640px): bottom tab bar within thumb reach, and a "More" sheet for the
        rarely used actions. Hidden on larger screens, where the header shows them. -->

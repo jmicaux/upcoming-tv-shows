@@ -1205,3 +1205,13 @@ body[data-view="notfound"] .search { display: none; }
 }
 @keyframes sk-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 @media (prefers-reduced-motion: reduce) { .sk-img, .sk-line { animation: none; } }
+
+/* Bypass block (WCAG 2.4.1): first Tab stop, visible only when focused. */
+.skip-link {
+  position: absolute; left: 0.75rem; top: -3rem; z-index: 100;
+  padding: 0.6rem 1rem; border-radius: var(--radius);
+  background: #fff; color: #1a1d24; font-weight: 700; text-decoration: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.skip-link:focus { top: 0.6rem; outline: 3px solid #1a1d24; outline-offset: 2px; }
+#grid:focus { outline: none; }

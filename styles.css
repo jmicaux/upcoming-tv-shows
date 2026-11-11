@@ -919,3 +919,12 @@ body[data-view="notfound"] .search { display: none; }
 .account-confirm label { display: flex; gap: 0.5rem; align-items: center; margin: 0.5rem 0; font-size: 0.9rem; }
 .account-footer { margin-top: 1.2rem; font-size: 0.85rem; color: var(--muted); }
 .account-footer a { color: var(--accent-text); }
+
+/* Static channel list baked into network pages by tools/make-pages.js --data (shown until
+   the app renders the feed, and to crawlers / no-JS visitors). */
+.prerender { grid-column: 1 / -1; max-width: 48rem; padding: 1rem 0; color: var(--text); }
+.prerender h2 { font-size: 1.2rem; margin: 0 0 0.75rem; }
+.prerender h3 { font-size: 1rem; margin: 1.25rem 0 0.5rem; color: var(--muted); }
+.prerender ul { list-style: none; margin: 0; padding: 0; }
+.prerender li { padding: 0.3rem 0; border-bottom: 1px solid var(--border); }
+.prerender time { color: var(--muted); font-variant-numeric: tabular-nums; }

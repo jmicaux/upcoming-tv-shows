@@ -6,7 +6,7 @@ Australia and the Nordics**, plus French channels (**Canal+**, **Arte**, TF1, M6
 follow only the ones you care about, and filter by genre. No build step, no backend —
 just static files (plus a free TMDB key for the French channels).
 
-[![CI](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml/badge.svg)](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml) ![version](https://img.shields.io/badge/version-1.26.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
+[![CI](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml/badge.svg)](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml) ![version](https://img.shields.io/badge/version-1.27.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
 
 **🔗 Live preview: [jmicaux.github.io/upcoming-tv-shows](https://jmicaux.github.io/upcoming-tv-shows/)**
 
@@ -134,6 +134,7 @@ tv-us-upcoming/
 ├── styles.css          # theming (dark/light via data-theme), responsive grid
 ├── app.js              # data fetching, caching, filtering, rendering, routing
 ├── networks.js         # channel lists + URL slugs (shared with tools/make-pages.js)
+├── feed-core.js        # TVmaze/TMDB fetching + snapshot plan (shared with the nightly script)
 ├── auth.js             # optional account: Supabase sign-in + preference sync
 ├── sync-core.js        # merge rules + sync engine (pure, unit-tested)
 ├── supabase-config.js  # public Supabase URL + anon key (safe to commit)
@@ -144,6 +145,7 @@ tv-us-upcoming/
 ├── presets/            # importable preferences snapshots (Export → Import)
 ├── tests/              # node --test unit tests (run in CI)
 ├── tools/make-pages.js # regenerates the pages below from index.html
+├── tools/fetch-schedule.js # nightly snapshot → data/schedule/ (not committed)
 ├── watchlist.html      # generated: <site>/watchlist
 ├── network/*.html      # generated: <site>/network/<slug>, one per major channel
 ├── 404.html            # generated: any other address (rare channels)
@@ -153,6 +155,16 @@ tv-us-upcoming/
 
 After editing `index.html` or `networks.js`, run `node tools/make-pages.js` (the tests
 fail if the generated pages are stale).
+
+### Nightly schedule snapshot
+
+`.github/workflows/pages.yml` deploys the site every night and on every push: it runs
+`node tools/fetch-schedule.js` (one pass over TVmaze, about 8 minutes for 3 months), then
+`node tools/make-pages.js --data data/schedule`, which bakes each channel's upcoming shows
+into its page as plain HTML. The app reads `data/schedule/` first and only calls TVmaze
+for what it does not cover. Setup: **Settings → Pages → Source: GitHub Actions**; add a
+`TMDB_KEY` repository secret to include the French channels. Without a snapshot (local
+development, or a failed night) the app simply fetches everything live, as before.
 
 No build step and no npm dependencies — everything runs in the browser. The only runtime
 dependency is a pinned `supabase-js` loaded from jsDelivr with Subresource Integrity.

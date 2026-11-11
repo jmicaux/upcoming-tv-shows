@@ -3,6 +3,23 @@
 All notable changes to Upcoming TV Shows are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.27.0 — 2026-11-11
+
+### Added
+- **Nightly schedule snapshot.** A GitHub Action fetches the schedule once a night
+  (`tools/fetch-schedule.js`: TVmaze, plus TMDB for French channels when the `TMDB_KEY`
+  secret is set) and publishes it with the site as small same-origin JSON files, one per
+  channel and month, for the next 3 months. The app reads them first and only calls TVmaze
+  for what the snapshot does not cover (a rare channel, a later month, a stale snapshot).
+  Pages appear faster and visitors no longer hit TVmaze for the common case.
+- **Channel pages carry their upcoming shows as plain HTML** (first episode of each show
+  per month, with premieres marked), readable by crawlers and without JavaScript; the app
+  replaces it with the interactive feed once it runs.
+
+### Changed
+- Schedule fetching moved to `feed-core.js`, shared by the app and the nightly script.
+- The site is deployed by `.github/workflows/pages.yml` (Pages source: GitHub Actions).
+
 ## 1.26.0 — 2026-11-11
 
 ### Added

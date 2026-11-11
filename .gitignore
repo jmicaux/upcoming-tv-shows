@@ -15,3 +15,6 @@ desktop.ini
 *.swp
 .vscode/
 .idea/
+
+# Nightly schedule snapshot — built by .github/workflows/pages.yml, never committed
+/data/

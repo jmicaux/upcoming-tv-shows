@@ -1,10 +1,9 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.26.0"; // single source of truth — bump on each release
+const APP_VERSION = "1.27.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
-const API = "https://api.tvmaze.com";
 const CACHE_PREFIX = "tvmaze:sched:v4:"; // v4: US + streaming + FR + UK/AU/Nordic flagships
 const FUTURE_TTL_MS = 6 * 60 * 60 * 1000; // 6h for today/future days
 const REQUEST_GAP_MS = 550;               // throttle: ~18 req / 10s, under TVMaze's ~20/10s
@@ -42,18 +41,17 @@ const DEFAULT_FOLLOWED = [
   "SVT1", "NRK1", "DR1", "Yle TV1", "RÚV",                   // Nordics
 ];
 
-// Web/streaming platforms to keep from the (worldwide) web schedule.
-const STREAMING_ALLOWLIST = /^(Netflix|Prime Video|Amazon|Hulu|Disney\+|Max|HBO Max|Apple TV\+?|Peacock|Paramount\+|Starz|Showtime|AMC\+|Shudder|Acorn TV|BritBox|Crunchyroll|ESPN\+|Discovery\+|Tubi|Freevee|MGM\+|Hallmark\+|Fox Nation)$/i;
+// Schedule fetching (TVmaze sources, TMDB for French channels, nightly snapshot plan)
+// lives in feed-core.js, shared with tools/fetch-schedule.js.
+const {
+  API, TMDB_IMG, TMDB_IMG_ORIG, trimItem, neededSources, fetchScheduleDay, tmdbChannel, planMonth,
+} = window.FeedCore;
 
 // French channels come from TMDB (far better FR coverage than TVMaze).
 // Key is provided at runtime by config.js (git-ignored) — see config.example.js.
 const TMDB_KEY_STORAGE = "tv:tmdbKey";
 // Priority: a key entered in-app (localStorage) → a build-time config.js key → none.
 let TMDB_KEY = localStorage.getItem(TMDB_KEY_STORAGE) || (window.LINEUP_CONFIG && window.LINEUP_CONFIG.TMDB_KEY) || "";
-const TMDB_NETWORKS = "285|1628|290|712|361|249"; // Canal+ | ARTE | TF1 | M6 | France 2 | France 3
-const TMDB_CHANNEL_NAMES = { 285: "Canal+", 1628: "ARTE", 290: "TF1", 712: "M6", 361: "France 2", 249: "France 3" };
-const TMDB_IMG = "https://image.tmdb.org/t/p/w342";
-const TMDB_IMG_ORIG = "https://image.tmdb.org/t/p/original";
 const TMDB_CACHE_PREFIX = "tmdb:fr:v1:"; // keyed by YYYY-MM
 const FAV_KEY = "tv:favorites";
 const OVERRIDES_KEY = "tv:watchOverrides"; // { sourceChannel: providerChannel } for "Watch on" links
@@ -253,28 +251,6 @@ async function throttledJson(url) {
   throw new Error("TVMaze rate limit persistant");
 }
 
-// Keep only the fields the UI needs, to stay within localStorage quota.
-// `channel` unifies broadcast network and streaming webChannel; precedence
-// follows the source schedule (web items are labelled by their platform).
-function trimItem(it, s, streaming) {
-  const chan = streaming ? (s.webChannel || s.network) : (s.network || s.webChannel);
-  return {
-    id: it.id,
-    season: it.season,
-    number: it.number,
-    airdate: it.airdate,
-    show: {
-      id: s.id,
-      name: s.name,
-      genres: s.genres || [],
-      channel: chan ? { name: chan.name, streaming } : null,
-      image: s.image ? { medium: s.image.medium, original: s.image.original } : null,
-      summary: s.summary || "",
-      premiered: s.premiered || null,
-    },
-  };
-}
-
 // Rebuild a full show object from the TVmaze /shows/{id} payload — used to rehydrate
 // a lean favorite (only { id, name } is persisted; everything else is fetched by id).
 function showFromTvmaze(d) {
@@ -307,21 +283,6 @@ function showFromTmdb(d, id) {
   };
 }
 
-// Which upstream sources a channel selection needs: "US" (national broadcast/cable),
-// "web" (streaming), "FR" (French via TMDB), and one entry per followed country code.
-// An empty selection needs nothing → we fetch nothing and show nothing.
-function neededSources(followed) {
-  const sources = new Set();
-  for (const name of followed) {
-    if (STREAMING_ALLOWLIST.test(name)) { sources.add("web"); continue; }
-    if (FR_NETWORKS.includes(name)) { sources.add("FR"); continue; }
-    let country = null;
-    for (const cc in COUNTRY_NETWORKS) if (COUNTRY_NETWORKS[cc].includes(name)) { country = cc; break; }
-    sources.add(country || "US"); // unrecognised name → assume a US network (broad catch-all)
-  }
-  return sources;
-}
-
 // Fetch (or read from cache) one source's shows for one day. Errors → [] and NOT cached,
 // so a transient failure retries; a successful-but-empty day IS cached to avoid refetching.
 async function fetchSourceDay(src, dateStr) {
@@ -329,21 +290,7 @@ async function fetchSourceDay(src, dateStr) {
   if (cached) return cached;
   let data;
   try {
-    if (src === "US") {
-      const raw = await throttledJson(`${API}/schedule?country=US&date=${dateStr}`);
-      data = raw.filter((it) => it.show && it.show.network).map((it) => trimItem(it, it.show, false));
-    } else if (src === "web") {
-      const raw = await throttledJson(`${API}/schedule/web?date=${dateStr}`);
-      data = raw
-        .map((it) => ({ it, s: it._embedded && it._embedded.show }))
-        .filter(({ s }) => { const chan = s && (s.webChannel || s.network); return chan && STREAMING_ALLOWLIST.test(chan.name); })
-        .map(({ it, s }) => trimItem(it, s, true));
-    } else { // international country code: keep flagship channels only
-      const raw = await throttledJson(`${API}/schedule?country=${src}&date=${dateStr}`);
-      data = raw
-        .filter((it) => it.show && it.show.network && FLAGSHIP_RE.test(it.show.network.name))
-        .map((it) => trimItem(it, it.show, false));
-    }
+    data = await fetchScheduleDay(throttledJson, src, dateStr);
   } catch {
     return []; // don't cache errors — retry on the next pass
   }
@@ -366,31 +313,6 @@ const tmdb = (path) =>
   fetch(`https://api.themoviedb.org/3/${path}${path.includes("?") ? "&" : "?"}api_key=${TMDB_KEY}`)
     .then((r) => { if (!r.ok) throw new Error(`TMDB ${r.status}`); return r.json(); });
 
-function tmdbChannel(networks) {
-  for (const n of networks || []) if (TMDB_CHANNEL_NAMES[n.id]) return TMDB_CHANNEL_NAMES[n.id];
-  return "";
-}
-
-function makeFrItem(show, season, ep) {
-  return {
-    id: ep.id,
-    season,
-    number: ep.episode_number,
-    airdate: ep.air_date,
-    show: {
-      id: "tmdb:" + show.id,
-      name: show.name,
-      genres: (show.genres || []).map((g) => g.name),
-      channel: { name: tmdbChannel(show.networks), streaming: false },
-      image: show.poster_path
-        ? { medium: TMDB_IMG + show.poster_path, original: TMDB_IMG_ORIG + show.poster_path }
-        : null,
-      summary: show.overview ? `<p>${escapeHtml(show.overview)}</p>` : "",
-      premiered: show.first_air_date || null,
-    },
-  };
-}
-
 // One TMDB pass per month (Canal+ / ARTE episodes airing in the window).
 async function fetchFrMonth(firstOfMonth) {
   if (!TMDB_KEY) return []; // no key configured → skip French channels
@@ -401,22 +323,9 @@ async function fetchFrMonth(firstOfMonth) {
   const cached = readTmdbCache(monthKey, lastDay);
   if (cached) return cached;
 
-  const items = [];
+  let items = [];
   try {
-    const disc = await tmdb(
-      `discover/tv?with_networks=${TMDB_NETWORKS}&air_date.gte=${gte}&air_date.lte=${lastDay}&sort_by=popularity.desc`
-    );
-    for (const r of disc.results || []) {
-      const show = await tmdb(`tv/${r.id}`);
-      const marker = show.next_episode_to_air || show.last_episode_to_air;
-      if (!marker) continue;
-      let season;
-      try { season = await tmdb(`tv/${show.id}/season/${marker.season_number}`); }
-      catch { continue; }
-      (season.episodes || [])
-        .filter((e) => e.air_date && e.air_date >= gte && e.air_date <= lastDay)
-        .forEach((e) => items.push(makeFrItem(show, marker.season_number, e)));
-    }
+    items = await window.FeedCore.fetchFrMonth(tmdb, firstOfMonth);
   } catch (err) {
     console.error("TMDB FR:", err);
   }
@@ -471,6 +380,27 @@ function normalizeFavorites() {
   if (changed) saveFavorites();
 }
 
+/* ---------- Nightly snapshot (data/schedule/, built by tools/fetch-schedule.js) ----------
+   Same-origin JSON, one file per channel and month. When it covers the followed channels,
+   no TVmaze call is made; otherwise (stale, missing locally, rare channel) the app falls
+   back to live fetching for the sources it does not cover. */
+let snapshotIndex = null;
+function loadSnapshotIndex() {
+  if (!snapshotIndex) {
+    snapshotIndex = fetch(APP_BASE + "data/schedule/index.json", { cache: "no-cache" })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
+  }
+  return snapshotIndex;
+}
+async function loadSnapshotFiles(monthKey, slugs) {
+  const lists = await Promise.all(slugs.map((slug) =>
+    fetch(`${APP_BASE}data/schedule/${monthKey}/${slug}.json`)
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null)));
+  return lists.every(Array.isArray) ? lists.flat() : null; // incomplete → go live instead
+}
+
 // Load the next month's data, appending a block and rendering it progressively.
 async function loadNextMonth() {
   if (state.loading || state.reachedEnd || state.blocks.length >= MAX_MONTHS) return;
@@ -491,11 +421,20 @@ async function loadNextMonth() {
   state.blocks.push(block);
   block.el = createBlockEl(block);
 
-  const days = monthDays(month);
+  // Channels covered by the nightly snapshot are read from it; the rest stays live.
+  let live = sources;
+  const monthKey = ymd(month).slice(0, 7);
+  const plan = planMonth(state.followed, await loadSnapshotIndex(), monthKey, Date.now());
+  if (plan.files.length) {
+    const snap = await loadSnapshotFiles(monthKey, plan.files);
+    if (snap) { block.items.push(...snap); live = plan.live; renderBlock(block); }
+  }
+
+  const days = [...live].some((s) => s !== "FR") ? monthDays(month) : [];
   let lastRender = 0;
   for (const day of days) {
     try {
-      block.items.push(...await fetchDay(day, sources));
+      block.items.push(...await fetchDay(day, live));
     } catch (err) {
       console.error(err);
       continue;
@@ -503,7 +442,7 @@ async function loadNextMonth() {
     const now = Date.now();
     if (now - lastRender > 250) { lastRender = now; rebuildFilterOptions(); renderBlock(block); }
   }
-  if (sources.has("FR")) block.items.push(...(await fetchFrMonth(month)));
+  if (live.has("FR")) block.items.push(...(await fetchFrMonth(month)));
   for (const s of sources) state.loadedSources.add(s);
   rebuildFilterOptions();
   renderBlock(block);

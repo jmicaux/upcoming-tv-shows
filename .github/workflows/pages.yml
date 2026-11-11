@@ -1,0 +1,58 @@
+name: Deploy site with schedule snapshot
+
+# Builds the site every night and on every push to main: fetches the schedule once
+# (tools/fetch-schedule.js), bakes the upcoming shows into the channel pages
+# (tools/make-pages.js --data) and deploys to GitHub Pages. Visitors and crawlers then
+# read same-origin JSON and HTML instead of calling TVmaze themselves.
+# Requires Settings → Pages → Source: "GitHub Actions". Optional secret TMDB_KEY adds the
+# French channels to the snapshot.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "15 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch the schedule snapshot
+        env:
+          TMDB_KEY: ${{ secrets.TMDB_KEY }}
+        # A failed source is simply left out of the snapshot (the app fetches it live).
+        run: node tools/fetch-schedule.js data/schedule 3
+
+      - name: Bake the upcoming shows into the channel pages
+        run: node tools/make-pages.js --data data/schedule
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

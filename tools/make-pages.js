@@ -5,13 +5,16 @@
 //   sitemap.xml             → the feed and the channel pages, for search engines
 // Run after editing index.html or the channel lists in networks.js:
 //   node tools/make-pages.js
+// With a nightly snapshot (tools/fetch-schedule.js), channel pages also get the upcoming
+// shows as plain HTML, readable without JavaScript (the app replaces it once it runs):
+//   node tools/make-pages.js --data data/schedule
 const fs = require("node:fs");
 const path = require("node:path");
 const { SEED_NETWORKS, networkSlug, networkMeta } = require("../networks.js");
 const root = path.join(__dirname, "..");
 
 const NOTE = "<!-- Generated from index.html by tools/make-pages.js — do not edit by hand. -->";
-const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 function siteUrl(indexHtml) {
   const m = indexHtml.match(/<link rel="canonical" href="([^"]+)">/);
@@ -32,7 +35,33 @@ function derive(indexHtml, { base, noindex }) {
   return html.replace(/(<meta charset="UTF-8">)/, "$1" + extra);
 }
 
-function networkPage(indexHtml, name) {
+const MAX_PER_MONTH = 60;
+const fmtDay = (d) => new Date(d + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+const fmtMonth = (k) => new Date(k + "-01T00:00:00Z").toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+
+// Static list of a channel's upcoming shows (first episode of each show per month).
+function prerender(name, data) {
+  if (!data || !data.index.channels[name]) return "";
+  const slug = data.index.channels[name];
+  const months = [];
+  for (const monthKey of data.index.months) {
+    const items = data.read(monthKey, slug).filter((it) => it.airdate && it.airdate >= data.today);
+    const firstByShow = new Map();
+    for (const it of items.sort((a, b) => a.airdate.localeCompare(b.airdate))) {
+      if (!firstByShow.has(it.show.id)) firstByShow.set(it.show.id, it);
+    }
+    const rows = [...firstByShow.values()].slice(0, MAX_PER_MONTH).map((it) => {
+      const ep = it.season != null && it.number != null ? ` · S${it.season}E${it.number}` : "";
+      const tag = it.number === 1 ? (it.season === 1 ? " — series premiere" : " — season premiere") : "";
+      return `<li><time datetime="${esc(it.airdate)}">${esc(fmtDay(it.airdate))}</time> · <strong>${esc(it.show.name)}</strong>${esc(ep)}${esc(tag)}</li>`;
+    });
+    if (rows.length) months.push(`<h3>${esc(fmtMonth(monthKey))}</h3>\n      <ul>\n        ${rows.join("\n        ")}\n      </ul>`);
+  }
+  const body = months.length ? months.join("\n      ") : "<p>No upcoming episodes listed yet.</p>";
+  return `\n    <section class="prerender" aria-labelledby="prerender-title">\n      <h2 id="prerender-title">Upcoming on ${esc(name)}</h2>\n      ${body}\n    </section>\n  `;
+}
+
+function networkPage(indexHtml, name, data) {
   const m = networkMeta(name);
   const json = (v) => JSON.stringify(v).slice(1, -1); // string body, safe inside "…" in JSON-LD
   let html = derive(indexHtml, { base: "../" });
@@ -46,11 +75,13 @@ function networkPage(indexHtml, name) {
   html = swap(html, /(<meta name="twitter:description" content=")[^"]*(">)/, esc(m.twitterDescription));
   // Structured data: same description as the page, plus its own address.
   html = swap(html, /("description": ")[^"]*(",)/, json(m.description) + '",\n    "url": "' + json(m.url));
+  const list = prerender(name, data);
+  if (list) html = swap(html, /(<main id="grid" class="grid">)(<\/main>)/, list);
   return html;
 }
 
 // { relativePath: content } for every generated file.
-function build(indexHtml) {
+function build(indexHtml, data) {
   const files = {
     "watchlist.html": derive(indexHtml, { noindex: true }),
     "404.html": derive(indexHtml, { base: new URL(siteUrl(indexHtml)).pathname, noindex: true }),
@@ -60,7 +91,7 @@ function build(indexHtml) {
     const slug = networkSlug(name);
     if (seen.has(slug)) throw new Error(`slug collision: "${seen.get(slug)}" and "${name}" → ${slug}`);
     seen.set(slug, name);
-    files[`network/${slug}.html`] = networkPage(indexHtml, name);
+    files[`network/${slug}.html`] = networkPage(indexHtml, name, data);
   }
   const site = siteUrl(indexHtml);
   const urls = [site, ...[...seen.keys()].map((s) => site + "network/" + s)];
@@ -73,8 +104,21 @@ function build(indexHtml) {
 }
 module.exports = { build };
 
+// Snapshot reader for build(): { index, read(monthKey, slug), today }.
+function loadData(dir) {
+  const index = JSON.parse(fs.readFileSync(path.join(dir, "index.json"), "utf8"));
+  const read = (monthKey, slug) => {
+    try { return JSON.parse(fs.readFileSync(path.join(dir, monthKey, slug + ".json"), "utf8")); }
+    catch { return []; }
+  };
+  return { index, read, today: new Date().toISOString().slice(0, 10) };
+}
+module.exports.loadData = loadData;
+
 if (require.main === module) {
-  const files = build(fs.readFileSync(path.join(root, "index.html"), "utf8"));
+  const i = process.argv.indexOf("--data");
+  const data = i > -1 ? loadData(path.resolve(process.argv[i + 1])) : null;
+  const files = build(fs.readFileSync(path.join(root, "index.html"), "utf8"), data);
   const dir = path.join(root, "network");
   fs.rmSync(dir, { recursive: true, force: true }); // drop pages of removed channels
   fs.mkdirSync(dir);

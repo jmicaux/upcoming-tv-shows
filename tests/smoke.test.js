@@ -15,15 +15,15 @@ test("index.html wires accounts", () => {
   assert.match(html, /id="accountBtn"/);
   assert.match(html, /script-src 'self' https:\/\/cloud\.umami\.is https:\/\/cdn\.jsdelivr\.net/);
   assert.match(html, /supabase-js@2\.\d+\.\d+\/dist\/umd\/supabase\.js" integrity="sha384-/);
-  assert.match(html, /sync-core\.js\?v=1\.26\.0/);
-  assert.match(html, /auth\.js\?v=1\.26\.0/);
+  assert.match(html, /sync-core\.js\?v=1\.27\.0/);
+  assert.match(html, /auth\.js\?v=1\.27\.0/);
 });
 
 test("release 1.26.0 is consistent", () => {
-  assert.match(read("app.js"), /const APP_VERSION = "1\.26\.0"/);
-  assert.match(read("index.html"), /styles\.css\?v=1\.26\.0/);
-  assert.match(read("README.md"), /version-1\.26\.0-blue/);
-  assert.match(read("CHANGELOG.md"), /^## 1\.26\.0 — \d{4}-\d{2}-\d{2}/m);
+  assert.match(read("app.js"), /const APP_VERSION = "1\.27\.0"/);
+  assert.match(read("index.html"), /styles\.css\?v=1\.27\.0/);
+  assert.match(read("README.md"), /version-1\.27\.0-blue/);
+  assert.match(read("CHANGELOG.md"), /^## 1\.27\.0 — \d{4}-\d{2}-\d{2}/m);
 });
 
 test("privacy page exists and exposes no personal email", () => {

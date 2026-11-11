@@ -33,9 +33,9 @@ test("privacy page exists and exposes no personal email", () => {
   assert.match(html, /delete/i);
 });
 
-test("applyPrefs respects a #network= deep link and refetches new sources", () => {
+test("applyPrefs respects a network/<slug> deep link and refetches new sources", () => {
   const fn = read("app.js").match(/function applyPrefs[\s\S]*?\n}\n/)[0];
-  assert.match(fn, /parseHash\(\)\.network/);
+  assert.match(fn, /parseRoute\(\)\.network/);
   assert.match(fn, /neededSources\(state\.followed\)/);
   assert.match(fn, /try \{[\s\S]*finally \{\s*applyingPrefs = false/);
 });
@@ -62,14 +62,32 @@ test("README dev server port matches the documented redirect URL", () => {
   assert.doesNotMatch(md, /localhost:8080/);
 });
 
-test("watchlist.html is index.html + noindex (run node tools/make-watchlist.js)", () => {
-  const { build } = require("../tools/make-watchlist.js");
-  assert.equal(read("watchlist.html"), build(read("index.html")));
+test("generated pages match index.html (run node tools/make-pages.js)", () => {
+  const { build } = require("../tools/make-pages.js");
+  const files = build(read("index.html"));
+  for (const [rel, html] of Object.entries(files)) assert.equal(read(rel), html, rel + " is stale");
+  const onDisk = fs.readdirSync(__dirname + "/../network").map((f) => "network/" + f).sort();
+  assert.deepEqual(onDisk, Object.keys(files).filter((f) => f.startsWith("network/")).sort());
+  assert.match(files["network/netflix.html"], /<title>Upcoming Netflix shows/);
+  assert.match(files["network/netflix.html"], /<base href="\.\.\/">/);
+  assert.match(files["network/netflix.html"], /canonical" href="https:\/\/jmicaux\.github\.io\/upcoming-tv-shows\/network\/netflix"/);
+  assert.doesNotMatch(files["network/netflix.html"], /noindex/);
+  assert.match(files["watchlist.html"], /noindex/);
+  assert.match(files["404.html"], /<base href="\/upcoming-tv-shows\/">/);
+});
+
+test("network slugs round-trip", () => {
+  const N = require("../networks.js");
+  for (const n of N.SEED_NETWORKS) assert.equal(N.networkFromSegment(N.networkSegment(n)), n);
+  assert.equal(N.networkSegment("Disney+"), "disney-plus");
+  assert.equal(N.networkSegment("Some Rare Channel"), "Some%20Rare%20Channel");
+  assert.equal(N.networkFromSegment("Some%20Rare%20Channel"), "Some Rare Channel");
 });
 
 test("routing: clean /watchlist path, no '#' left behind", () => {
   const src = read("app.js");
-  assert.match(src, /const APP_BASE = /);
+  assert.match(src, /const APP_BASE = new URL\("\.", document\.baseURI\)\.pathname/);
+  assert.match(src, /navigate\(networkUrl\(name\)\)/);
   assert.match(src, /addEventListener\("popstate", applyRoute\)/);
   assert.doesNotMatch(src, /location\.hash = /);
   assert.match(read("auth.js"), /const redirectTo = location\.origin \+ APP_BASE/);

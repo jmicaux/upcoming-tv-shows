@@ -13,6 +13,13 @@ All notable changes to Upcoming TV Shows are documented here. This project follo
 - The Watchlist has a clean address, `…/upcoming-tv-shows/watchlist` (was `#watchlist`; old
   links still work). Back/Forward move between the feed and the Watchlist, and closing a
   channel filter no longer leaves a bare `#` in the address.
+- **Channel links have clean addresses too**: `…/upcoming-tv-shows/network/netflix` (was
+  `#network=Netflix`; old links still work). Each major channel gets its own indexable
+  page with its own title and description, listed in `sitemap.xml`. Rarer channels use
+  `network/<name>` and are served by `404.html`.
+- The tab title follows the view (feed, Watchlist, channel).
+- Channel lists moved to `networks.js`; `node tools/make-pages.js` regenerates
+  `watchlist.html`, `network/*.html`, `404.html` and `sitemap.xml` from `index.html`.
 
 ### Fixed
 - **Sync could replace your favorites instead of merging them.** A tab that had not

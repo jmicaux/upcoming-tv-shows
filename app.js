@@ -11,49 +11,11 @@ const REQUEST_GAP_MS = 550;               // throttle: ~18 req / 10s, under TVMa
 const FOLLOW_KEY = "tv:followedNetworks";
 const KNOWN_KEY = "tv:knownNetworks";
 
-// Seed list so the major US channels are pickable before any month is browsed.
-// Flagship international broadcasters kept from each country's TVmaze schedule.
-// (We fetch the whole country schedule but keep only these networks — "flagship only".)
-const UK_NETWORKS = [
-  "BBC One", "BBC Two", "BBC Three", "BBC Four",
-  "ITV1", "ITV2", "Channel 4", "5", "Sky Atlantic", "Sky Max", "E4", // TVmaze labels Channel 5 as "5"
-];
-const AU_NETWORKS = ["ABC", "Seven Network", "Nine Network", "Network 10", "SBS"];
-// Nordic flagship channels, per country (incl. the messy real TVmaze name variants).
-const SE_NETWORKS = ["SVT1", "SVT2", "TV4"];
-const NO_NETWORKS = ["NRK1", "NRK2", "TV 2", "TV 2 Direkte"];
-const DK_NETWORKS = ["DR1", "DR2", "TV2"];          // Denmark's channel has no space on TVmaze
-const FI_NETWORKS = ["Yle TV1", "Yle TV2", "MTV3"];
-const IS_NETWORKS = ["RÚV", "Stöð 2"];
-// country code -> flagship channels. A country's schedule is only fetched when the user
-// follows at least one of its channels, so API calls stay proportional to the selection.
-const COUNTRY_NETWORKS = {
-  GB: UK_NETWORKS, AU: AU_NETWORKS,
-  SE: SE_NETWORKS, NO: NO_NETWORKS, DK: DK_NETWORKS, FI: FI_NETWORKS, IS: IS_NETWORKS,
-};
-const NORDIC_NETWORKS = [...SE_NETWORKS, ...NO_NETWORKS, ...DK_NETWORKS, ...FI_NETWORKS, ...IS_NETWORKS];
-// Keep only flagship broadcasters from those schedules. Prefix-anchored (not fully anchored)
-// so messy real-world variants still match: "TV 2 Direkte", "SVT2", "ABC News", "5STAR"…
-const FLAGSHIP_RE = /^(BBC (One|Two|Three|Four)|ITV\d|Channel 4|E4|5|Sky (Atlantic|Max)|ABC|Seven Network|Nine Network|Network 10|SBS|SVT\d?|TV4|NRK\d?|TV ?2|DR\d?|Yle TV\d?|MTV3|RÚV|Stöð 2)/i;
-
-const US_BROADCAST = [
-  "ABC", "CBS", "NBC", "FOX", "The CW", "PBS",
-  "AMC", "FX", "FXX", "USA Network", "TNT", "TBS", "HBO", "Showtime", "Starz",
-  "A&E", "History", "Bravo", "E!", "Syfy", "Comedy Central", "MTV",
-  "Cartoon Network", "Adult Swim", "Nickelodeon", "Disney Channel", "Freeform",
-  "TLC", "HGTV", "Food Network", "Discovery Channel", "National Geographic",
-  "Lifetime", "Hallmark Channel", "Paramount Network", "BET", "truTV",
-];
-const STREAMING_NETWORKS = [
-  "Netflix", "Prime Video", "Hulu", "Disney+", "Max", "Apple TV",
-  "Peacock", "Paramount+", "AMC+", "Shudder", "ESPN+",
-];
-const FR_NETWORKS = ["Canal+", "ARTE", "TF1", "M6", "France 2", "France 3"];
-
-const SEED_NETWORKS = [
-  ...US_BROADCAST, ...STREAMING_NETWORKS, ...FR_NETWORKS,
-  ...UK_NETWORKS, ...AU_NETWORKS, ...NORDIC_NETWORKS,
-];
+// Channel lists and URL slugs live in networks.js (shared with tools/make-pages.js).
+const {
+  UK_NETWORKS, AU_NETWORKS, SE_NETWORKS, NO_NETWORKS, DK_NETWORKS, FI_NETWORKS, IS_NETWORKS, COUNTRY_NETWORKS, NORDIC_NETWORKS, FLAGSHIP_RE, US_BROADCAST, STREAMING_NETWORKS, FR_NETWORKS, SEED_NETWORKS,
+  networkSegment, networkFromSegment,
+} = window.UpcomingNetworks;
 
 // Grouped view for the channel picker (label + the channels that belong to each group),
 // so the user can select/clear a whole country at once.
@@ -785,7 +747,7 @@ function toggleGroup(names, on) {
   }
   saveSet(FOLLOW_KEY, state.followed); emitPrefsChanged();
   saveSet(KNOWN_KEY, state.known);
-  dropNetworkHash();
+  dropNetworkRoute();
   updateNetworkButton();
   updateActiveNetwork();
   renderNetworkList();
@@ -807,7 +769,7 @@ function toggleNetwork(name, on) {
   if (on) state.followed.add(name);
   else state.followed.delete(name);
   saveSet(FOLLOW_KEY, state.followed); emitPrefsChanged();
-  dropNetworkHash();       // user is hand-editing the selection now
+  dropNetworkRoute();       // user is hand-editing the selection now
   updateNetworkButton();
   updateActiveNetwork();
   // Following a channel from a not-yet-fetched source needs a reload; otherwise a
@@ -822,7 +784,7 @@ function toggleNetwork(name, on) {
 function filterToNetwork(name) {
   state.known.add(name);
   saveSet(KNOWN_KEY, state.known);
-  navigate(APP_BASE + "#network=" + encodeURIComponent(name));
+  navigate(networkUrl(name));
   toast(`Showing ${name} only`);
 }
 
@@ -959,27 +921,43 @@ function toggleFav(id, showObj) {
   });
 }
 
-// URL routing (bookmarkable): "<base>watchlist" for the Watchlist (served by
-// watchlist.html on GitHub Pages), "<base>#network=<name>" for a one-channel feed.
-const WATCHLIST_PATH_RE = /watchlist(\.html)?\/?$/;
-const APP_BASE = location.pathname.replace(WATCHLIST_PATH_RE, "").replace(/index\.html$/, "");
-function parseHash() {
-  const raw = location.hash.replace(/^#/, "");
-  if (raw.startsWith("network=")) return { view: "month", network: decodeURIComponent(raw.slice(8)) };
-  return { view: WATCHLIST_PATH_RE.test(location.pathname) ? "watchlist" : "month", network: null };
+// URL routing (bookmarkable, served by generated pages on GitHub Pages):
+//   <base>                  the month feed
+//   <base>watchlist         the Watchlist (watchlist.html)
+//   <base>network/<slug>    a one-channel feed (network/<slug>.html, or 404.html for rare channels)
+// Generated pages carry <base href> pointing at the app root, so this works at any depth.
+const APP_BASE = new URL(".", document.baseURI).pathname;
+function routePath() {
+  const p = location.pathname;
+  return p.startsWith(APP_BASE) ? p.slice(APP_BASE.length) : p.replace(/^\//, "");
 }
+function parseRoute() {
+  const rel = routePath().replace(/\/$/, "");
+  const m = rel.match(/^network\/([^/]+)$/);
+  if (m) return { view: "month", network: networkFromSegment(m[1]) };
+  return { view: /^watchlist(\.html)?$/.test(rel) ? "watchlist" : "month", network: null };
+}
+const networkUrl = (name) => APP_BASE + "network/" + networkSegment(name);
 // Navigate inside the app without a reload, then render the new route.
 function navigate(url) {
   if (url !== location.pathname + location.hash) history.pushState(null, "", url);
   applyRoute();
 }
-// Old "#watchlist" bookmarks → the clean /watchlist address.
+// Old "#watchlist" / "#network=<name>" bookmarks → the clean addresses.
 if (location.hash === "#watchlist") history.replaceState(null, "", APP_BASE + "watchlist");
+else if (location.hash.startsWith("#network=")) {
+  let name = location.hash.slice(9);
+  try { name = decodeURIComponent(name); } catch { /* keep raw */ }
+  history.replaceState(null, "", networkUrl(name));
+}
 
 // A network in the URL filters the feed transiently — it reflects the link, it does not
 // overwrite the user's saved channel selection (that returns on a plain reload).
 function applyRoute() {
-  const { view, network } = parseHash();
+  const { view, network } = parseRoute();
+  // One title per view (WCAG 2.4.2), matching the generated page of that address.
+  document.title = network ? `Upcoming ${network} shows and premieres — Upcoming TV Shows`
+    : view === "watchlist" ? "Watchlist — Upcoming TV Shows" : "Upcoming TV Shows";
   state.followed = network ? new Set([network]) : new Set(loadFollowed());
   if (network) state.known.add(network);
   updateNetworkButton();
@@ -990,7 +968,7 @@ function applyRoute() {
 
 // The removable "Netflix ✕" pill shown while a transient network filter is active.
 function updateActiveNetwork() {
-  const { network } = parseHash();
+  const { network } = parseRoute();
   if (network) {
     el.clearNetwork.hidden = false;
     el.clearNetwork.innerHTML = `${escapeHtml(network)} <span aria-hidden="true">✕</span>`;
@@ -1000,10 +978,10 @@ function updateActiveNetwork() {
   }
 }
 
-// Silently drop a "#network=" hash (used when the user edits the selection by hand, so the
-// URL doesn't misrepresent it) without firing a route change.
-function dropNetworkHash() {
-  if (location.hash.startsWith("#network=")) history.replaceState(null, "", location.pathname + location.search);
+// Silently leave a network/<slug> address (used when the user edits the selection by hand,
+// so the URL doesn't misrepresent it) without firing a route change.
+function dropNetworkRoute() {
+  if (parseRoute().network) history.replaceState(null, "", APP_BASE);
 }
 
 function setView(v) {
@@ -1573,9 +1551,9 @@ function applyPrefs(data, { silent = false } = {}) {
     saveSet(KNOWN_KEY, state.known);
   }
   if (Array.isArray(data.followedNetworks)) {
-    // A shared "#network=" link filters the feed transiently; keep it on screen and only
+    // A shared network/<slug> link filters the feed transiently; keep it on screen and only
     // save the selection for when the link is cleared.
-    if (parseHash().network) saveSet(FOLLOW_KEY, new Set(data.followedNetworks));
+    if (parseRoute().network) saveSet(FOLLOW_KEY, new Set(data.followedNetworks));
     else { state.followed = new Set(data.followedNetworks); saveSet(FOLLOW_KEY, state.followed); }
     emitPrefsChanged();
     data.followedNetworks.forEach((n) => state.known.add(n));
@@ -1724,7 +1702,7 @@ el.networkSearch.addEventListener("input", (e) => { state.networkSearch = e.targ
 el.networkClear.addEventListener("click", () => {
   state.followed.clear();
   saveSet(FOLLOW_KEY, state.followed); emitPrefsChanged();
-  dropNetworkHash();
+  dropNetworkRoute();
   updateActiveNetwork();
   renderNetworkList();
   renderAllBlocks();
@@ -1807,7 +1785,7 @@ function resetFilters() {
   collapseSearch();
   // If a transient network filter is active, exit it and restore the saved selection —
   // applyRoute() re-renders with the search/genre/premieres we just reset above.
-  if (location.hash.startsWith("#network=")) { navigate(APP_BASE); return; }
+  if (parseRoute().network) { navigate(APP_BASE); return; }
   renderAllBlocks();
 }
 
@@ -1871,4 +1849,4 @@ updateViewButton();
 renderNetworkList(); // show the network list + pre-selection immediately (from the seed)
 renderGenreList();   // initialise the (empty) genre picker; fills in as months load
 scrollObserver.observe(sentinelEl);
-applyRoute(); // honor /watchlist or "#network=…" in a bookmarked URL
+applyRoute(); // honor /watchlist or /network/<slug> in a bookmarked URL

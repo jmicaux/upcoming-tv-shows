@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<!-- Generated from index.html by tools/make-pages.js — do not edit by hand. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <base href="../">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cloud.umami.is https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:; base-uri 'self'; form-action 'self'; object-src 'none'">
+  <title>Upcoming A&amp;E shows and premieres — Upcoming TV Shows</title>
+  <meta name="description" content="New and returning A&amp;E series, month by month: premiere dates, seasons and episodes. Free, no account needed.">
+
+  <!-- Theme -->
+  <meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23e50914'/%3E%3Ctext x='50' y='68' font-size='50' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold' letter-spacing='-2'%3EUp%3C/text%3E%3C/svg%3E">
+
+  <!-- Social sharing -->
+  <meta property="og:url" content="https://jmicaux.github.io/upcoming-tv-shows/network/a-and-e">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Upcoming TV Shows">
+  <meta property="og:title" content="Upcoming A&amp;E shows and premieres — Upcoming TV Shows">
+  <meta property="og:description" content="New and returning A&amp;E series, month by month: premiere dates, seasons and episodes. Free, no account needed.">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:image" content="https://jmicaux.github.io/upcoming-tv-shows/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Upcoming TV Shows — upcoming TV & streaming premieres, month by month">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Upcoming A&amp;E shows and premieres — Upcoming TV Shows">
+  <meta name="twitter:description" content="New and returning A&amp;E series, month by month: premiere dates, seasons and episodes. Free, no account needed.">
+  <meta name="twitter:image" content="https://jmicaux.github.io/upcoming-tv-shows/og-image.png">
+
+  <!-- Canonical -->
+  <link rel="canonical" href="https://jmicaux.github.io/upcoming-tv-shows/network/a-and-e">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Upcoming TV Shows",
+    "description": "Upcoming TV and streaming premieres, month by month.",
+    "applicationCategory": "EntertainmentApplication",
+    "operatingSystem": "Any",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+
+  <link rel="stylesheet" href="styles.css?v=1.26.0">
+
+  <!-- Umami analytics (privacy-friendly, cookieless) -->
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="c762aadf-9152-4e82-ab9a-cd19552819b6"></script>
+</head>
+<body>
+  <noscript>
+    <p style="padding:1rem;text-align:center">Upcoming TV Shows needs JavaScript to load the upcoming TV and streaming schedule.</p>
+  </noscript>
+  <header class="topbar">
+    <h1 class="brand">Upcoming TV Shows <span class="brand-ver" id="appVersion"></span></h1>
+    <div class="actions">
+      <div class="search" id="search">
+        <input type="search" id="searchInput" class="search-input" placeholder="Search shows…" aria-label="Search shows" autocomplete="off">
+        <button type="button" id="searchClear" class="search-clear" aria-label="Clear search" hidden>×</button>
+        <button type="button" id="searchToggle" class="icon-btn search-toggle" aria-label="Search shows" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+      </div>
+      <button id="viewBtn" class="view-btn"></button>
+      <button id="exportBtn" class="icon-btn" title="Export preferences" aria-label="Export preferences">⭳</button>
+      <button id="importBtn" class="icon-btn" title="Import preferences" aria-label="Import preferences">⭱</button>
+      <input id="importFile" type="file" accept="application/json" hidden>
+      <button id="accountBtn" class="icon-btn account-btn" title="Account" aria-label="Account" data-sync="idle" hidden>
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      </button>
+      <button id="settingsBtn" class="icon-btn" title="Settings" aria-label="Settings">⚙</button>
+      <button id="themeBtn" class="theme-btn" aria-label="Toggle theme"></button>
+    </div>
+  </header>
+
+  <section class="filters">
+    <div class="field dropdown" id="networkDropdown">
+      <span class="field-label">Networks</span>
+      <button type="button" id="networkBtn" class="dropdown-btn" aria-haspopup="true" aria-expanded="false">All <span id="networkBtnCount" class="pill"></span> ▾</button>
+      <div id="networkPanel" class="dropdown-panel" hidden>
+        <div class="dropdown-actions">
+          <input type="search" id="networkSearch" placeholder="Filter list…" aria-label="Filter channel list" autocomplete="off">
+          <button type="button" id="networkClear">Show all</button>
+        </div>
+        <div id="networkList" class="network-list"></div>
+      </div>
+    </div>
+    <div class="field dropdown" id="genreDropdown">
+      <span class="field-label">Genre</span>
+      <button type="button" id="genreBtn" class="dropdown-btn" aria-haspopup="true" aria-expanded="false">All <span id="genreBtnCount" class="pill"></span> ▾</button>
+      <div id="genrePanel" class="dropdown-panel" hidden>
+        <div class="dropdown-actions">
+          <input type="search" id="genreSearch" placeholder="Filter list…" aria-label="Filter genre list" autocomplete="off">
+          <button type="button" id="genreClear">Show all</button>
+        </div>
+        <div id="genreList" class="network-list"></div>
+      </div>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="premieresOnly" checked>
+      Premieres only
+    </label>
+    <label class="switch">
+      <input type="checkbox" id="hidePast">
+      Hide past
+    </label>
+    <button type="button" id="resetFilters" class="reset-btn">Reset filters</button>
+    <button type="button" id="clearNetwork" class="active-network" hidden></button>
+    <span id="resultCount" class="result-count" role="status" aria-live="polite"></span>
+  </section>
+
+  <main id="grid" class="grid"></main>
+
+  <div id="modal" class="modal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <button class="modal-nav prev" id="modalPrev" aria-label="Previous show" hidden>‹</button>
+    <article class="modal-card" role="dialog" aria-modal="true" tabindex="-1">
+      <button class="modal-close" data-close aria-label="Close">×</button>
+      <div id="modalBody"></div>
+    </article>
+    <button class="modal-nav next" id="modalNext" aria-label="Next show" hidden>›</button>
+  </div>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js" integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
+  <script defer src="supabase-config.js?v=1.26.0"></script>
+  <script defer src="sync-core.js?v=1.26.0"></script>
+  <script defer src="config.js"></script>
+  <script defer src="networks.js?v=1.26.0"></script>
+  <script defer src="app.js?v=1.26.0"></script>
+  <script defer src="auth.js?v=1.26.0"></script>
+</body>
+</html>

@@ -132,7 +132,8 @@ enough):
 tv-us-upcoming/
 ├── index.html          # markup: header, filters, grid, detail modal
 ├── styles.css          # theming (dark/light via data-theme), responsive grid
-├── app.js              # data fetching, caching, filtering, rendering
+├── app.js              # data fetching, caching, filtering, rendering, routing
+├── networks.js         # channel lists + URL slugs (shared with tools/make-pages.js)
 ├── auth.js             # optional account: Supabase sign-in + preference sync
 ├── sync-core.js        # merge rules + sync engine (pure, unit-tested)
 ├── supabase-config.js  # public Supabase URL + anon key (safe to commit)
@@ -142,8 +143,16 @@ tv-us-upcoming/
 ├── config.js           # your real key (git-ignored, create from the example)
 ├── presets/            # importable preferences snapshots (Export → Import)
 ├── tests/              # node --test unit tests (run in CI)
+├── tools/make-pages.js # regenerates the pages below from index.html
+├── watchlist.html      # generated: <site>/watchlist
+├── network/*.html      # generated: <site>/network/<slug>, one per major channel
+├── 404.html            # generated: any other address (rare channels)
+├── sitemap.xml         # generated: feed + channel pages
 └── README.md
 ```
+
+After editing `index.html` or `networks.js`, run `node tools/make-pages.js` (the tests
+fail if the generated pages are stale).
 
 No build step and no npm dependencies — everything runs in the browser. The only runtime
 dependency is a pinned `supabase-js` loaded from jsDelivr with Subresource Integrity.

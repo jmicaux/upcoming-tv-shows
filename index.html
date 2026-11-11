@@ -61,13 +61,13 @@
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </button>
       </div>
-      <button id="viewBtn" class="view-btn"></button>
-      <input id="importFile" type="file" accept="application/json" hidden>
+      <button id="viewBtn" class="view-btn">★ Watchlist</button>
+      <input id="importFile" type="file" accept="application/json" aria-label="Preferences file to import" hidden>
       <button id="accountBtn" class="icon-btn account-btn" title="Account" aria-label="Account" data-sync="idle" hidden>
         <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
       </button>
       <button id="settingsBtn" class="icon-btn" title="Settings" aria-label="Settings">⚙</button>
-      <button id="themeBtn" class="theme-btn" aria-label="Toggle theme"></button>
+      <button id="themeBtn" class="theme-btn" aria-label="Toggle theme">☾</button>
     </div>
   </header>
 
@@ -103,7 +103,7 @@
       Hide past
     </label>
     <button type="button" id="resetFilters" class="reset-btn">Reset filters</button>
-    <button type="button" id="clearNetwork" class="active-network" hidden></button>
+    <button type="button" id="clearNetwork" class="active-network" aria-label="Clear channel filter" hidden>Clear channel filter</button>
     <span id="resultCount" class="result-count" role="status" aria-live="polite"></span>
   </section>
 

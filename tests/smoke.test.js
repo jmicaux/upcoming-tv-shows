@@ -124,3 +124,15 @@ test("unknown addresses render a not-found view; noindex follows the view", () =
   assert.match(src, /const indexable = view === "month" && \(!network \|\| SEED_NETWORKS\.includes\(network\)\)/);
   assert.match(src, /if \(indexable && robots\) robots\.remove\(\)/);
 });
+
+test("index.html: no empty button, every form field labelled (WAVE errors)", () => {
+  const html = read("index.html");
+  assert.doesNotMatch(html, /<button[^>]*>\s*<\/button>/, "empty button");
+  for (const input of html.match(/<input\b[^>]*>/g)) {
+    const id = (input.match(/id="([^"]+)"/) || [])[1];
+    const labelled = /aria-label="[^"]+"|aria-labelledby=/.test(input) || (id && html.includes(`for="${id}"`)) ||
+      // wrapped in a <label>
+      new RegExp(`<label[^>]*>\\s*${input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`).test(html);
+    assert.ok(labelled, "unlabelled: " + input);
+  }
+});

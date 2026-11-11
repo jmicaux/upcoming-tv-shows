@@ -245,6 +245,9 @@ On every release, update the version in **three** places so browsers pick up fre
 The `?v=` query forces browsers to re-download the CSS/JS after a deploy instead of serving
 a stale cached copy.
 
+Then add a `CHANGELOG.md` entry and publish a GitHub release for the new tag, e.g.
+`gh release create v1.28.4 --target main --title "Upcoming TV Shows 1.28.4" --notes-file notes.md`.
+
 ## Quality
 
 This project follows a documented quality review process covering accessibility, security, performance and code quality.

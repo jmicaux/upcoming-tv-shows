@@ -1,10 +1,12 @@
 name: Supabase keep-alive
 
-# Free-tier Supabase projects pause after a week without activity. One tiny read a week
-# keeps the account sync available.
+# Free-tier Supabase projects pause after a week without activity. One tiny read on Monday
+# and Thursday keeps the account sync available, with a spare run if one fails.
+# Note: GitHub disables scheduled workflows after 60 days without a commit — re-enable it
+# in the Actions tab if that happens.
 on:
   schedule:
-    - cron: "0 6 * * 1"
+    - cron: "0 6 * * 1,4"
   workflow_dispatch:
 
 permissions:

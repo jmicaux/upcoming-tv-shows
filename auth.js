@@ -12,6 +12,10 @@
     auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true },
   });
   const redirectTo = location.origin + location.pathname;
+  const RETURN_HASH_KEY = "tv:authReturnHash";
+  function rememberRoute() {
+    try { sessionStorage.setItem(RETURN_HASH_KEY, location.hash); } catch (_) {}
+  }
   const SYNCED_KEYS = ["tv:followedNetworks", "tv:knownNetworks", "tv:favorites", "tv:watchOverrides", "tv:theme", SyncCore.MARKER_KEY];
 
   let user = null;          // { id, email } | null
@@ -69,8 +73,15 @@
 
   // After an OAuth / magic-link return, supabase-js exchanges ?code= for a session; then
   // drop the query so a reload does not retry it. The #hash route (e.g. #watchlist) is kept.
+  // The redirect URL is registered without a #hash, so the route the user was on (e.g.
+  // #watchlist) is saved before leaving and restored here.
   if (/[?&]code=/.test(location.search)) {
-    client.auth.getSession().finally(() => history.replaceState(null, "", location.pathname + location.hash));
+    let hash = location.hash;
+    try { hash = hash || sessionStorage.getItem(RETURN_HASH_KEY) || ""; sessionStorage.removeItem(RETURN_HASH_KEY); } catch (_) {}
+    client.auth.getSession().finally(() => {
+      history.replaceState(null, "", location.pathname + hash);
+      if (hash) window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
   }
 
   accountBtn.hidden = false;
@@ -156,6 +167,7 @@
   function wireSignedOut() {
     el.modalBody.querySelector("#googleBtn").addEventListener("click", async () => {
       setStatus("Redirecting to Google…");
+      rememberRoute();
       const { error } = await client.auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
       if (error) setStatus(errMsg(error), "error");
     });
@@ -166,6 +178,7 @@
       e.preventDefault();
       const email = el.modalBody.querySelector("#accountEmail").value.trim();
       setStatus("Sending…");
+      rememberRoute();
       const { error } = await client.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
       if (error) { setStatus(errMsg(error), "error"); return; }
       pendingEmail = email;

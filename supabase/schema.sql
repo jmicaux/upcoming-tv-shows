@@ -7,6 +7,10 @@ create table if not exists public.preferences (
   updated_at timestamptz not null default now()
 );
 
+-- Supabase grants every table to anon by default. Signed-out visitors never write here:
+-- keep only SELECT (RLS returns zero rows; the keep-alive workflow relies on it).
+revoke insert, update, delete, truncate, references, trigger on public.preferences from anon;
+
 -- Row Level Security: a signed-in user can only see and change their own row.
 alter table public.preferences enable row level security;
 
@@ -29,5 +33,5 @@ set search_path = ''
 as $$
   delete from auth.users where id = auth.uid();
 $$;
-revoke all on function public.delete_my_account() from public;
+revoke all on function public.delete_my_account() from public, anon;
 grant execute on function public.delete_my_account() to authenticated;

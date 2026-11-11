@@ -83,54 +83,20 @@ preview can enable Canal+ / Arte without shipping a key.
 
 ## Accounts (optional)
 
-Click 👤 in the header and **Continue with Google** or **Continue with GitHub**. From then on your followed channels,
+Click 👤 in the header (on mobile: **More → Account**) and **Continue with Google** or **Continue with GitHub**. From then on your followed channels,
 watchlist, watch redirects and theme are stored with your account and restored on any device
 you sign in from. Details:
 
 - Everything keeps working without an account; signing in is purely for sync.
-- The first time an account signs in on a device, local and account preferences are
-  **merged** so nothing is lost. After that the account wins, and changes are saved about a
-  second after you make them (and when you leave the page).
+- Preferences are **merged item by item**: each favorite, channel and setting keeps its
+  most recent change, whichever device made it, so nothing is lost or resurrected. Changes
+  are saved about a second after you make them (and when you leave the page).
 - Your **TMDB key is never synced** — it stays on the device where you typed it.
 - **Sign out** keeps your preferences on the device. **Delete account** removes the account
   and its stored preferences, with an option to clear the device too.
 - Email sign-in (magic link + 6-digit code) exists but is off until a custom email sender is
   configured (`EMAIL_LOGIN` in `supabase-config.js`).
 - What is stored and why: [privacy.html](https://jmicaux.github.io/upcoming-tv-shows/privacy.html).
-
-### Self-hosting with accounts
-
-The hosted preview has its own Supabase project. For your own deployment (free tier is
-enough):
-
-1. Create a project at [supabase.com](https://supabase.com) — pick an **EU region** if you
-   care about GDPR locality.
-2. **SQL editor** → run [`supabase/schema.sql`](supabase/schema.sql) (table, Row Level
-   Security policies, `delete_my_account()` function).
-3. **Authentication → URL configuration**: Site URL = your deployment
-   (e.g. `https://<you>.github.io/upcoming-tv-shows/`); add it and
-   `http://localhost:8000/` to Redirect URLs.
-4. **Google sign-in**: in [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-   create an *OAuth client ID* (Web application) with authorized redirect URI
-   `https://<project-ref>.supabase.co/auth/v1/callback`; paste the client ID and secret in
-   Supabase **Authentication → Providers → Google**. Keep Supabase's default automatic
-   identity linking so Google and email with the same address share one account. Only the
-   email/profile scopes are requested, so no Google app verification is needed.
-   **GitHub sign-in** (optional): GitHub → Settings → Developer settings → *OAuth Apps* →
-   New OAuth App, with the same callback URL
-   `https://<project-ref>.supabase.co/auth/v1/callback`; paste the client ID and a generated
-   secret in Supabase **Authentication → Providers → GitHub**. Same address on Google and
-   GitHub = same account (automatic identity linking).
-5. Copy **Project Settings → API** → Project URL and `anon` key into `supabase-config.js`
-   (these are public by design; never put the `service_role` key anywhere in the repo).
-6. Email sign-in (optional): Supabase's built-in sender only delivers to project members and
-   is rate-limited, so keep `EMAIL_LOGIN: false` until you configure **custom SMTP** on your
-   own domain (e.g. Resend). Then edit the *Magic Link* email template to include
-   `{{ .Token }}` so the 6-digit code appears, and flip `EMAIL_LOGIN` to `true`.
-7. Free-tier projects **pause after about a week without traffic**. The
-   [`keepalive.yml`](.github/workflows/keepalive.yml) workflow pings the API twice a week; if the
-   project still gets paused, restore it from the Supabase dashboard. While paused, the app
-   shows "Sync unavailable" and keeps working locally.
 
 ## Project structure
 

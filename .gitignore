@@ -39,3 +39,6 @@ docs/superpowers/
 # Personal preference exports
 /presets/
 /audits/
+
+# Maintainer-only notes (Supabase / OAuth setup), kept local
+/docs/private/

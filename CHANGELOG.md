@@ -48,6 +48,9 @@ All notable changes to Upcoming TV Shows are documented here. This project follo
   page has an end, so the footer is reachable, and focus moves to the newly loaded month.
 - **"Buy me a coffee"** link in the footer, the About page and the mobile "More" sheet
   (which also links to About).
+- **Richer "Page not found"**: the address asked for, next steps (upcoming shows,
+  Watchlist, search), popular channel chips and a link to report a broken link; the same
+  content is in the static 404.html for visitors without JavaScript.
 - **Stronger keyboard focus**: a 3 px two-tone ring (dark on light theme, white on dark
   theme, with a contrasting halo; white between black edges on posters) instead of a thin
   red outline that got lost on the red accent and images.

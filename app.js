@@ -1103,14 +1103,16 @@ if (tabbar) {
 
 function renderNotFound() {
   el.resultCount.textContent = "";
-  el.grid.innerHTML = `<div class="empty not-found">
-      <h1>Page not found</h1>
-      <p>This address does not match any page of Upcoming TV Shows.</p>
-      <p><a href="${escapeAttr(APP_BASE)}">See upcoming shows</a></p>
-    </div>`;
-  const link = el.grid.querySelector("a");
-  link.addEventListener("click", (e) => { e.preventDefault(); navigate(APP_BASE); });
-  link.focus();
+  el.grid.innerHTML = window.UpcomingNetworks.notFoundHtml({ base: APP_BASE, path: location.pathname, search: true });
+  // Internal links navigate in place; the search button opens the header search.
+  el.grid.querySelectorAll(".not-found a[href^='/'], .not-found a[href^='./']").forEach((a) => {
+    a.addEventListener("click", (e) => {
+      if (e.ctrlKey || e.metaKey || e.shiftKey || e.button) return;
+      e.preventDefault();
+      navigate(a.getAttribute("href"));
+    });
+  });
+  el.grid.querySelector(".nf-search").addEventListener("click", openSearchFromTab);
 }
 
 // Visible name of the view (desktop and mobile), above the month groups.

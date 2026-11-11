@@ -1281,3 +1281,27 @@ a.sheet-item { text-decoration: none; box-sizing: border-box; }
 /* Short lists of links shown inline (footer, page bottoms): a real list, CSS separators. */
 .inline-links { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.25rem 0; }
 .inline-links li + li::before { content: "·"; margin: 0 0.5rem; color: var(--muted); }
+
+/* "Page not found": useful next steps instead of a dead end. */
+.not-found { max-width: 46rem; padding: 1.5rem 1.25rem 2rem; color: var(--text); }
+.not-found h1 { font-size: 1.6rem; margin: 0 0 0.5rem; }
+.not-found h2 { font-size: 1.05rem; margin: 1.5rem 0 0.6rem; }
+.nf-lede { color: var(--muted); line-height: 1.5; margin: 0; }
+.nf-lede code { color: var(--text); background: var(--surface-2); padding: 0.05rem 0.35rem; border-radius: 4px; overflow-wrap: anywhere; }
+.nf-actions { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.5rem; }
+.nf-action {
+  display: flex; align-items: center; min-height: 44px; padding: 0 1rem; box-sizing: border-box; width: 100%;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--text); font: inherit; font-weight: 600; text-decoration: none; text-align: left; cursor: pointer;
+}
+.nf-action::after { content: "→"; margin-left: auto; color: var(--accent-text); }
+.nf-action:hover { border-color: var(--accent); }
+.nf-chips { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.nf-chip {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 1rem; box-sizing: border-box;
+  border: 1px solid var(--border); border-radius: 999px; background: var(--surface-2);
+  color: var(--text); text-decoration: none; font-weight: 600;
+}
+.nf-chip:hover { border-color: var(--accent); color: var(--accent-text); }
+.nf-help { margin-top: 1.75rem; color: var(--muted); }
+.nf-help a { color: var(--accent-text); }

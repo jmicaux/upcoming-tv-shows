@@ -99,9 +99,34 @@
     };
   }
 
+  // "Page not found" content, shared by the app (not-found view) and the generated
+  // 404.html (readable without JavaScript). `base` prefixes the links ("" when the page
+  // has a <base href>); `search` adds a search button (app only).
+  const POPULAR = ["Netflix", "HBO", "Disney+", "Prime Video", "Apple TV", "Hulu", "BBC One", "Canal+", "ABC", "NBC"];
+  function notFoundHtml({ base = "", path = "", search = false } = {}) {
+    const e = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const chips = POPULAR.map((n) => `<li><a class="nf-chip" href="${e(base)}network/${networkSlug(n)}">${e(n)}</a></li>`).join("");
+    const asked = path ? ` <code>${e(path)}</code>` : " this address";
+    return `
+    <section class="not-found" aria-labelledby="not-found-title">
+      <h1 id="not-found-title">Page not found</h1>
+      <p class="nf-lede">There is no page at${asked}. It may have moved, or the address may contain a typo.</p>
+      <h2>Where to go next</h2>
+      <ul class="nf-actions">
+        <li><a class="nf-action" href="${e(base) || "./"}">Upcoming shows, month by month</a></li>
+        <li><a class="nf-action" href="${e(base)}watchlist">Your watchlist</a></li>${search ? `
+        <li><button type="button" class="nf-action nf-search">Search for a show</button></li>` : ""}
+      </ul>
+      <h2>Popular channels</h2>
+      <ul class="nf-chips">${chips}</ul>
+      <p class="nf-help">Followed a broken link from this site? <a href="https://github.com/jmicaux/upcoming-tv-shows/issues">Tell us on GitHub</a>.</p>
+    </section>
+  `;
+  }
+
   const api = {
     UK_NETWORKS, AU_NETWORKS, SE_NETWORKS, NO_NETWORKS, DK_NETWORKS, FI_NETWORKS, IS_NETWORKS, COUNTRY_NETWORKS, NORDIC_NETWORKS, FLAGSHIP_RE, US_BROADCAST, STREAMING_NETWORKS, FR_NETWORKS, SEED_NETWORKS,
-    networkSlug, networkSegment, networkFromSegment, SITE_META, networkMeta, NETWORK_GROUPS,
+    networkSlug, networkSegment, networkFromSegment, SITE_META, networkMeta, NETWORK_GROUPS, notFoundHtml,
   };
   root.UpcomingNetworks = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;

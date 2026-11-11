@@ -14,7 +14,7 @@
 // script is idempotent: running it again (with or without data) rewrites them in place.
 const fs = require("node:fs");
 const path = require("node:path");
-const { SEED_NETWORKS, NETWORK_GROUPS, networkSlug, networkMeta } = require("../networks.js");
+const { SEED_NETWORKS, NETWORK_GROUPS, networkSlug, networkMeta, notFoundHtml } = require("../networks.js");
 const root = path.join(__dirname, "..");
 
 const NOTE = "<!-- Generated from index.html by tools/make-pages.js — do not edit by hand. -->";
@@ -168,7 +168,7 @@ function build(indexHtml, data) {
   const files = {
     "index.html": index,
     "watchlist.html": derive(region(index, "prerender", ""), { noindex: true }),
-    "404.html": derive(region(index, "prerender", ""), { base: new URL(siteUrl(index)).pathname, noindex: true }),
+    "404.html": derive(region(index, "prerender", notFoundHtml()), { base: new URL(siteUrl(index)).pathname, noindex: true }),
   };
   const seen = new Map();
   for (const name of new Set(SEED_NETWORKS)) {

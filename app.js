@@ -990,18 +990,24 @@ function renderNotFound() {
   link.focus();
 }
 
+// Visible name of the view (desktop and mobile), above the month groups.
+function watchlistTitleHtml(n) {
+  const count = n ? ` <span class="view-title-count">${n} show${n > 1 ? "s" : ""}</span>` : "";
+  return `<h2 class="view-title">Watchlist${count}</h2>`;
+}
+
 async function renderWatchlist() {
   el.resultCount.textContent = "";
   const favs = Object.values(state.favorites);
 
   if (favs.length === 0) {
-    el.grid.innerHTML = '<p class="empty">No favorites yet. Tap the ☆ on any show to add it to your watchlist.</p>';
+    el.grid.innerHTML = watchlistTitleHtml(0) + '<p class="empty">No favorites yet. Tap the ☆ on any show to add it to your watchlist.</p>';
     return;
   }
 
   // Group by the month of each show's next episode → need those dates first.
   if (favs.some((s) => state.nextEp[s.id] === undefined)) {
-    el.grid.innerHTML = '<div class="sentinel">Loading your watchlist…</div>';
+    el.grid.innerHTML = watchlistTitleHtml(favs.length) + '<div class="sentinel">Loading your watchlist…</div>';
   }
   await Promise.all(favs.map(ensureNextEpisode));
   if (state.view !== "watchlist") return; // user navigated away while loading
@@ -1019,7 +1025,7 @@ async function renderWatchlist() {
   }
 
   const ordered = [...groups.values()].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-  el.grid.innerHTML = ordered.map((g) => {
+  el.grid.innerHTML = watchlistTitleHtml(favs.length) + ordered.map((g) => {
     const cards = g.shows
       .sort((a, b) => {
         const ea = state.nextEp[a.id], eb = state.nextEp[b.id];
@@ -1027,7 +1033,7 @@ async function renderWatchlist() {
           a.name.localeCompare(b.name);
       })
       .map(watchlistCardHtml).join("");
-    return `<section class="month-block"><h2 class="month-heading">${escapeHtml(g.label)}</h2><div class="month-grid">${cards}</div></section>`;
+    return `<section class="month-block"><h3 class="month-heading">${escapeHtml(g.label)}</h3><div class="month-grid">${cards}</div></section>`;
   }).join("");
   wireCards(el.grid);
 }
@@ -1782,6 +1788,13 @@ function syncTopbarHeight() {
 }
 syncTopbarHeight();
 window.addEventListener("resize", syncTopbarHeight);
+// The bar also changes height without a resize (search hidden in the Watchlist, the
+// "★ Watchlist 52" / "‹ Browse" button wrapping on mobile); sticky month headings sit
+// below it, so keep --topbar-h exact or they slide under the bar and disappear.
+if ("ResizeObserver" in window) {
+  const bar = document.querySelector(".topbar");
+  if (bar) new ResizeObserver(syncTopbarHeight).observe(bar);
+}
 
 console.log(`Upcoming TV Shows v${APP_VERSION}`);
 const versionEl = document.getElementById("appVersion");

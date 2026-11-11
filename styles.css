@@ -412,8 +412,18 @@ body[data-view="notfound"] .search { display: none; }
 
 .grid { display: block; }
 
+.view-title {
+  margin: 0;
+  padding: 1rem 1.25rem 0.4rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.view-title-count { font-size: 0.85rem; font-weight: 400; color: var(--muted); margin-left: 0.4rem; }
+@media (max-width: 560px) { .view-title { padding: 0.8rem 1rem 0.3rem; } }
+
 .month-block { border-top: 1px solid var(--border); }
-.month-block:first-child { border-top: none; }
+.month-block:first-child, .view-title + .month-block { border-top: none; }
 
 .month-heading {
   position: sticky;

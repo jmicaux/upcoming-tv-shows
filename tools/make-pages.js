@@ -7,7 +7,7 @@
 //   node tools/make-pages.js
 const fs = require("node:fs");
 const path = require("node:path");
-const { SEED_NETWORKS, networkSlug } = require("../networks.js");
+const { SEED_NETWORKS, networkSlug, networkMeta } = require("../networks.js");
 const root = path.join(__dirname, "..");
 
 const NOTE = "<!-- Generated from index.html by tools/make-pages.js — do not edit by hand. -->";
@@ -33,18 +33,19 @@ function derive(indexHtml, { base, noindex }) {
 }
 
 function networkPage(indexHtml, name) {
-  const url = siteUrl(indexHtml) + "network/" + networkSlug(name);
-  const title = `Upcoming ${name} shows and premieres — Upcoming TV Shows`;
-  const desc = `New and returning ${name} series, month by month: premiere dates, seasons and episodes. Free, no account needed.`;
+  const m = networkMeta(name);
+  const json = (v) => JSON.stringify(v).slice(1, -1); // string body, safe inside "…" in JSON-LD
   let html = derive(indexHtml, { base: "../" });
-  html = swap(html, /(<title>)[^<]*(<\/title>)/, esc(title));
-  html = swap(html, /(<meta name="description" content=")[^"]*(">)/, esc(desc));
-  html = swap(html, /(<link rel="canonical" href=")[^"]*(">)/, esc(url));
-  html = swap(html, /(<meta property="og:url" content=")[^"]*(">)/, esc(url));
-  html = swap(html, /(<meta property="og:title" content=")[^"]*(">)/, esc(title));
-  html = swap(html, /(<meta property="og:description" content=")[^"]*(">)/, esc(desc));
-  html = swap(html, /(<meta name="twitter:title" content=")[^"]*(">)/, esc(title));
-  html = swap(html, /(<meta name="twitter:description" content=")[^"]*(">)/, esc(desc));
+  html = swap(html, /(<title>)[^<]*(<\/title>)/, esc(m.title));
+  html = swap(html, /(<meta name="description" content=")[^"]*(">)/, esc(m.description));
+  html = swap(html, /(<link rel="canonical" href=")[^"]*(">)/, esc(m.url));
+  html = swap(html, /(<meta property="og:url" content=")[^"]*(">)/, esc(m.url));
+  html = swap(html, /(<meta property="og:title" content=")[^"]*(">)/, esc(m.title));
+  html = swap(html, /(<meta property="og:description" content=")[^"]*(">)/, esc(m.description));
+  html = swap(html, /(<meta name="twitter:title" content=")[^"]*(">)/, esc(m.title));
+  html = swap(html, /(<meta name="twitter:description" content=")[^"]*(">)/, esc(m.twitterDescription));
+  // Structured data: same description as the page, plus its own address.
+  html = swap(html, /("description": ")[^"]*(",)/, json(m.description) + '",\n    "url": "' + json(m.url));
   return html;
 }
 

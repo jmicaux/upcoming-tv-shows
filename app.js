@@ -955,15 +955,30 @@ else if (location.hash.startsWith("#network=")) {
 // overwrite the user's saved channel selection (that returns on a plain reload).
 function applyRoute() {
   const { view, network } = parseRoute();
-  // One title per view (WCAG 2.4.2), matching the generated page of that address.
-  document.title = network ? `Upcoming ${network} shows and premieres — Upcoming TV Shows`
-    : view === "watchlist" ? "Watchlist — Upcoming TV Shows" : "Upcoming TV Shows";
+  updateHeadMeta(view, network);
   state.followed = network ? new Set([network]) : new Set(loadFollowed());
   if (network) state.known.add(network);
   updateNetworkButton();
   updateActiveNetwork();
   renderNetworkList();
   setView(view);
+}
+
+// Title (WCAG 2.4.2), description, canonical and social tags follow the view, matching
+// what the generated page of that address serves, so a shared or saved page is consistent.
+function updateHeadMeta(view, network) {
+  const { SITE_META, networkMeta } = window.UpcomingNetworks;
+  const m = network ? networkMeta(network) : SITE_META;
+  const title = view === "watchlist" ? "Watchlist — " + SITE_META.title : m.title;
+  document.title = title;
+  const set = (sel, attr, value) => { const n = document.head.querySelector(sel); if (n) n.setAttribute(attr, value); };
+  set('meta[name="description"]', "content", m.description);
+  set('meta[property="og:title"]', "content", title);
+  set('meta[property="og:description"]', "content", m.description);
+  set('meta[property="og:url"]', "content", m.url);
+  set('meta[name="twitter:title"]', "content", title);
+  set('meta[name="twitter:description"]', "content", m.twitterDescription);
+  set('link[rel="canonical"]', "href", m.url);
 }
 
 // The removable "Netflix ✕" pill shown while a transient network filter is active.

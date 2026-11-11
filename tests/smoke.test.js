@@ -92,3 +92,27 @@ test("routing: clean /watchlist path, no '#' left behind", () => {
   assert.doesNotMatch(src, /location\.hash = /);
   assert.match(read("auth.js"), /const redirectTo = location\.origin \+ APP_BASE/);
 });
+
+test("channel pages: every description tag and the JSON-LD agree", () => {
+  const html = read("network/netflix.html");
+  const descs = [
+    html.match(/<meta name="description" content="([^"]+)"/)[1],
+    html.match(/<meta property="og:description" content="([^"]+)"/)[1],
+    html.match(/<meta name="twitter:description" content="([^"]+)"/)[1],
+    JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]).description,
+  ];
+  assert.equal(new Set(descs).size, 1, descs.join("\n"));
+  assert.match(descs[0], /Netflix/);
+  assert.equal(JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]).url,
+    "https://jmicaux.github.io/upcoming-tv-shows/network/netflix");
+});
+
+test("SITE_META matches index.html (used when navigating back to the feed)", () => {
+  const { SITE_META } = require("../networks.js");
+  const html = read("index.html");
+  assert.match(html, new RegExp(`<title>${SITE_META.title}</title>`));
+  assert.ok(html.includes(`<meta name="description" content="${SITE_META.description}">`));
+  assert.ok(html.includes(`<meta property="og:description" content="${SITE_META.description}">`));
+  assert.ok(html.includes(`<meta name="twitter:description" content="${SITE_META.twitterDescription}">`));
+  assert.ok(html.includes(`<link rel="canonical" href="${SITE_META.url}">`));
+});

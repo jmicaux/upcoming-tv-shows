@@ -66,9 +66,27 @@
     try { return decodeURIComponent(s); } catch { return s; }
   }
 
+  // Page texts. SITE_META must match index.html (checked by tests/smoke.test.js).
+  const SITE_URL = "https://jmicaux.github.io/upcoming-tv-shows/";
+  const SITE_META = {
+    title: "Upcoming TV Shows",
+    description: "Track upcoming TV and streaming premieres month by month across US, UK, Australian, Nordic and French channels. Follow your favorites and filter by genre.",
+    twitterDescription: "Upcoming TV and streaming premieres month by month — US, UK, Australian, Nordic and French channels. Filter by genre.",
+    url: SITE_URL,
+  };
+  // Title, description and URL of a channel page (generated page and in-app navigation alike).
+  function networkMeta(name) {
+    const description = `New and returning ${name} series, month by month: premiere dates, seasons and episodes. Free, no account needed.`;
+    return {
+      title: `Upcoming ${name} shows and premieres — Upcoming TV Shows`,
+      description, twitterDescription: description,
+      url: SITE_URL + "network/" + networkSegment(name),
+    };
+  }
+
   const api = {
     UK_NETWORKS, AU_NETWORKS, SE_NETWORKS, NO_NETWORKS, DK_NETWORKS, FI_NETWORKS, IS_NETWORKS, COUNTRY_NETWORKS, NORDIC_NETWORKS, FLAGSHIP_RE, US_BROADCAST, STREAMING_NETWORKS, FR_NETWORKS, SEED_NETWORKS,
-    networkSlug, networkSegment, networkFromSegment,
+    networkSlug, networkSegment, networkFromSegment, SITE_META, networkMeta,
   };
   root.UpcomingNetworks = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;

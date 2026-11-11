@@ -41,6 +41,8 @@ All notable changes to Upcoming TV Shows are documented here. This project follo
   descriptions are unique per day; channels with nothing upcoming are `noindex` and left
   out of the sitemap; JSON-LD gets `dateModified`. New About page (sources, terms,
   accessibility, contact) linked from the footer with Privacy.
+- **"Buy me a coffee"** link in the footer, the About page and the mobile "More" sheet
+  (which also links to About).
 - **Red header** (#c1121f, white text at 6.2:1), also colouring the mobile browser bar.
 - **"Premieres only" and "Hide past" in the Watchlist**, with their own values (off by
   default): only shows whose next episode opens a season, and hide shows with nothing

@@ -1069,7 +1069,7 @@ if (tabbar) {
   moreSheet.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { e.stopPropagation(); setMoreSheet(false); return; }
     if (e.key !== "Tab") return; // keep focus inside the sheet
-    const items = [...moreSheet.querySelectorAll("button:not([hidden])")].filter((b) => b.offsetParent);
+    const items = [...moreSheet.querySelectorAll("button:not([hidden]), a[href]")].filter((b) => b.offsetParent);
     const first = items[0], last = items[items.length - 1];
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }

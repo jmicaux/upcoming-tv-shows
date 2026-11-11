@@ -19,6 +19,7 @@ const root = path.join(__dirname, "..");
 
 const NOTE = "<!-- Generated from index.html by tools/make-pages.js — do not edit by hand. -->";
 const REPO = "https://github.com/jmicaux/upcoming-tv-shows";
+const BMC = "https://buymeacoffee.com/jmicaux";
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 function siteUrl(indexHtml) {
@@ -84,7 +85,7 @@ function footerHtml() {
       <h2 id="footer-channels-title">Upcoming shows by channel</h2>
       <div class="footer-groups">${groups}</div>
     </nav>
-    <p class="footer-links"><a href="./">Home</a> · <a href="about.html">About</a> · <a href="privacy.html">Privacy</a> · <a href="${REPO}/issues">Contact &amp; feedback</a> · <a href="${REPO}">Source on GitHub</a></p>
+    <p class="footer-links"><a href="./">Home</a> · <a href="about.html">About</a> · <a href="privacy.html">Privacy</a> · <a href="${REPO}/issues">Contact &amp; feedback</a> · <a href="${REPO}">Source on GitHub</a> · <a href="${BMC}">☕ Buy me a coffee</a></p>
   `;
 }
 

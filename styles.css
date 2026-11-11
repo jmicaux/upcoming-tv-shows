@@ -1251,3 +1251,6 @@ main > .view-title:first-child { padding-top: 1rem; }
 @media (max-width: 640px) {
   .footer-group li a { display: inline-block; padding: 0.35rem 0; } /* ≥ 24px targets */
 }
+
+/* Links in the More sheet look like its buttons. */
+a.sheet-item { text-decoration: none; box-sizing: border-box; }

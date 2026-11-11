@@ -970,19 +970,17 @@ body[data-view="notfound"] .search { display: none; }
   .search-toggle { display: none; }
   body[data-view="watchlist"] .search { display: none; }
 
-  /* Filters: one horizontal row of chips, swipeable, edge to edge. */
+  /* Filters: chips that wrap onto as many lines as needed — every one is visible and
+     reachable with a single tap, no horizontal swipe required (WCAG 2.5.1). */
   .filters {
-    --control-h: 2.25rem;
-    flex-wrap: nowrap;
+    --control-h: 2.75rem;
+    flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
-    overflow-x: auto;
-    scrollbar-width: none;
     padding: 0.5rem 1rem 0.6rem;
-    scroll-padding-inline: 1rem;
   }
-  .filters::-webkit-scrollbar { display: none; }
   .filters > * { flex: 0 0 auto; }
+  .result-count { flex-basis: 100%; }
   .field {
     flex-direction: row;
     align-items: center;
@@ -1006,7 +1004,7 @@ body[data-view="notfound"] .search { display: none; }
   }
   .filters .switch:has(input:checked) { border-color: var(--accent); }
   .reset-btn { border-radius: 999px; white-space: nowrap; }
-  .filters .active-network { margin-bottom: 0; order: -1; }
+  .filters .active-network { margin-bottom: 0; order: -1; height: var(--control-h); padding: 0 0.9rem; }
   .result-count { margin-left: 0; font-size: 0.8rem; white-space: nowrap; }
 
   /* Channel / genre pickers become bottom sheets. */

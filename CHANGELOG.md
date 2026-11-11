@@ -20,8 +20,8 @@ All notable changes to Upcoming TV Shows are documented here. This project follo
 - Schedule fetching moved to `feed-core.js`, shared by the app and the nightly script.
 - The site is deployed by `.github/workflows/pages.yml` (Pages source: GitHub Actions).
 - **Mobile layout (≤ 640px)**: a bottom tab bar (Upcoming · Watchlist · Search · More)
-  within thumb reach; a compact header that scrolls away; filters as one swipeable row of
-  chips whose channel and genre pickers open as bottom sheets; a "More" sheet with labelled
+  within thumb reach; a compact header that scrolls away; filters as 44px chips that wrap onto
+  several lines (no swipe needed), whose channel and genre pickers open as bottom sheets; a "More" sheet with labelled
   Account, Settings and Theme. Show cards are denser with 44px touch targets (star,
   "Watch on"), and a show opens as a bottom sheet that closes by dragging it down, with
   ×, or with the phone's Back button. Desktop is unchanged.

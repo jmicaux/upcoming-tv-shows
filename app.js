@@ -1574,7 +1574,9 @@ function applyPrefs(data, { silent = false } = {}) {
   }
   if (data.favorites && typeof data.favorites === "object") {
     state.favorites = data.favorites;
-    state.showCache = {};
+    // Keep state.showCache: it holds the full show data (poster, channel) behind lean
+    // favorites, and ensureNextEpisode() will not refetch a show whose next episode is
+    // already known — clearing it left watchlist cards without their image after a sync.
     normalizeFavorites(); // lean the import if it carries legacy full snapshots; saves too
     saveFavorites();
   }

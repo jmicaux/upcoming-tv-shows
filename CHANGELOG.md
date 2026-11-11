@@ -1,0 +1,419 @@
+# Changelog
+
+All notable changes to Upcoming TV Shows are documented here. This project follows
+[semver](https://semver.org/).
+
+## 1.27.0 — 2026-11-11
+
+### Added
+- **Nightly schedule snapshot.** A GitHub Action fetches the schedule once a night
+  (`tools/fetch-schedule.js`: TVmaze, plus TMDB for French channels when the `TMDB_KEY`
+  secret is set) and publishes it with the site as small same-origin JSON files, one per
+  channel and month, for the next 3 months. The app reads them first and only calls TVmaze
+  for what the snapshot does not cover (a rare channel, a later month, a stale snapshot).
+  Pages appear faster and visitors no longer hit TVmaze for the common case.
+- **Channel pages carry their upcoming shows as plain HTML** (first episode of each show
+  per month, with premieres marked), readable by crawlers and without JavaScript; the app
+  replaces it with the interactive feed once it runs.
+
+### Changed
+- Schedule fetching moved to `feed-core.js`, shared by the app and the nightly script.
+- The site is deployed by `.github/workflows/pages.yml` (Pages source: GitHub Actions).
+- The version next to the title is plain text; the in-app changelog is gone (release
+  notes stay in this file).
+
+## 1.26.0 — 2026-11-11
+
+### Added
+- **Continue with GitHub** next to Google in the account dialog. The same email address on
+  both providers signs in to the same account.
+
+### Changed
+- The Watchlist has a clean address, `…/upcoming-tv-shows/watchlist` (was `#watchlist`; old
+  links still work). Back/Forward move between the feed and the Watchlist, and closing a
+  channel filter no longer leaves a bare `#` in the address.
+- **Channel links have clean addresses too**: `…/upcoming-tv-shows/network/netflix` (was
+  `#network=Netflix`; old links still work). Each major channel gets its own indexable
+  page with its own title and description, listed in `sitemap.xml`. Rarer channels use
+  `network/<name>` and are served by `404.html`.
+- The tab title, description, social tags, canonical and `noindex` follow the view (feed,
+  Watchlist, channel), also when navigating inside the app. Channel pages carry their own
+  description in the JSON-LD.
+- An unknown address shows "Page not found" instead of the home feed.
+- Channel lists moved to `networks.js`; `node tools/make-pages.js` regenerates
+  `watchlist.html`, `network/*.html`, `404.html` and `sitemap.xml` from `index.html`.
+
+### Fixed
+- **Sync could replace your favorites instead of merging them.** A tab that had not
+  refreshed (or a device back online) pushed its whole, stale copy over the account, and
+  changes made while signed out were dropped at the next sign-in. Each favorite, followed
+  channel, watch redirect and the theme now carry the time of their last change (removals
+  included); every save is fetch → merge → push, and the newest change of each item wins.
+- **Sign out** only signs out the current device, not all of them.
+- Watchlist cards lost their poster after an account sync (the show cache was emptied while
+  the next-episode cache was kept, so shows were never reloaded).
+- Signing in now brings you back to the view you were on (e.g. the Watchlist).
+
+### Changed
+- `supabase/schema.sql`: signed-out visitors can only read the preferences table (zero rows
+  under RLS) and can no longer call `delete_my_account()`.
+- The Supabase keep-alive runs twice a week.
+
+## 1.25.0 — 2026-11-10
+
+### Added
+- **Optional account** (👤 in the header) to keep your followed channels, watchlist, watch
+  redirects and theme on every device. Sign in with Google; no password. Everything still
+  works without an account, and your TMDB key is never synced.
+- The first time an account signs in on a device, local and account preferences are merged
+  (nothing is lost); afterwards the account is the source of truth and changes are saved
+  about a second after you make them.
+- **Delete account** removes the account and its stored preferences; optionally also clears
+  this device.
+- `privacy.html` describing what is stored and why.
+- Email sign-in (magic link + 6-digit code) is built in but off (`EMAIL_LOGIN: false`) until
+  a custom email sender is configured.
+
+### Changed
+- Accounts are backed by Supabase (EU region, Row Level Security). The app loads a pinned
+  `supabase-js` from jsDelivr with Subresource Integrity; the CSP allows that origin.
+- Unit tests (`node --test tests/`) run in CI.
+
+## 1.24.0 — 2026-11-08
+
+### Changed
+- The app is renamed **Upcoming TV Shows** (formerly *Lineup*) to avoid confusion with an
+  existing iOS app of the same name. Title, header, social cards, structured data and
+  favicon ("Up") are updated. Your saved preferences and favorites are kept, and
+  preference files exported from Lineup still import.
+- Exported preferences are now saved as `upcoming-tv-shows-preferences.json`.
+
+## 1.23.1 — 2026-07-26
+
+### Fixed
+- The series grid no longer flickers while a month loads. Progressive rendering used to
+  rebuild the whole grid's HTML every ~250ms, destroying and recreating every card (and its
+  image) each tick, so images kept re-fetching and repainting. Rendering now reconciles
+  cards by a stable `showId:airdate` key — existing cards (and their loaded images) are
+  reused, only genuinely new cards are created. Filter panels are likewise only rebuilt when
+  their options actually change.
+- Aligned the `?v=` cache-busting query in `index.html` with `APP_VERSION` (was stuck at 1.20.0).
+
+## 1.23.0 — 2026-07-24
+
+### Changed
+- The feed now fetches only the sources your selection needs. Each channel maps to a
+  source (US broadcast, streaming, France, or a specific country) and only those schedules
+  are requested. Following only US channels is back to ~2 calls/day; a country is queried
+  only when you follow one of its channels. Schedules are cached per source per day.
+- With no channels selected, the feed shows nothing (and fetches nothing) instead of
+  "show everything".
+
+### Added
+- The channel picker is grouped (United States, Streaming, France, UK, Australia, and each
+  Nordic country) with an "All / Clear" button per group, so you can select or clear a
+  whole country at once.
+
+## 1.22.0 — 2026-07-24
+
+### Added
+- UK, Australian and Nordic (Sweden, Norway, Denmark, Finland, Iceland) broadcasters.
+  Their TVmaze schedules are now fetched alongside the US one, filtered to flagship
+  channels only (BBC, ITV, Channel 4/5, Sky; ABC/Seven/Nine/Network 10/SBS; SVT, TV4,
+  NRK, DR, TV 2, Yle, MTV3, RÚV/Stöð 2). These appear in the channel picker and are
+  pre-selected for new users.
+
+### Notes
+- Nordic coverage on TVmaze is sparse and channel names are inconsistent, so relatively
+  few Nordic titles may show up.
+- Loading a month now issues more API calls (one schedule request per country), so the
+  first load of each month is slower; results are cached per day afterwards.
+
+## 1.21.3 — 2026-07-24
+
+### Changed
+- Aired-episode cards no longer dim at all (removed the grayscale poster and muted title):
+  they render in full colour like any other card. The "Aired" badge (plus the grey date
+  badge) is now the sole differentiator.
+
+## 1.21.2 — 2026-07-24
+
+### Added
+- Aired-episode cards now carry an explicit "Aired" badge in the top-left corner, so the
+  past state is obvious and not conveyed by the (subtle, colour-only) grayscale alone.
+
+## 1.21.1 — 2026-07-24
+
+### Changed
+- Aired-episode cards no longer use any opacity. The "past" signal is now a grayscale
+  poster (restored to colour on hover) plus the muted title and date badge, keeping every
+  card fully legible.
+
+## 1.21.0 — 2026-07-24
+
+### Changed
+- Aired-episode cards now dim only the poster instead of the whole card, so the title,
+  date and channel stay legible (WCAG AA contrast).
+- Cards always show "Watch on {network}" instead of a bare "Watch".
+- Favorites are stored lean (`{ id, name }`); show details are re-fetched by id from the
+  API (reusing the call the watchlist already makes), shrinking the exported prefs JSON by
+  ~80%. Legacy favorites are migrated automatically on load.
+
+## 1.20.0 — 2026-07-23
+
+### Added
+- "Hide past" toggle to remove already-aired days from the current month (off by default,
+  which keeps them visible but dimmed).
+
+## 1.19.0 — 2026-07-23
+
+### Added
+- Past (already-aired) days in the current month are now visually marked: their cards are
+  dimmed and the date badge is muted (grey) instead of the accent red, so it's clear at a
+  glance what's still upcoming.
+
+## 1.18.3 — 2026-07-23
+
+### Added
+- Filter-list search box in the Genre dropdown, matching the Networks dropdown.
+
+## 1.18.2 — 2026-07-23
+
+### Added
+- "Show all" button in the Genre dropdown to clear the selected genres (matching Networks).
+
+## 1.18.1 — 2026-07-23
+
+### Changed
+- Settings and docs now refer to "the French channels" generically instead of naming only
+  Canal+ / Arte (TF1, M6 and France 2/3 are supported too).
+
+## 1.18.0 — 2026-07-23
+
+### Added
+- France 2 (TMDB 361) and France 3 (TMDB 249) as French channels.
+
+## 1.17.1 — 2026-07-23
+
+### Added
+- M6 as a French channel (TMDB network 712).
+
+## 1.17.0 — 2026-07-23
+
+### Changed
+- The Genre filter is now a multi-select dropdown (like Networks): pick several genres and
+  the feed shows shows matching any of them.
+
+## 1.16.0 — 2026-07-23
+
+### Added
+- TF1 as a French channel (TMDB network 290), alongside Canal+ and Arte.
+
+## 1.15.0 — 2026-07-23
+
+### Added
+- Enter your TMDB API key directly in ⚙ Settings to enable Canal+ / Arte. It's stored only
+  in the browser (localStorage), so the hosted preview can load French channels without a key
+  in the repo. Saving reloads the feed; clearing the field disables the French channels.
+
+## 1.14.1 — 2026-07-23
+
+### Changed
+- Mobile responsiveness: tighter modal (smaller padding, poster and title), carousel arrows
+  move to a bottom pager instead of overlapping the text, and the card grid shows two
+  columns on phones.
+
+## 1.14.0 — 2026-07-23
+
+### Changed
+- All "Watch on" links now use a site-scoped Google search per platform (more durable than
+  guessing each platform's on-site search URL); JustWatch remains the fallback.
+- Reduced the detail modal height (it was too tall).
+
+## 1.13.3 — 2026-07-23
+
+### Fixed
+- Disney+ "Watch on" link now uses a `site:disneyplus.com` Google search (same reason as Canal+).
+
+## 1.13.2 — 2026-07-23
+
+### Fixed
+- Canal+ "Watch on" link now uses a `site:canalplus.com` Google search (Canal+ exposes no
+  usable on-site search).
+
+## 1.13.1 — 2026-07-23
+
+### Changed
+- The detail modal now has a constant size: the header (poster, title, actions) stays
+  pinned and only the summary scrolls, so it no longer resizes between shows in the carousel.
+
+## 1.13.0 — 2026-07-23
+
+### Changed
+- Search now queries the whole TVMaze catalog (debounced) instead of only the loaded feed,
+  so it finds any show — including ones with no upcoming premiere. Results show a status
+  label (Running / Ended / TBD…) and open the same detail modal. Clearing the search
+  returns to the month feed.
+
+## 1.12.0 — 2026-07-23
+
+### Added
+- The channel quick-filter is now bookmarkable: clicking a channel sets `#network=<name>`
+  in the URL. It's transient — it does not overwrite your saved channel selection.
+- A removable "<network> ✕" pill shows the active network filter; clicking it (or the
+  browser Back button, or Reset filters) restores your previous selection.
+- Clear (✕) button in the header search field.
+
+### Fixed
+- The detail modal no longer forces a tall fixed height (which left a large empty area);
+  it fits its content and scrolls internally only when the content is too long.
+
+## 1.11.0 — 2026-07-23
+
+### Added
+- Channel name on cards is now a quick-filter link: click it to narrow the feed to that
+  network only (a first step toward browsing by network).
+
+## 1.10.1 — 2026-07-23
+
+### Changed
+- The detail modal now keeps a constant size and scrolls internally for long content,
+  so it no longer resizes when stepping through shows with the carousel.
+
+## 1.10.0 — 2026-07-23
+
+### Added
+- Carousel navigation in the detail modal: prev/next arrows (and ←/→ keys) step through the
+  visible shows without closing the modal. Arrows hide at the ends and are disabled for the
+  settings and changelog dialogs.
+
+## 1.9.1 — 2026-07-23
+
+### Changed
+- Channel favicon chip is now square (rounded corners) instead of a circle, to avoid
+  clipping brand logos.
+- On cards, the "Watch on" link is shortened to "Watch" (the channel already shows in the
+  card meta); it still names the provider when a watch-setting override redirects elsewhere.
+
+## 1.9.0 — 2026-07-23
+
+### Added
+- "Episode guide ↗" link in the detail modal, pointing to the show's epguides.com page.
+
+## 1.8.1 — 2026-07-23
+
+### Fixed
+- The month feed no longer stops permanently at the first empty month; it keeps loading
+  past gaps and only ends after several consecutive empty months.
+- Escaped TMDB show summaries before rendering them (prevents HTML injection from data).
+
+### Changed
+- Importing preferences now asks for confirmation before replacing your favorites and settings.
+- Channel favicons fall back to a colored initial chip if the icon fails to load (no broken
+  image, no lingering external dependency).
+- Storage-quota failures now surface a toast instead of silently dropping your data.
+
+## 1.8.0 — 2026-07-23
+
+### Changed
+- Title search moved to the header as an expanding magnifier: click the loupe to reveal the
+  field, it collapses when left empty, and Escape clears and closes it. Declutters the
+  filters bar and follows the common search-to-expand pattern.
+
+## 1.7.1 — 2026-07-23
+
+### Changed
+- The channel favicon in the detail modal is now a uniform round chip (clipped, fixed size,
+  neutral background) instead of a raw, inconsistently-sized favicon.
+
+## 1.7.0 — 2026-07-23
+
+### Added
+- **Watch settings** (⚙ in the header): optionally remap a channel to a provider you
+  already have, so the "Watch on" link points there instead (e.g. a show on Apple TV →
+  "Watch on Canal+"). Mappings persist locally and travel with export/import preferences.
+
+## 1.6.0 — 2026-07-23
+
+### Accessibility
+- Show cards are now keyboard-operable (`role="button"`, focusable, Enter/Space to open)
+  with a visible focus ring.
+- Detail modal manages focus: it moves focus into the dialog on open, traps Tab inside
+  while open, returns focus to the triggering card on close, and exposes an accessible name.
+- Favorite buttons expose their state via `aria-pressed`; the network dropdown exposes
+  `aria-haspopup`/`aria-expanded`; the channel search field and modal close button got
+  proper labels (and the label language now matches the page).
+- Result count is announced via an `aria-live` region instead of re-announcing the whole grid.
+- Fixed low-contrast colors: the gold "In watchlist" button (unreadable in light mode) and
+  the red "Watch on" / streaming text now use theme-aware, AA-compliant colors.
+- Honors `prefers-reduced-motion` by dropping hover/transition animations.
+
+## 1.5.1 — 2026-07-23
+
+### Added
+- Network favicon next to the channel name in the detail modal (known channels only).
+
+## 1.5.0 — 2026-07-23
+
+### Added
+- **Text search** — filter the feed by show title, combinable with the network,
+  genre and premieres filters.
+- **Reset filters** button that clears search, genre and the premieres toggle in one click.
+- **"Watch on <platform>" links** on every card and in the detail modal — jump straight
+  to the platform's search (Netflix, Prime Video, Hulu, Disney+, Max, Apple TV, Paramount+,
+  Canal+, Arte…), falling back to JustWatch for anything else.
+
+### Changed
+- Detail modal groups the watch and watchlist buttons into a single action row.
+
+## 1.4.1 — 2026-07-23
+
+### Changed
+- More visible card date (accent-filled badge) and a larger, higher-contrast favorite star.
+
+## 1.4.0 — 2026-07-23
+
+### Changed
+- Watchlist now groups shows by the month of their next episode, using the same big
+  sticky month headings as the main feed (shows with no upcoming episode go last).
+- Larger, more prominent month headings across both views.
+
+## 1.3.0 — 2026-07-23
+
+### Changed
+- Replaced the month carousel (prev/next/today) with a single continuous feed: the
+  current month shows first and the next months load lazily as you scroll, each under a
+  sticky month heading. Filters and favorites apply across all loaded months.
+
+## 1.2.0 — 2026-07-23
+
+### Added
+- Bookmarkable Watchlist: the view is reflected in the URL (`#watchlist`), so you can
+  bookmark it and the browser's back/forward buttons work.
+
+## 1.1.0 — 2026-07-23
+
+### Added
+- In-app changelog — click the version number in the header to read it.
+
+## 1.0.0 — 2026-07-23
+
+First release.
+
+### Added
+- Month-by-month view of upcoming US TV premieres, powered by the TVMaze API.
+- Broadcast, cable and streaming in one grid (Netflix, Prime Video, Hulu, Disney+,
+  Max, Apple TV, Peacock, Paramount+ and more).
+- French channels Canal+ and Arte, sourced from TMDB.
+- Pick-and-choose channel filter with the major networks pre-selected by default.
+- Genre filter and a "Premieres only" toggle.
+- Favorites with a dedicated Watchlist view showing each show's next episode.
+- Export / import preferences to a JSON file (File System Access on Chrome/Edge)
+  for cross-device sync via a cloud-synced folder.
+- Dark / light theme toggle that persists and overrides the OS preference.
+- Detail view per show: poster, channel, air date, season/episode, genres, summary.
+
+### Notes
+- Progressive rendering: results appear as days load instead of all at once.
+- Local caching keeps revisited months instant; requests are throttled to respect
+  the TVMaze rate limit.

@@ -23,6 +23,7 @@ test("release 1.26.0 is consistent", () => {
   assert.match(read("app.js"), /const APP_VERSION = "1\.27\.0"/);
   assert.match(read("index.html"), /styles\.css\?v=1\.27\.0/);
   assert.match(read("README.md"), /version-1\.27\.0-blue/);
+  assert.match(read("CHANGELOG.md"), /^## 1\.27\.0 — \d{4}-\d{2}-\d{2}/m);
 });
 
 test("privacy page exists and exposes no personal email", () => {

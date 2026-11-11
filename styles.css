@@ -178,7 +178,7 @@ body[data-view="watchlist"] .search { display: none; }
 
 /* Watchlist view hides month navigation and filters. */
 body[data-view="watchlist"] .month-nav,
-body[data-view="watchlist"] .filters,
+body[data-view="watchlist"] .filters > :not(.switch),
 body[data-view="watchlist"] .progress,
 body[data-view="notfound"] .month-nav,
 body[data-view="notfound"] .filters,

@@ -71,6 +71,7 @@ const state = {
   genres: new Set(),                // selected genres (empty = all); a show matches any
   availableGenres: new Set(),       // genres present in the loaded feed
   premieresOnly: true,
+  watchFilters: { premieresOnly: false, hidePast: false }, // the Watchlist's own toggles
   hidePast: false,                  // hide already-aired days in the current month
   view: "month",                    // "month" | "watchlist"
   loadedSources: new Set(),         // upstream sources already fetched into the loaded blocks
@@ -963,6 +964,10 @@ function setView(v) {
   }
   state.view = v;
   document.body.setAttribute("data-view", v);
+  // The two toggles are shared by both views but each view keeps its own values.
+  const f = toggleState();
+  el.premieresOnly.checked = f.premieresOnly;
+  el.hidePast.checked = f.hidePast;
   updateViewButton();
   window.scrollTo(0, 0);
   if (v === "watchlist") renderWatchlist();
@@ -1068,8 +1073,9 @@ function renderNotFound() {
 }
 
 // Visible name of the view (desktop and mobile), above the month groups.
-function watchlistTitleHtml(n) {
-  const count = n ? ` <span class="view-title-count">${n} show${n > 1 ? "s" : ""}</span>` : "";
+function watchlistTitleHtml(n, shown = n) {
+  const label = shown < n ? `${shown} of ${n} shows` : `${n} show${n > 1 ? "s" : ""}`;
+  const count = n ? ` <span class="view-title-count">${label}</span>` : "";
   return `<h2 class="view-title">Watchlist${count}</h2>`;
 }
 
@@ -1089,8 +1095,22 @@ async function renderWatchlist() {
   await Promise.all(favs.map(ensureNextEpisode));
   if (state.view !== "watchlist") return; // user navigated away while loading
 
+  // Watchlist toggles: premieres = next episode opens a season; past = nothing upcoming.
+  const wf = state.watchFilters;
+  const shown = favs.filter((s) => {
+    const ep = state.nextEp[s.id];
+    if (wf.hidePast && !(ep && ep.airdate)) return false;
+    if (wf.premieresOnly && !(ep && ep.number === 1)) return false;
+    return true;
+  });
+  if (!shown.length) {
+    el.grid.innerHTML = watchlistTitleHtml(favs.length) +
+      '<p class="empty">No show in your watchlist matches these filters.</p>';
+    return;
+  }
+
   const groups = new Map(); // monthKey -> { label, sortKey, shows: [] }
-  for (const show of favs) {
+  for (const show of shown) {
     const ep = state.nextEp[show.id];
     const key = ep && ep.airdate ? ep.airdate.slice(0, 7) : "none";
     if (!groups.has(key)) {
@@ -1102,7 +1122,7 @@ async function renderWatchlist() {
   }
 
   const ordered = [...groups.values()].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-  el.grid.innerHTML = watchlistTitleHtml(favs.length) + ordered.map((g) => {
+  el.grid.innerHTML = watchlistTitleHtml(favs.length, shown.length) + ordered.map((g) => {
     const cards = g.shows
       .sort((a, b) => {
         const ea = state.nextEp[a.id], eb = state.nextEp[b.id];
@@ -1789,8 +1809,14 @@ document.addEventListener("error", (e) => {
 
 document.addEventListener("click", () => { setNetworkPanel(false); setGenrePanel(false); });
 
-el.premieresOnly.addEventListener("change", (e) => { state.premieresOnly = e.target.checked; renderAllBlocks(); });
-el.hidePast.addEventListener("change", (e) => { state.hidePast = e.target.checked; renderAllBlocks(); });
+// "Premieres only" / "Hide past" apply to the feed, or to the Watchlist with its own values.
+function toggleState() { return state.view === "watchlist" ? state.watchFilters : state; }
+function onToggle(key, value) {
+  toggleState()[key] = value;
+  if (state.view === "watchlist") renderWatchlist(); else renderAllBlocks();
+}
+el.premieresOnly.addEventListener("change", (e) => onToggle("premieresOnly", e.target.checked));
+el.hidePast.addEventListener("change", (e) => onToggle("hidePast", e.target.checked));
 el.searchInput.addEventListener("input", (e) => onSearchInput(e.target.value));
 el.searchClear.addEventListener("click", () => { clearSearch(); el.searchInput.focus(); });
 el.resetFilters.addEventListener("click", resetFilters);

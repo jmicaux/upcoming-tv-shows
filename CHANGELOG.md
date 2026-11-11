@@ -25,6 +25,9 @@ All notable changes to Upcoming TV Shows are documented here. This project follo
   Account, Settings and Theme. Show cards are denser with 44px touch targets (star,
   "Watch on"), and a show opens as a bottom sheet that closes by dragging it down, with
   ×, or with the phone's Back button. Desktop is unchanged.
+- **"Premieres only" and "Hide past" in the Watchlist**, with their own values (off by
+  default): only shows whose next episode opens a season, and hide shows with nothing
+  upcoming. The title shows "12 of 52 shows" when a filter is on.
 - **Export / Import moved into Settings** ("Your preferences"), on every screen size.
 - Channel and genre buttons are now announced with their label ("Networks: Selected 1").
 - The version next to the title is plain text; the in-app changelog is gone (release

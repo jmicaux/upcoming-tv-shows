@@ -33,11 +33,19 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Fetch the schedule snapshot
+      # Nightly run: fresh data from TVmaze/TMDB (~8 min). Code deploy (push, manual run):
+      # reuse the snapshot already published on the site (seconds), unless it is missing
+      # or older than 36 h. A failed source is left out of the snapshot (fetched live).
+      - name: Get the schedule snapshot
         env:
           TMDB_KEY: ${{ secrets.TMDB_KEY }}
-        # A failed source is simply left out of the snapshot (the app fetches it live).
-        run: node tools/fetch-schedule.js data/schedule 3
+          SITE_URL: https://jmicaux.github.io/upcoming-tv-shows/
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ] && node tools/pull-snapshot.js "$SITE_URL" data/schedule 36; then
+            echo "Snapshot reused."
+          else
+            node tools/fetch-schedule.js data/schedule 3
+          fi
 
       - name: Bake the upcoming shows into the channel pages
         run: node tools/make-pages.js --data data/schedule

@@ -152,6 +152,7 @@ tv-us-upcoming/
 ├── tests/              # node --test unit tests (run in CI)
 ├── tools/make-pages.js # fills index.html's generated regions and builds the pages below
 ├── tools/fetch-schedule.js # nightly schedule snapshot → data/schedule/
+├── tools/pull-snapshot.js  # code deploys: reuse the published snapshot
 └── README.md
 
 Generated, not committed (built by the deploy workflow, or locally with the tools):
@@ -168,8 +169,10 @@ pages above, which you also need to browse `/watchlist` or `/network/…` locall
 
 ### Nightly schedule snapshot
 
-`.github/workflows/pages.yml` deploys the site every night and on every push: it runs
-`node tools/fetch-schedule.js` (one pass over TVmaze, about 8 minutes for 3 months), then
+`.github/workflows/pages.yml` deploys the site every night and on every push. The nightly
+run calls `node tools/fetch-schedule.js` (one pass over TVmaze, about 8 minutes for 3
+months); a push only reuses the snapshot already published on the site with
+`node tools/pull-snapshot.js` (a few seconds), unless it is missing or older than 36 h. Then
 `node tools/make-pages.js --data data/schedule`, which bakes each channel's upcoming shows
 into its page as plain HTML. The app reads `data/schedule/` first and only calls TVmaze
 for what it does not cover. Setup: **Settings → Pages → Source: GitHub Actions**; add a

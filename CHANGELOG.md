@@ -14,6 +14,9 @@ All notable changes to Upcoming TV Shows are documented here. This project follo
   24 px tall (WCAG 2.5.8).
 - Cards read title first: the markup now goes title, date, channel, watch link, then the
   image and the star; CSS keeps the visual order.
+- Faster deploys: a code push reuses the schedule snapshot already published on the site
+  (seconds) instead of querying TVmaze again (about 8 minutes); only the nightly run
+  refreshes the data.
 - TVmaze's channel "5" is shown as "Channel 5" (titles, footer, cards, breadcrumb).
 
 ## 1.28.0 — 2026-11-11

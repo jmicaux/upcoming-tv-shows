@@ -195,8 +195,11 @@ body[data-view="notfound"] .search { display: none; }
 }
 
 .filters {
+  /* Everything sits on the line of the dropdowns (which carry a label above), at one
+     common control height, so checkboxes, Reset and the channel pill line up with them. */
+  --control-h: 2.5rem;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 1.25rem;
   flex-wrap: wrap;
   padding: 0.9rem 1.25rem;
@@ -225,7 +228,7 @@ body[data-view="notfound"] .search { display: none; }
 }
 
 .reset-btn {
-  align-self: flex-end;
+  min-height: var(--control-h);
   background: none;
   color: var(--muted);
   border: 1px solid var(--border);
@@ -256,6 +259,7 @@ body[data-view="notfound"] .search { display: none; }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 0.4rem 0.6rem;
+  min-height: var(--control-h, 2.5rem);
   font-size: 0.9rem;
   min-width: 11rem;
   text-align: left;
@@ -362,6 +366,7 @@ body[data-view="notfound"] .search { display: none; }
 .filters .switch {
   flex-direction: row;
   align-items: center;
+  min-height: var(--control-h);
   text-transform: none;
   letter-spacing: 0;
   font-size: 0.85rem;
@@ -383,10 +388,15 @@ body[data-view="notfound"] .search { display: none; }
   font-weight: 600;
   cursor: pointer;
 }
+/* The pill is shorter than the controls: centre it on their line. */
+.filters .active-network { height: 1.75rem; margin-bottom: calc((var(--control-h) - 1.75rem) / 2); }
 .active-network[hidden] { display: none; }
 .active-network:hover { opacity: 0.9; }
 
 .result-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-h, auto);
   margin-left: auto;
   color: var(--muted);
   font-size: 0.85rem;

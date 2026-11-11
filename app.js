@@ -416,9 +416,10 @@ async function loadNextMonth() {
   setSentinel(`Loading ${monthLabel(monthAt(state.blocks.length))}…`);
 
   const month = monthAt(state.blocks.length);
-  const block = { month, items: [], el: null };
+  const block = { month, items: [], el: null, loading: true };
   state.blocks.push(block);
   block.el = createBlockEl(block);
+  renderBlock(block); // placeholders until the first shows arrive
 
   // Channels covered by the nightly snapshot are read from it; the rest stays live.
   let live = sources;
@@ -443,6 +444,7 @@ async function loadNextMonth() {
   }
   if (live.has("FR")) block.items.push(...(await fetchFrMonth(month)));
   for (const s of sources) state.loadedSources.add(s);
+  block.loading = false;
   rebuildFilterOptions();
   renderBlock(block);
   updateResultCount();
@@ -762,12 +764,34 @@ function createBlockEl(block) {
   return sec;
 }
 
+// Placeholder cards shown while a month (or the Watchlist) loads. Decorative: the
+// loading state is announced by the visible "Loading …" status text.
+function skeletonHtml(n = 8) {
+  const card = '<div class="card skeleton"><div class="sk-img"></div><div class="card-body">' +
+    '<div class="sk-line sk-short"></div><div class="sk-line"></div><div class="sk-line sk-mid"></div></div></div>';
+  return card.repeat(n);
+}
+
 function renderBlock(block) {
   if (!block.el) return;
   const grid = block.el.querySelector(".month-grid");
   const emptyEl = block.el.querySelector(".month-empty");
   const cards = dedupeSort(visibleItemsIn(block.items));
+  if (grid.classList.contains("is-loading") && (cards.length || !block.loading)) {
+    grid.classList.remove("is-loading");
+    grid.removeAttribute("aria-hidden");
+    grid.replaceChildren();
+  }
   if (cards.length === 0) {
+    if (block.loading) { // still fetching: placeholders instead of "no shows"
+      emptyEl.hidden = true;
+      if (!grid.classList.contains("is-loading")) {
+        grid.classList.add("is-loading");
+        grid.setAttribute("aria-hidden", "true");
+        grid.innerHTML = skeletonHtml();
+      }
+      return;
+    }
     if (grid.firstChild) grid.replaceChildren();
     emptyEl.hidden = false;
     return;
@@ -1086,7 +1110,9 @@ async function renderWatchlist() {
 
   // Group by the month of each show's next episode → need those dates first.
   if (favs.some((s) => state.nextEp[s.id] === undefined)) {
-    el.grid.innerHTML = watchlistTitleHtml(favs.length) + '<div class="sentinel">Loading your watchlist…</div>';
+    el.grid.innerHTML = watchlistTitleHtml(favs.length) +
+      '<p class="sr-only" role="status">Loading your watchlist…</p>' +
+      `<section class="month-block"><div class="month-grid is-loading" aria-hidden="true">${skeletonHtml(Math.min(favs.length, 8))}</div></section>`;
   }
   await Promise.all(favs.map(ensureNextEpisode));
   if (state.view !== "watchlist") return; // user navigated away while loading

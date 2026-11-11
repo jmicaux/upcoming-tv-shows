@@ -25,6 +25,11 @@ All notable changes to Upcoming TV Shows are documented here. This project follo
   Account, Settings and Theme. Show cards are denser with 44px touch targets (star,
   "Watch on"), and a show opens as a bottom sheet that closes by dragging it down, with
   ×, or with the phone's Back button. Desktop is unchanged.
+- **Accessibility (WAVE: 0 errors)**: show cards are no longer a `role="button"` wrapping
+  other controls — the title is the card's button and a tap anywhere still opens it;
+  posters are decorative (the title is right below); "Watch on" links and star buttons
+  name the show and say when a new tab opens; the import field and the channel pill have
+  labels; no text is smaller than 12px.
 - **Red header** (#c1121f, white text at 6.2:1), also colouring the mobile browser bar.
 - **"Premieres only" and "Hide past" in the Watchlist**, with their own values (off by
   default): only shows whose next episode opens a season, and hide shows with nothing

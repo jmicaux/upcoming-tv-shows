@@ -541,12 +541,12 @@ function statusLabel(show) {
 function searchCardHtml(show) {
   const chan = show.channel ? show.channel.name : "—";
   return `
-    <article class="card" role="button" tabindex="0" aria-label="${escapeAttr(`${show.name}, ${chan}. View details`)}" data-show-id="${escapeAttr(String(show.id))}">
+    <article class="card" data-show-id="${escapeAttr(String(show.id))}">
       ${favBtnHtml(show.id)}
       ${imageHtml(show)}
       <div class="card-body">
         <div class="card-status">${escapeHtml(statusLabel(show))}</div>
-        <h3 class="card-title">${escapeHtml(show.name)}</h3>
+        ${cardTitleHtml(show.name)}
         <div class="card-meta">${chanMetaHtml(show.channel)}</div>
         ${watchLinkHtml(show.channel && show.channel.name, show.name, "card-watch")}
       </div>
@@ -815,12 +815,9 @@ function updateResultCount() {
 // Wire a single card's interactions (used by both full and incremental rendering).
 function wireCard(c) {
   const id = c.dataset.showId;
+  // Click anywhere on the card; keyboard users reach the title button (.card-open), whose
+  // click bubbles here too.
   c.addEventListener("click", () => openFromCard(c));
-  // Keyboard activation for the role="button" card (ignore keys from inner controls).
-  c.addEventListener("keydown", (e) => {
-    if (e.target !== c) return;
-    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openFromCard(c); }
-  });
   c.querySelector(".fav-btn").addEventListener("click", (e) => {
     e.stopPropagation();
     toggleFav(id);
@@ -855,7 +852,6 @@ function toggleFav(id, showObj) {
     b.classList.toggle("on", on);
     b.textContent = on ? "★" : "☆";
     b.setAttribute("aria-pressed", String(on));
-    b.setAttribute("aria-label", on ? "Remove from watchlist" : "Add to watchlist");
   });
 }
 
@@ -1139,12 +1135,12 @@ function watchlistCardHtml(fav) {
   const show = showFor(fav.id) || fav; // fav is lean { id, name }; details come from the hydration cache
   const chan = show.channel ? show.channel.name : "—";
   return `
-    <article class="card" role="button" tabindex="0" aria-label="${escapeAttr(`${show.name}, ${chan}. View details`)}" data-show-id="${escapeAttr(String(show.id))}">
+    <article class="card" data-show-id="${escapeAttr(String(show.id))}">
       ${favBtnHtml(show.id)}
       ${imageHtml(show)}
       <div class="card-body">
         <div class="card-date">${escapeHtml(nextEpLabel(state.nextEp[show.id]))}</div>
-        <h3 class="card-title">${escapeHtml(show.name)}</h3>
+        ${cardTitleHtml(show.name)}
         <div class="card-meta">${chanMetaHtml(show.channel)}</div>
         ${watchLinkHtml(show.channel && show.channel.name, show.name, "card-watch")}
       </div>
@@ -1189,15 +1185,24 @@ async function ensureNextEpisode(show) {
   return ep;
 }
 
+// The card's main control: its title is a real button (a "stretched" hit area covers the
+// card), so the star, channel and watch link are not nested inside another button.
+function cardTitleHtml(name) {
+  return `<h3 class="card-title"><button type="button" class="card-open">${escapeHtml(name)}</button></h3>`;
+}
+
+// Toggle button: one stable label naming the show, the state is aria-pressed.
 function favBtnHtml(id) {
   const on = !!state.favorites[id];
-  return `<button class="fav-btn ${on ? "on" : ""}" data-fav="${escapeAttr(String(id))}" title="Toggle favorite" aria-label="Add to watchlist" aria-pressed="${on}">${on ? "★" : "☆"}</button>`;
+  const s = showFor(id);
+  const label = `Add ${s && s.name ? s.name : "this show"} to watchlist`;
+  return `<button type="button" class="fav-btn ${on ? "on" : ""}" data-fav="${escapeAttr(String(id))}" title="${escapeAttr(label)}" aria-label="${escapeAttr(label)}" aria-pressed="${on}">${on ? "★" : "☆"}</button>`;
 }
 
 function imageHtml(show) {
   return show.image
-    ? `<img class="card-img" loading="lazy" src="${escapeAttr(show.image.medium)}" alt="${escapeAttr(show.name)}">`
-    : `<div class="card-no-img">${escapeHtml(show.name)}</div>`;
+    ? `<img class="card-img" loading="lazy" src="${escapeAttr(show.image.medium)}" alt="">`
+    : `<div class="card-no-img" aria-hidden="true">${escapeHtml(show.name)}</div>`;
 }
 
 // "Watch on <platform>" links. Platforms rarely expose a stable on-site search URL, so we
@@ -1290,14 +1295,15 @@ function channelIconHtml(channelName) {
 function watchLinkHtml(channelName, title, cls) {
   const provider = resolveProvider(channelName);
   const label = provider ? `Watch on ${escapeHtml(provider)}` : "Where to watch";
-  return `<a class="${cls}" href="${escapeAttr(watchUrl(channelName, title))}" target="_blank" rel="noopener">▸ ${label}</a>`;
+  // Visible text stays short; screen readers also get the show and the new-tab warning.
+  return `<a class="${cls}" href="${escapeAttr(watchUrl(channelName, title))}" target="_blank" rel="noopener"><span aria-hidden="true">▸ </span>${label}<span class="sr-only">: ${escapeHtml(title)} (opens in a new tab)</span></a>`;
 }
 
 // Card meta line: channel name as a quick-filter link (+ streaming tag).
 function chanMetaHtml(channel) {
   if (!channel) return "—";
   const stream = channel.streaming ? ' <span class="tag-stream">streaming</span>' : "";
-  return `<button class="chan-link" data-chan="${escapeAttr(channel.name)}" title="Show ${escapeAttr(channel.name)} only">${escapeHtml(channel.name)}</button>${stream}`;
+  return `<button type="button" class="chan-link" data-chan="${escapeAttr(channel.name)}" title="Show ${escapeAttr(channel.name)} only" aria-label="Show ${escapeAttr(channel.name)} only">${escapeHtml(channel.name)}</button>${stream}`;
 }
 
 function cardHtml(it) {
@@ -1307,13 +1313,13 @@ function cardHtml(it) {
     ? (it.season === 1 ? "Series premiere" : `Season ${it.season}`)
     : `S${it.season}E${it.number}`;
   return `
-    <article class="card${past ? " past" : ""}" role="button" tabindex="0" aria-label="${escapeAttr(`${it.show.name} — ${formatDay(it.airdate)}${past ? " (aired)" : ""}, ${chan}. View details`)}" data-show-id="${escapeAttr(String(it.show.id))}" data-airdate="${escapeAttr(it.airdate)}">
+    <article class="card${past ? " past" : ""}" data-show-id="${escapeAttr(String(it.show.id))}" data-airdate="${escapeAttr(it.airdate)}">
       ${favBtnHtml(it.show.id)}
       ${past ? '<span class="aired-flag">Aired</span>' : ""}
       ${imageHtml(it.show)}
       <div class="card-body">
         <div class="card-date">${formatDay(it.airdate)}</div>
-        <h3 class="card-title">${escapeHtml(it.show.name)}</h3>
+        ${cardTitleHtml(it.show.name)}
         <div class="card-meta">${chanMetaHtml(it.show.channel)}</div>
         <span class="badge">${escapeHtml(premiere)}</span>
         ${watchLinkHtml(it.show.channel && it.show.channel.name, it.show.name, "card-watch")}

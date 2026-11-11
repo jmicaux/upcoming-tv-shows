@@ -77,7 +77,7 @@ body {
 }
 
 .brand-ver {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 400;
   color: var(--muted);
   opacity: 0.7;
@@ -209,7 +209,7 @@ body[data-view="notfound"] .search { display: none; }
 .filters label {
   display: flex;
   flex-direction: column;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--muted);
@@ -247,7 +247,7 @@ body[data-view="notfound"] .search { display: none; }
 }
 
 .field-label {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--muted);
@@ -271,7 +271,7 @@ body[data-view="notfound"] .search { display: none; }
   background: var(--accent);
   color: #fff;
   border-radius: 999px;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   padding: 0.02rem 0.42rem;
   margin: 0 0.15rem;
 }
@@ -345,14 +345,14 @@ body[data-view="notfound"] .search { display: none; }
   padding: 0.3rem 0.35rem 0.15rem;
 }
 .net-group-label {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--muted);
 }
 .net-group-all {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   color: var(--accent-text);
@@ -519,7 +519,7 @@ body[data-view="notfound"] .search { display: none; }
   left: 0.5rem;
   z-index: 2;
   padding: 2px 7px;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -570,7 +570,7 @@ body[data-view="notfound"] .search { display: none; }
 
 .card-status {
   display: inline-block;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -601,7 +601,7 @@ body[data-view="notfound"] .search { display: none; }
 .card-watch {
   display: inline-block;
   margin-top: 0.5rem;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--accent-text);
   text-decoration: none;
@@ -610,7 +610,7 @@ body[data-view="notfound"] .search { display: none; }
 
 .tag-stream {
   display: inline-block;
-  font-size: 0.6rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--accent-text);
@@ -623,7 +623,7 @@ body[data-view="notfound"] .search { display: none; }
 
 .badge {
   display: inline-block;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 5px;
@@ -1038,7 +1038,7 @@ body[data-view="notfound"] .search { display: none; }
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem;
     min-height: 44px;
     background: none; border: none; color: var(--muted);
-    font: inherit; font-size: 0.7rem; cursor: pointer;
+    font: inherit; font-size: 0.75rem; cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
   .tab svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -1049,7 +1049,7 @@ body[data-view="notfound"] .search { display: none; }
     position: absolute; top: 0.35rem; left: calc(50% + 0.45rem);
     min-width: 1.1rem; height: 1.1rem; padding: 0 0.3rem;
     border-radius: 999px; background: var(--accent); color: #fff;
-    font-size: 0.62rem; font-weight: 700; line-height: 1.1rem; text-align: center;
+    font-size: 0.75rem; font-weight: 700; line-height: 1.1rem; text-align: center;
   }
   .tab-badge[hidden] { display: none; }
 
@@ -1108,7 +1108,7 @@ body[data-view="notfound"] .search { display: none; }
 @media (max-width: 640px) {
   .month-grid { gap: 0.6rem; padding: 0.75rem; }
   .card-body { padding: 0.5rem 0.55rem 0.15rem; }
-  .card-date { font-size: 0.7rem; padding: 0.1rem 0.4rem; }
+  .card-date { font-size: 0.75rem; padding: 0.1rem 0.4rem; }
   .card-title {
     font-size: 0.88rem; line-height: 1.25; margin: 0.3rem 0 0.2rem;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
@@ -1174,3 +1174,17 @@ body[data-view="notfound"] .search { display: none; }
 /* Sync dot: a white ring makes it stand out on the red (green alone: 1.2:1). The state
    is also in the button's label and in the More sheet, not in colour only. */
 .topbar .account-btn[data-sync]::after { border: 2px solid #fff; width: 9px; height: 9px; top: 2px; right: 2px; }
+
+/* Screen-reader-only text. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Card: the title is the card's button; its ::after stretches over the whole card so a
+   tap anywhere opens it. Other controls sit above that layer. */
+.card-open { all: unset; cursor: pointer; color: inherit; font: inherit; }
+.card-open::after { content: ""; position: absolute; inset: 0; z-index: 1; }
+.card-open:focus-visible { outline: none; }
+.card:has(.card-open:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
+.chan-link, .card-watch { position: relative; z-index: 2; }

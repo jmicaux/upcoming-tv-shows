@@ -136,3 +136,16 @@ test("index.html: no empty button, every form field labelled (WAVE errors)", () 
     assert.ok(labelled, "unlabelled: " + input);
   }
 });
+
+test("cards: no role=button wrapper, decorative posters, named controls", () => {
+  const src = read("app.js");
+  assert.doesNotMatch(src, /<article class="card[^\n]*role="button"/);
+  assert.match(src, /class="card-img" loading="lazy" src="[^"]*" alt=""/);
+  assert.match(src, /class="sr-only">: \$\{escapeHtml\(title\)\} \(opens in a new tab\)/);
+  assert.match(src, /const label = `Add \$\{/);
+});
+
+test("styles: no text smaller than 0.75rem (12px, WAVE 'very small text')", () => {
+  const sizes = [...read("styles.css").matchAll(/font-size:\s*([\d.]+)rem/g)].map((m) => Number(m[1]));
+  assert.deepEqual(sizes.filter((n) => n < 0.75), []);
+});

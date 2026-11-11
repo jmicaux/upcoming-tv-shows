@@ -20,8 +20,9 @@ If you enjoy this app, you can support it:
 
 ## Features
 
-- **Continuous month feed** — starts on the current month and lazy-loads the next months as
-  you scroll (infinite scroll), with a sticky heading for each month.
+- **Month feed** — starts on the current month, loads the next one on its own, then one
+  more month per "Load <month>" button (no endless scroll, so the footer stays reachable),
+  with a sticky heading for each month.
 - **Broadcast, cable and streaming** in one place — ABC, CBS, NBC, FOX, AMC, FX, HBO…
   plus Netflix, Prime Video, Hulu, Disney+, Max, Apple TV+, Peacock, Paramount+ and more.
 - **UK, Australia & Nordic flagships** — BBC, ITV, Channel 4, Sky; ABC, Seven, Nine, Network 10,

@@ -47,7 +47,7 @@ jobs:
       - name: Assemble the site
         run: |
           mkdir _site
-          cp index.html watchlist.html 404.html about.html privacy.html accessibilite.html google*.html _site/
+          cp index.html watchlist.html 404.html about.html privacy.html accessibility.html google*.html _site/
           cp app.js auth.js sync-core.js networks.js feed-core.js supabase-config.js _site/
           cp styles.css og-image.png sitemap.xml _site/
           cp -r network data _site/

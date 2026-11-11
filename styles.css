@@ -1254,3 +1254,13 @@ main > .view-title:first-child { padding-top: 1rem; }
 
 /* Links in the More sheet look like its buttons. */
 a.sheet-item { text-decoration: none; box-sizing: border-box; }
+
+/* "Load <month>" button that ends the feed (replaces endless scrolling). */
+.load-more {
+  min-height: 44px; padding: 0.6rem 1.4rem;
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 999px;
+  font: inherit; font-weight: 600; cursor: pointer;
+}
+.load-more:hover { border-color: var(--accent); }
+.month-heading:focus { outline: 3px solid var(--accent); outline-offset: -3px; }

@@ -334,7 +334,11 @@ function writeTmdbCache(monthKey, data) {
   catch { /* ignore quota */ }
 }
 
-const MAX_MONTHS = 24;       // safety cap for the infinite scroll
+const MAX_MONTHS = 24;       // safety cap
+// Only the first months load on their own; further months are loaded with a button, so
+// the page has an end: the footer (links, accessibility statement) stays reachable and
+// keyboard / screen-reader users keep control (no endless feed).
+const AUTO_MONTHS = 2;
 const EMPTY_MONTHS_END = 3;  // stop only after this many consecutive empty months
 
 function monthAt(offset) {
@@ -384,6 +388,20 @@ async function loadSnapshotFiles(monthKey, slugs) {
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null)));
   return lists.every(Array.isArray) ? lists.flat() : null; // incomplete → go live instead
+}
+
+// "Load <month>" button at the end of the feed, once the automatic months are loaded.
+function updateLoadMore() {
+  if (state.loading || state.reachedEnd || state.blocks.length >= MAX_MONTHS) return;
+  if (state.blocks.length < AUTO_MONTHS) { setSentinel(""); return; }
+  const label = monthLabel(monthAt(state.blocks.length));
+  sentinelEl.innerHTML = `<button type="button" class="load-more">Load ${escapeHtml(label)}</button>`;
+  sentinelEl.querySelector(".load-more").addEventListener("click", async () => {
+    const block = await loadNextMonth();
+    // Keyboard and screen-reader users land on the month they asked for.
+    const heading = block && block.el && block.el.querySelector(".month-heading");
+    if (heading) { heading.tabIndex = -1; heading.focus(); }
+  });
 }
 
 // Load the next month's data, appending a block and rendering it progressively.
@@ -444,16 +462,12 @@ async function loadNextMonth() {
   } else {
     state.emptyStreak = 0;
   }
-  setSentinel("");
+  updateLoadMore();
 
-  // Auto-fill the viewport while the page is too short to scroll. Guard against
-  // restrictive filters (raw data but 0 visible cards) chaining through many months:
-  // only keep auto-loading past the first few months when the block actually rendered cards.
-  const visibleCount = dedupeSort(visibleItemsIn(block.items)).length;
+  // Auto-fill the first months while the page is too short to scroll.
   const sentinelNear = sentinelEl.getBoundingClientRect().top < window.innerHeight + 200;
-  if (state.view === "month" && sentinelNear && (visibleCount > 0 || state.blocks.length < 3)) {
-    loadNextMonth();
-  }
+  if (state.view === "month" && sentinelNear && state.blocks.length < AUTO_MONTHS) loadNextMonth();
+  return block;
 }
 
 /* ---------- Catalog search (TVMaze /search/shows) ---------- */
@@ -725,7 +739,8 @@ function updateNetworkButton() {
 const sentinelEl = document.createElement("div");
 sentinelEl.className = "sentinel";
 const scrollObserver = new IntersectionObserver((entries) => {
-  if (entries[0].isIntersecting && state.view === "month" && !state.loading && !state.searching) loadNextMonth();
+  if (entries[0].isIntersecting && state.view === "month" && !state.loading && !state.searching &&
+      state.blocks.length < AUTO_MONTHS) loadNextMonth();
 }, { rootMargin: "600px" });
 
 function setSentinel(text) { sentinelEl.textContent = text; }

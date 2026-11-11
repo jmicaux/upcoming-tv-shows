@@ -41,9 +41,11 @@ All notable changes to Upcoming TV Shows are documented here. This project follo
   descriptions are unique per day; channels with nothing upcoming are `noindex` and left
   out of the sitemap; JSON-LD gets `dateModified`. New About page (sources, terms,
   accessibility, contact) linked from the footer with Privacy.
-- **Accessibility statement (RGAA)**: `accessibilite.html`, in French as per the RGAA
-  model (status "non conforme" until a full RGAA audit, measures taken, known issues,
-  contact, legal recourse), linked from the footer as "Accessibilité : non conforme".
+- **Accessibility statement (RGAA)**: `accessibility.html` (status "non-compliant" until a
+  full RGAA audit, measures taken, known issues, contact, legal recourse), linked from the
+  footer and the mobile More sheet.
+- **"Load <month>" button instead of endless scrolling** after the first two months: the
+  page has an end, so the footer is reachable, and focus moves to the newly loaded month.
 - **"Buy me a coffee"** link in the footer, the About page and the mobile "More" sheet
   (which also links to About).
 - **Red header** (#c1121f, white text at 6.2:1), also colouring the mobile browser bar.

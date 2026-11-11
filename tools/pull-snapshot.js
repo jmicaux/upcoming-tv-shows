@@ -11,10 +11,18 @@ const outDir = path.resolve(process.argv[3] || "data/schedule");
 const maxAgeMs = (Number(process.argv[4]) || 36) * 3600 * 1000;
 const UA = { "User-Agent": "upcoming-tv-shows deploy (GitHub Actions)" };
 
+// GitHub Pages sometimes answers 5xx for a moment: retry before giving up.
 async function getJson(url) {
-  const res = await fetch(url, { headers: UA, cache: "no-store" });
-  if (!res.ok) throw new Error(`${res.status} ${url}`);
-  return res.json();
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const res = await fetch(url, { headers: UA, cache: "no-store" });
+      if (res.ok) return res.json();
+      if (res.status < 500 || attempt >= 4) throw new Error(`${res.status} ${url}`);
+    } catch (err) {
+      if (attempt >= 4 || /^4\d\d /.test(err.message)) throw err;
+    }
+    await new Promise((r) => setTimeout(r, 1000 * attempt));
+  }
 }
 
 async function main() {

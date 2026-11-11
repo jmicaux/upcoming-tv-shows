@@ -10,6 +10,10 @@ All notable changes to Upcoming TV Shows are documented here. This project follo
   link and footer as the rest of the site (RGAA 12.6, 12.7, 12.2); the footer is filled
   by `tools/make-pages.js` so it stays identical everywhere.
 - Footer links are at least 24 × 24 px, even very short channel names such as "E!".
+- About, Privacy and Accessibility follow the light / dark theme chosen in the app
+  (`theme.js`), not only the system theme.
+- Deploys retry a transient GitHub Pages error when reusing the published snapshot,
+  instead of falling back to a full TVmaze fetch.
 
 ## 1.28.2 — 2026-11-11
 

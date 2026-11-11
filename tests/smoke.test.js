@@ -62,12 +62,11 @@ test("README dev server port matches the documented redirect URL", () => {
   assert.doesNotMatch(md, /localhost:8080/);
 });
 
-test("generated pages match index.html (run node tools/make-pages.js)", () => {
+test("index.html generated regions are up to date (run node tools/make-pages.js)", () => {
   const { build } = require("../tools/make-pages.js");
   const files = build(read("index.html"));
-  for (const [rel, html] of Object.entries(files)) assert.equal(read(rel), html, rel + " is stale");
-  const onDisk = fs.readdirSync(__dirname + "/../network").map((f) => "network/" + f).sort();
-  assert.deepEqual(onDisk, Object.keys(files).filter((f) => f.startsWith("network/")).sort());
+  assert.equal(read("index.html"), files["index.html"], "index.html is stale");
+  assert.ok(Object.keys(files).filter((f) => f.startsWith("network/")).length >= 80);
   assert.match(files["network/netflix.html"], /<title>Upcoming Netflix shows/);
   assert.match(files["network/netflix.html"], /<base href="\.\.\/">/);
   assert.match(files["network/netflix.html"], /canonical" href="https:\/\/jmicaux\.github\.io\/upcoming-tv-shows\/network\/netflix"/);
@@ -94,7 +93,7 @@ test("routing: clean /watchlist path, no '#' left behind", () => {
 });
 
 test("channel pages: every description tag and the JSON-LD agree", () => {
-  const html = read("network/netflix.html");
+  const html = require("../tools/make-pages.js").build(read("index.html"))["network/netflix.html"];
   const descs = [
     html.match(/<meta name="description" content="([^"]+)"/)[1],
     html.match(/<meta property="og:description" content="([^"]+)"/)[1],

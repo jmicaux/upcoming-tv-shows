@@ -3,10 +3,10 @@
 A lightweight web app that lists **upcoming TV and streaming premieres, month by month**.
 Browse US broadcast/cable and streaming platforms, flagship channels from the **UK,
 Australia and the Nordics**, plus French channels (**Canal+**, **Arte**, TF1, M6, France 2/3) —
-follow only the ones you care about, and filter by genre. No build step, no backend —
-just static files (plus a free TMDB key for the French channels).
+follow only the ones you care about, and filter by genre. A static site with no framework
+and no npm dependencies; an optional account keeps your settings on every device.
 
-[![CI](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml/badge.svg)](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml) ![version](https://img.shields.io/badge/version-1.27.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![no build](https://img.shields.io/badge/build-none-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
+[![CI](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml/badge.svg)](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml) ![version](https://img.shields.io/badge/version-1.27.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![static](https://img.shields.io/badge/site-static-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
 
 **🔗 Live preview: [jmicaux.github.io/upcoming-tv-shows](https://jmicaux.github.io/upcoming-tv-shows/)**
 
@@ -28,7 +28,7 @@ If you enjoy this app, you can support it:
   SBS; SVT, NRK, DR, Yle, RÚV — pulled keyless from TVMaze country schedules (flagship channels only).
 - **French channels** Canal+, Arte, TF1, M6 and France 2/3, sourced from TMDB for reliable FR coverage.
 - **Pick-and-choose channels** — check the networks/platforms you follow; your selection
-  is saved in the browser and applies across every month. No selection = show everything.
+  is saved in the browser and applies across every month. An empty selection shows nothing.
 - **Genre filter**, **title search** and a **Premieres only** toggle (season & series
   premieres), all combinable, with a one-click **Reset filters**.
 - **"Watch on <platform>" links** on every card and in the detail view — jump straight to
@@ -40,8 +40,13 @@ If you enjoy this app, you can support it:
   followed shows with their next upcoming episode.
 - **Optional account** — sign in with Google or GitHub to find the same channels, watchlist and
   settings on every device. See [Accounts](#accounts-optional).
-- **Export / import preferences** — save your favorites, followed channels and theme to a
-  JSON file and load them on another machine. Point it at a cloud-synced folder
+- **One page per channel** (`/network/netflix`, `/network/bbc-one`…) listing its upcoming
+  shows, and a clean `/watchlist` address.
+- **Mobile-first layout** — bottom tab bar, filter chips, show details as a bottom sheet.
+- **Accessible** — keyboard and screen-reader friendly, WCAG 2.2 AA contrast, reduced
+  motion respected (see [QUALITY.md](QUALITY.md)).
+- **Export / import preferences** (Settings) — save your favorites, followed channels and
+  theme to a JSON file and load them on another machine. Point it at a cloud-synced folder
   (OneDrive/Dropbox/Drive) for cross-device sync without a backend.
 - **Dark / light theme** toggle that persists and overrides the OS preference.
 - **Local caching** so revisited months load instantly, with request throttling to stay
@@ -140,21 +145,25 @@ tv-us-upcoming/
 ├── supabase-config.js  # public Supabase URL + anon key (safe to commit)
 ├── supabase/schema.sql # table, RLS policies, delete_my_account()
 ├── privacy.html        # what an account stores and why
+├── about.html          # what the site is, data sources, terms, contact
 ├── config.example.js   # template for your TMDB key
 ├── config.js           # your real key (git-ignored, create from the example)
-├── presets/            # importable preferences snapshots (Export → Import)
 ├── tests/              # node --test unit tests (run in CI)
-├── tools/make-pages.js # regenerates the pages below from index.html
-├── tools/fetch-schedule.js # nightly snapshot → data/schedule/ (not committed)
-├── watchlist.html      # generated: <site>/watchlist
-├── network/*.html      # generated: <site>/network/<slug>, one per major channel
-├── 404.html            # generated: any other address (rare channels)
-├── sitemap.xml         # generated: feed + channel pages
+├── tools/make-pages.js # fills index.html's generated regions and builds the pages below
+├── tools/fetch-schedule.js # nightly schedule snapshot → data/schedule/
 └── README.md
+
+Generated, not committed (built by the deploy workflow, or locally with the tools):
+├── watchlist.html      # <site>/watchlist
+├── network/*.html      # <site>/network/<slug>, one per major channel
+├── 404.html            # any other address (rare channels)
+├── sitemap.xml         # feed, About and channel pages
+└── data/schedule/      # nightly snapshot: one JSON file per channel and month
 ```
 
-After editing `index.html` or `networks.js`, run `node tools/make-pages.js` (the tests
-fail if the generated pages are stale).
+After editing `index.html` or `networks.js`, run `node tools/make-pages.js`: it refreshes
+the generated regions of `index.html` (the tests fail if they are stale) and writes the
+pages above, which you also need to browse `/watchlist` or `/network/…` locally.
 
 ### Nightly schedule snapshot
 
@@ -166,8 +175,9 @@ for what it does not cover. Setup: **Settings → Pages → Source: GitHub Actio
 `TMDB_KEY` repository secret to include the French channels. Without a snapshot (local
 development, or a failed night) the app simply fetches everything live, as before.
 
-No build step and no npm dependencies — everything runs in the browser. The only runtime
-dependency is a pinned `supabase-js` loaded from jsDelivr with Subresource Integrity.
+No npm dependencies: the app runs in the browser as is, and the deploy only runs the two
+small Node scripts above. The only runtime dependency is a pinned `supabase-js` loaded
+from jsDelivr with Subresource Integrity.
 
 ## Data sources
 
@@ -202,8 +212,9 @@ Everything configurable lives at the top of `app.js`:
 
 ## Limitations
 
-- A cold month makes ~2 calls per day (~60/month → ~24s behind the progress bar); cached
-  months are instant. Background prefetch of the next month is a planned improvement.
+- The next 3 months come from the nightly snapshot and load instantly. Beyond that (or for
+  a rare channel), a cold month makes ~2 TVMaze calls per day (~60/month → ~24s); cached
+  months are instant.
 - TVMaze streaming coverage is less complete than its broadcast/cable data.
 - Some daily news/talk shows use odd episode numbering; they're naturally excluded while
   "Premieres only" is on.
@@ -223,7 +234,8 @@ changes.
 On every release, update the version in **three** places so browsers pick up fresh assets:
 
 1. `APP_VERSION` in `app.js`
-2. the `?v=` cache-busting query on `styles.css` / `app.js` in `index.html`
+2. the `?v=` cache-busting query on the stylesheet and every script in `index.html`
+   (then run `node tools/make-pages.js`)
 3. the version badge above
 
 The `?v=` query forces browsers to re-download the CSS/JS after a deploy instead of serving

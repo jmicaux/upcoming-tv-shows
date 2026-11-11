@@ -85,7 +85,7 @@ function footerHtml() {
       <h2 id="footer-channels-title">Upcoming shows by channel</h2>
       <div class="footer-groups">${groups}</div>
     </nav>
-    <p class="footer-links"><a href="./">Home</a> · <a href="about.html">About</a> · <a href="privacy.html">Privacy</a> · <a href="accessibility.html">Accessibility: non-compliant (RGAA)</a> · <a href="${REPO}/issues">Contact &amp; feedback</a> · <a href="${REPO}">Source on GitHub</a> · <a href="${BMC}">☕ Buy me a coffee</a></p>
+    <ul class="footer-links inline-links"><li><a href="./">Home</a></li><li><a href="about.html">About</a></li><li><a href="privacy.html">Privacy</a></li><li><a href="accessibility.html">Accessibility: non-compliant (RGAA)</a></li><li><a href="${REPO}/issues">Contact &amp; feedback</a></li><li><a href="${REPO}">Source on GitHub</a></li><li><a href="${BMC}"><span aria-hidden="true">☕ </span>Buy me a coffee</a></li></ul>
   `;
 }
 

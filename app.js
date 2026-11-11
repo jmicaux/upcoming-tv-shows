@@ -141,6 +141,7 @@ function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
   el.themeBtn.textContent = theme === "dark" ? "☀" : "☾";
   el.themeBtn.title = theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
+  el.themeBtn.setAttribute("aria-label", el.themeBtn.title); // name says what the button does now
 }
 let currentTheme =
   localStorage.getItem(THEME_KEY) ||
@@ -520,7 +521,8 @@ function renderSearchResults(shows, q) {
   }
   el.grid.innerHTML =
     `<h1 class="view-title">Search results for “${escapeHtml(q)}”</h1>` +
-    `<section class="month-block"><div class="month-grid">${shows.map(searchCardHtml).join("")}</div></section>`;
+    `<section class="month-block"><h2 class="month-heading">${shows.length} show${shows.length !== 1 ? "s" : ""} found</h2>` +
+    `<div class="month-grid">${shows.map(searchCardHtml).join("")}</div></section>`;
   wireCards(el.grid);
 }
 
@@ -863,7 +865,12 @@ function wireCard(c) {
   const watch = c.querySelector(".card-watch");
   if (watch) watch.addEventListener("click", (e) => e.stopPropagation());
   const chan = c.querySelector(".chan-link");
-  if (chan) chan.addEventListener("click", (e) => { e.stopPropagation(); filterToNetwork(chan.dataset.chan); });
+  if (chan) chan.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.button) return; // let the browser open a new tab
+    e.preventDefault();
+    filterToNetwork(chan.dataset.chan);
+  });
 }
 
 // Shared card wiring for month blocks and the watchlist grid.
@@ -1343,7 +1350,7 @@ function watchLinkHtml(channelName, title, cls) {
 function chanMetaHtml(channel) {
   if (!channel) return "—";
   const stream = channel.streaming ? ' <span class="tag-stream">streaming</span>' : "";
-  return `<button type="button" class="chan-link" data-chan="${escapeAttr(channel.name)}" title="Show ${escapeAttr(channel.name)} only" aria-label="Show ${escapeAttr(channel.name)} only">${escapeHtml(channel.name)}</button>${stream}`;
+  return `<a class="chan-link" href="${escapeAttr(networkUrl(channel.name))}" data-chan="${escapeAttr(channel.name)}">${escapeHtml(channel.name)}</a>${stream}`;
 }
 
 function cardHtml(it) {

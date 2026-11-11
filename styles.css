@@ -597,7 +597,8 @@ body[data-view="notfound"] .search { display: none; }
   color: var(--muted);
   cursor: pointer;
 }
-.chan-link:hover { color: var(--accent-text); text-decoration: underline; }
+.chan-link { text-decoration: underline; text-underline-offset: 2px; }
+.chan-link:hover { color: var(--accent-text); }
 
 .card-watch {
   display: inline-block;
@@ -1202,7 +1203,7 @@ body[data-view="notfound"] .search { display: none; }
 .sk-img, .sk-line {
   background: linear-gradient(90deg, var(--surface-2) 0%, var(--border) 50%, var(--surface-2) 100%);
   background-size: 200% 100%;
-  animation: sk-shimmer 1.3s ease-in-out infinite;
+  animation: sk-shimmer 1.3s ease-in-out 3; /* stops after 3.9 s (RGAA 13.8: no motion > 5 s) */
 }
 @keyframes sk-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 @media (prefers-reduced-motion: reduce) { .sk-img, .sk-line { animation: none; } }
@@ -1264,3 +1265,7 @@ a.sheet-item { text-decoration: none; box-sizing: border-box; }
 }
 .load-more:hover { border-color: var(--accent); }
 .month-heading:focus { outline: 3px solid var(--accent); outline-offset: -3px; }
+
+/* Short lists of links shown inline (footer, page bottoms): a real list, CSS separators. */
+.inline-links { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.25rem 0; }
+.inline-links li + li::before { content: "·"; margin: 0 0.5rem; color: var(--muted); }

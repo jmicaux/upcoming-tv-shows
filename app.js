@@ -144,8 +144,6 @@ const el = {
   modalNext: document.getElementById("modalNext"),
   themeBtn: document.getElementById("themeBtn"),
   viewBtn: document.getElementById("viewBtn"),
-  exportBtn: document.getElementById("exportBtn"),
-  importBtn: document.getElementById("importBtn"),
   importFile: document.getElementById("importFile"),
   settingsBtn: document.getElementById("settingsBtn"),
 };
@@ -976,6 +974,84 @@ function updateViewButton() {
   el.viewBtn.innerHTML = state.view === "watchlist"
     ? "‹ Browse"
     : `★ Watchlist${n ? ` <span class="count">${n}</span>` : ""}`;
+  updateTabbar();
+}
+
+/* ---------- Mobile tab bar + "More" sheet (shown ≤ 640px by CSS) ---------- */
+const tabbar = document.querySelector(".tabbar");
+const moreSheet = document.getElementById("moreSheet");
+function updateTabbar() {
+  if (!tabbar) return;
+  const searchOpen = el.search.classList.contains("open");
+  tabbar.querySelectorAll(".tab[data-tab]").forEach((t) => {
+    const tab = t.dataset.tab;
+    const current = tab === "search" ? searchOpen
+      : tab === "watchlist" ? state.view === "watchlist"
+      : tab === "month" ? state.view === "month" && !searchOpen : false;
+    if (current) t.setAttribute("aria-current", "page"); else t.removeAttribute("aria-current");
+  });
+  const n = Object.keys(state.favorites).length;
+  const badge = document.getElementById("tabWatchCount");
+  badge.hidden = !n;
+  badge.textContent = n > 99 ? "99+" : String(n);
+  tabbar.querySelector('[data-tab="watchlist"]').setAttribute("aria-label", n ? `Watchlist, ${n} shows` : "Watchlist");
+}
+function openSearchFromTab() {
+  if (state.view !== "month") navigate(APP_BASE);
+  window.scrollTo(0, 0);
+  el.search.classList.add("open");
+  el.searchToggle.setAttribute("aria-expanded", "true");
+  el.searchInput.focus();
+  updateTabbar();
+}
+let sheetReturnFocus = null;
+function setMoreSheet(open) {
+  const tab = tabbar.querySelector('[data-tab="more"]');
+  if (open) {
+    // Mirror the header controls the sheet stands in for.
+    const account = document.getElementById("accountBtn");
+    const moreAccount = document.getElementById("moreAccount");
+    moreAccount.hidden = !account || account.hidden;
+    if (account) document.getElementById("moreAccountHint").textContent = account.title && account.title !== "Account" ? account.title : "Sync across devices";
+    document.getElementById("moreTheme").textContent = currentTheme === "dark" ? "Light mode" : "Dark mode";
+    sheetReturnFocus = document.activeElement;
+  }
+  moreSheet.hidden = !open;
+  tab.setAttribute("aria-expanded", String(open));
+  document.body.classList.toggle("sheet-open", open);
+  if (open) moreSheet.querySelector(".sheet-panel").focus();
+  else if (sheetReturnFocus) { sheetReturnFocus.focus(); sheetReturnFocus = null; }
+}
+if (tabbar) {
+  tabbar.addEventListener("click", (e) => {
+    const t = e.target.closest(".tab");
+    if (!t) return;
+    const tab = t.dataset.tab;
+    if (tab === "more") { setMoreSheet(true); return; }
+    if (tab === "search") { openSearchFromTab(); return; }
+    collapseSearch();
+    if (tab === "watchlist") navigate(APP_BASE + "watchlist");
+    else if (state.view !== "month" || parseRoute().network) navigate(APP_BASE);
+    else window.scrollTo({ top: 0, behavior: "smooth" }); // tapping the current tab scrolls to top
+    updateTabbar();
+  });
+  moreSheet.addEventListener("click", (e) => {
+    if (e.target.closest("[data-sheet-close]")) { setMoreSheet(false); return; }
+    const item = e.target.closest("[data-proxy]");
+    if (!item) return;
+    const target = document.getElementById(item.dataset.proxy);
+    sheetReturnFocus = null; // the action opens its own dialog, which owns focus
+    setMoreSheet(false);
+    if (target) target.click();
+  });
+  moreSheet.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.stopPropagation(); setMoreSheet(false); return; }
+    if (e.key !== "Tab") return; // keep focus inside the sheet
+    const items = [...moreSheet.querySelectorAll("button:not([hidden])")].filter((b) => b.offsetParent);
+    const first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
 }
 
 function renderNotFound() {
@@ -1381,6 +1457,14 @@ function renderSettings() {
         (e.g. a show on Apple TV → Watch on Canal+).</p>
       <div class="ov-list">${rows || '<p class="ov-empty">No mappings yet.</p>'}</div>
       <button type="button" class="ov-add">+ Add mapping</button>
+
+      <h3 class="settings-h">Your preferences</h3>
+      <p class="settings-note">Save your channels, watchlist and settings to a file, or load them
+        from one (e.g. on another device without an account).</p>
+      <div class="prefs-row">
+        <button type="button" class="prefs-btn" id="exportPrefsBtn">Export to a file</button>
+        <button type="button" class="prefs-btn" id="importPrefsBtn">Import from a file</button>
+      </div>
     </div>`;
   wireSettings();
 }
@@ -1413,6 +1497,8 @@ function wireSettings() {
     row.querySelector(".ov-tgt").addEventListener("change", commitSettings);
     row.querySelector(".ov-del").addEventListener("click", () => { row.remove(); commitSettings(); renderSettings(); });
   });
+  el.modalBody.querySelector("#exportPrefsBtn").addEventListener("click", exportPrefs);
+  el.modalBody.querySelector("#importPrefsBtn").addEventListener("click", importPrefs);
   el.modalBody.querySelector(".ov-add").addEventListener("click", () => {
     const names = allProviderNames();
     const used = new Set(Object.keys(state.watchOverrides));
@@ -1702,6 +1788,7 @@ el.resetFilters.addEventListener("click", resetFilters);
 function collapseSearch() {
   el.search.classList.remove("open");
   el.searchToggle.setAttribute("aria-expanded", "false");
+  updateTabbar();
 }
 function clearSearch() {
   if (!el.searchInput.value) return;
@@ -1747,8 +1834,6 @@ el.viewBtn.addEventListener("click", () => {
 window.addEventListener("hashchange", applyRoute);
 window.addEventListener("popstate", applyRoute);
 
-el.exportBtn.addEventListener("click", exportPrefs);
-el.importBtn.addEventListener("click", importPrefs);
 el.settingsBtn.addEventListener("click", showSettings);
 el.importFile.addEventListener("change", async (e) => {
   const f = e.target.files[0];
@@ -1784,7 +1869,9 @@ el.modal.addEventListener("keydown", (e) => {
 // Keep sticky month headings tucked right under the (sticky, wrap-variable) top bar.
 function syncTopbarHeight() {
   const bar = document.querySelector(".topbar");
-  if (bar) document.documentElement.style.setProperty("--topbar-h", `${bar.offsetHeight}px`);
+  // On mobile the bar scrolls away (not sticky), so month headings stick to the very top.
+  const sticky = bar && getComputedStyle(bar).position === "sticky";
+  if (bar) document.documentElement.style.setProperty("--topbar-h", `${sticky ? bar.offsetHeight : 0}px`);
 }
 syncTopbarHeight();
 window.addEventListener("resize", syncTopbarHeight);

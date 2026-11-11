@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <base href="../">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cloud.umami.is https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:; base-uri 'self'; form-action 'self'; object-src 'none'">
   <title>Upcoming NRK2 shows and premieres — Upcoming TV Shows</title>
   <meta name="description" content="New and returning NRK2 series, month by month: premiere dates, seasons and episodes. Free, no account needed.">
@@ -66,8 +66,6 @@
         </button>
       </div>
       <button id="viewBtn" class="view-btn"></button>
-      <button id="exportBtn" class="icon-btn" title="Export preferences" aria-label="Export preferences">⭳</button>
-      <button id="importBtn" class="icon-btn" title="Import preferences" aria-label="Import preferences">⭱</button>
       <input id="importFile" type="file" accept="application/json" hidden>
       <button id="accountBtn" class="icon-btn account-btn" title="Account" aria-label="Account" data-sync="idle" hidden>
         <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
@@ -79,8 +77,8 @@
 
   <section class="filters">
     <div class="field dropdown" id="networkDropdown">
-      <span class="field-label">Networks</span>
-      <button type="button" id="networkBtn" class="dropdown-btn" aria-haspopup="true" aria-expanded="false">All <span id="networkBtnCount" class="pill"></span> ▾</button>
+      <span class="field-label" id="networkLabel">Networks</span>
+      <button type="button" id="networkBtn" class="dropdown-btn" aria-haspopup="true" aria-expanded="false" aria-labelledby="networkLabel networkBtn">All <span id="networkBtnCount" class="pill"></span> ▾</button>
       <div id="networkPanel" class="dropdown-panel" hidden>
         <div class="dropdown-actions">
           <input type="search" id="networkSearch" placeholder="Filter list…" aria-label="Filter channel list" autocomplete="off">
@@ -90,8 +88,8 @@
       </div>
     </div>
     <div class="field dropdown" id="genreDropdown">
-      <span class="field-label">Genre</span>
-      <button type="button" id="genreBtn" class="dropdown-btn" aria-haspopup="true" aria-expanded="false">All <span id="genreBtnCount" class="pill"></span> ▾</button>
+      <span class="field-label" id="genreLabel">Genre</span>
+      <button type="button" id="genreBtn" class="dropdown-btn" aria-haspopup="true" aria-expanded="false" aria-labelledby="genreLabel genreBtn">All <span id="genreBtnCount" class="pill"></span> ▾</button>
       <div id="genrePanel" class="dropdown-panel" hidden>
         <div class="dropdown-actions">
           <input type="search" id="genreSearch" placeholder="Filter list…" aria-label="Filter genre list" autocomplete="off">
@@ -114,6 +112,41 @@
   </section>
 
   <main id="grid" class="grid"></main>
+
+  <!-- Mobile only (≤ 640px): bottom tab bar within thumb reach, and a "More" sheet for the
+       rarely used actions. Hidden on larger screens, where the header shows them. -->
+  <nav class="tabbar" aria-label="Main">
+    <button type="button" class="tab" data-tab="month">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
+      <span>Upcoming</span>
+    </button>
+    <button type="button" class="tab" data-tab="watchlist">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>
+      <span>Watchlist</span><span class="tab-badge" id="tabWatchCount" hidden></span>
+    </button>
+    <button type="button" class="tab" data-tab="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-4.3-4.3"/></svg>
+      <span>Search</span>
+    </button>
+    <button type="button" class="tab" data-tab="more" aria-haspopup="dialog" aria-controls="moreSheet" aria-expanded="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+      <span>More</span>
+    </button>
+  </nav>
+
+  <div class="sheet" id="moreSheet" hidden>
+    <div class="sheet-backdrop" data-sheet-close></div>
+    <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="moreTitle" tabindex="-1">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <h2 class="sheet-title" id="moreTitle">More</h2>
+      <ul class="sheet-list">
+        <li><button type="button" class="sheet-item" data-proxy="accountBtn" id="moreAccount" hidden>Account<span class="sheet-hint" id="moreAccountHint"></span></button></li>
+        <li><button type="button" class="sheet-item" data-proxy="settingsBtn">Settings<span class="sheet-hint">Watch links, TMDB key, export / import</span></button></li>
+        <li><button type="button" class="sheet-item" data-proxy="themeBtn" id="moreTheme">Theme</button></li>
+      </ul>
+      <button type="button" class="sheet-close" data-sheet-close>Close</button>
+    </div>
+  </div>
 
   <div id="modal" class="modal" hidden>
     <div class="modal-backdrop" data-close></div>

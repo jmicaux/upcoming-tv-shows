@@ -933,3 +933,167 @@ body[data-view="notfound"] .search { display: none; }
 .prerender ul { list-style: none; margin: 0; padding: 0; }
 .prerender li { padding: 0.3rem 0; border-bottom: 1px solid var(--border); }
 .prerender time { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ======================================================================
+   Settings: preferences file
+   ====================================================================== */
+.prefs-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.4rem 0 0.8rem; }
+.prefs-btn {
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.5rem 0.9rem; font: inherit; font-size: 0.88rem; cursor: pointer;
+}
+.prefs-btn:hover { border-color: var(--accent); }
+
+/* ======================================================================
+   Mobile (≤ 640px): compact header that scrolls away, filter chips in one
+   swipeable row with bottom-sheet pickers, bottom tab bar, "More" sheet.
+   ====================================================================== */
+.tabbar, .sheet { display: none; }
+
+@media (max-width: 640px) {
+  :root { --tabbar-h: 3.6rem; }
+  body { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); }
+
+  /* Header: brand only (actions live in the tab bar), scrolls away with the page. */
+  .topbar {
+    position: static;
+    padding: 0.7rem 1rem 0.5rem;
+    padding-top: max(0.7rem, env(safe-area-inset-top));
+    gap: 0.5rem;
+  }
+  .topbar h1 { font-size: 1.05rem; }
+  .actions > :not(.search) { display: none !important; }
+  .actions { flex: 1 1 100%; }
+  .search:not(.open) { display: none; }
+  .search.open { display: flex; width: 100%; }
+  .search.open .search-input { width: 100%; max-width: none; margin-right: 0.4rem; padding: 0.6rem 0.75rem; font-size: 1rem; }
+  .search-toggle { display: none; }
+  body[data-view="watchlist"] .search { display: none; }
+
+  /* Filters: one horizontal row of chips, swipeable, edge to edge. */
+  .filters {
+    --control-h: 2.25rem;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.5rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0.5rem 1rem 0.6rem;
+    scroll-padding-inline: 1rem;
+  }
+  .filters::-webkit-scrollbar { display: none; }
+  .filters > * { flex: 0 0 auto; }
+  .field {
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-2);
+    padding-left: 0.75rem;
+    position: static; /* the picker is a fixed sheet, not anchored to the chip */
+  }
+  .field-label { font-size: 0.82rem; text-transform: none; letter-spacing: 0; color: var(--muted); }
+  .field-label::after { content: ":"; }
+  .dropdown-btn {
+    min-width: 0; min-height: var(--control-h);
+    border: none; background: none; border-radius: 999px;
+    padding: 0 0.75rem 0 0.3rem; font-size: 0.85rem;
+  }
+  .filters .switch {
+    border: 1px solid var(--border); border-radius: 999px; background: var(--surface-2);
+    padding: 0 0.75rem; font-size: 0.85rem; white-space: nowrap;
+  }
+  .filters .switch:has(input:checked) { border-color: var(--accent); }
+  .reset-btn { border-radius: 999px; white-space: nowrap; }
+  .filters .active-network { margin-bottom: 0; order: -1; }
+  .result-count { margin-left: 0; font-size: 0.8rem; white-space: nowrap; }
+
+  /* Channel / genre pickers become bottom sheets. */
+  .dropdown-panel {
+    position: fixed;
+    left: 0; right: 0; bottom: 0; top: auto;
+    width: auto; max-width: none;
+    max-height: 75vh;
+    overflow-y: auto;
+    z-index: 60;
+    border-radius: 16px 16px 0 0;
+    border-bottom: none;
+    padding: 0.9rem 1rem calc(1rem + env(safe-area-inset-bottom));
+    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.45); /* dims the page behind */
+  }
+
+  /* Bottom tab bar. */
+  .tabbar {
+    display: flex;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 40;
+    height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+  }
+  .tab {
+    flex: 1;
+    position: relative;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem;
+    min-height: 44px;
+    background: none; border: none; color: var(--muted);
+    font: inherit; font-size: 0.7rem; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tab svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .tab[aria-current="page"] { color: var(--accent-text); font-weight: 600; }
+  .tab[aria-current="page"] svg { stroke-width: 2.2; }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 10px; }
+  .tab-badge {
+    position: absolute; top: 0.35rem; left: calc(50% + 0.45rem);
+    min-width: 1.1rem; height: 1.1rem; padding: 0 0.3rem;
+    border-radius: 999px; background: var(--accent); color: #fff;
+    font-size: 0.62rem; font-weight: 700; line-height: 1.1rem; text-align: center;
+  }
+  .tab-badge[hidden] { display: none; }
+
+  /* "More" sheet. */
+  .sheet { display: block; position: fixed; inset: 0; z-index: 70; }
+  .sheet[hidden] { display: none; }
+  .sheet-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45); }
+  .sheet-panel {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: var(--surface);
+    border-radius: 16px 16px 0 0;
+    padding: 0.5rem 1rem calc(1rem + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.35);
+    animation: sheet-up 0.22s ease-out;
+  }
+  .sheet-panel:focus { outline: none; }
+  .sheet-grip { width: 2.5rem; height: 4px; border-radius: 2px; background: var(--border); margin: 0.2rem auto 0.6rem; }
+  .sheet-title { font-size: 1rem; margin: 0 0 0.4rem; }
+  .sheet-list { list-style: none; margin: 0; padding: 0; }
+  .sheet-item {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem;
+    width: 100%; min-height: 52px; padding: 0.6rem 0.25rem;
+    background: none; border: none; border-bottom: 1px solid var(--border);
+    color: var(--text); font: inherit; font-size: 1rem; text-align: left; cursor: pointer;
+  }
+  .sheet-item[hidden] { display: none; }
+  .sheet-hint { font-size: 0.8rem; color: var(--muted); }
+  .sheet-close {
+    width: 100%; min-height: 48px; margin-top: 0.75rem;
+    background: var(--surface-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    font: inherit; font-size: 0.95rem; cursor: pointer;
+  }
+  body.sheet-open { overflow: hidden; }
+
+  /* Lighter section titles: one sticky line per month, under the scrolled-away header. */
+  .month-heading { font-size: 1.15rem; padding: 0.55rem 1rem; border-bottom-width: 1px; }
+  .view-title { font-size: 1.3rem; padding: 0.9rem 1rem 0.2rem; }
+
+  /* Toasts sit above the tab bar. */
+  .toast { bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 0.75rem); }
+}
+
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .sheet-panel { animation: none; } }

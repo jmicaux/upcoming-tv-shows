@@ -3,6 +3,16 @@
 All notable changes to Upcoming TV Shows are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.28.5 — 2026-11-11
+
+### Changed
+- Header buttons share one size (34 px, square icon buttons; the theme toggle was shorter
+  and had square corners).
+- The version number sits at the far right of the header; no hover effect on the title
+  and logo.
+- README: the self-hosting guide is no longer published; the Accounts section describes
+  the per-item sync.
+
 ## 1.28.4 — 2026-11-11
 
 ### Added

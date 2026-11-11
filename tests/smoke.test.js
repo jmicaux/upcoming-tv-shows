@@ -15,15 +15,15 @@ test("index.html wires accounts", () => {
   assert.match(html, /id="accountBtn"/);
   assert.match(html, /script-src 'self' https:\/\/cloud\.umami\.is https:\/\/cdn\.jsdelivr\.net/);
   assert.match(html, /supabase-js@2\.\d+\.\d+\/dist\/umd\/supabase\.js" integrity="sha384-/);
-  assert.match(html, /sync-core\.js\?v=1\.28\.4/);
-  assert.match(html, /auth\.js\?v=1\.28\.4/);
+  assert.match(html, /sync-core\.js\?v=1\.28\.5/);
+  assert.match(html, /auth\.js\?v=1\.28\.5/);
 });
 
 test("release 1.26.0 is consistent", () => {
-  assert.match(read("app.js"), /const APP_VERSION = "1\.28\.4"/);
-  assert.match(read("index.html"), /styles\.css\?v=1\.28\.4/);
-  assert.match(read("README.md"), /version-1\.28\.4-blue/);
-  assert.match(read("CHANGELOG.md"), /^## 1\.28\.4 — \d{4}-\d{2}-\d{2}/m);
+  assert.match(read("app.js"), /const APP_VERSION = "1\.28\.5"/);
+  assert.match(read("index.html"), /styles\.css\?v=1\.28\.5/);
+  assert.match(read("README.md"), /version-1\.28\.5-blue/);
+  assert.match(read("CHANGELOG.md"), /^## 1\.28\.5 — \d{4}-\d{2}-\d{2}/m);
 });
 
 test("privacy page exists and exposes no personal email", () => {
@@ -55,10 +55,10 @@ test("auth.js restores focus after re-render, toasts on sync error and labels th
   assert.match(src, /accountBtn\.setAttribute\("aria-label"/);
 });
 
-test("README dev server port matches the documented redirect URL", () => {
+test("README dev server port is consistent", () => {
   const md = read("README.md");
   const port = md.match(/http\.server (\d+)/)[1];
-  assert.match(md, new RegExp(`http://localhost:${port}/`));
+  assert.match(md, new RegExp(`http://localhost:${port}`));
   assert.doesNotMatch(md, /localhost:8080/);
 });
 

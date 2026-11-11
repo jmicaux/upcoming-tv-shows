@@ -1381,3 +1381,13 @@ a.sheet-item { text-decoration: none; box-sizing: border-box; }
   .topbar .brand-ver { order: 1; margin-left: auto; }
   .topbar .actions { order: 2; }
 }
+
+/* Header buttons: one height for all, square icon buttons (the theme toggle was shorter). */
+.topbar .icon-btn, .topbar .theme-btn, .topbar .view-btn {
+  box-sizing: border-box; height: 2.125rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  line-height: 1;
+}
+.topbar .icon-btn, .topbar .theme-btn { width: 2.125rem; min-width: 2.125rem; padding: 0; }
+.topbar .view-btn { padding: 0 0.75rem; }
+.topbar .theme-btn { border-radius: var(--radius); }

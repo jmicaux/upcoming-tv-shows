@@ -194,7 +194,13 @@ body[data-view="watchlist"] .search { display: none; }
 /* Watchlist view hides month navigation and filters. */
 body[data-view="watchlist"] .month-nav,
 body[data-view="watchlist"] .filters,
-body[data-view="watchlist"] .progress { display: none; }
+body[data-view="watchlist"] .progress,
+body[data-view="notfound"] .month-nav,
+body[data-view="notfound"] .filters,
+body[data-view="notfound"] .progress,
+body[data-view="notfound"] .search { display: none; }
+.not-found h2 { margin: 0 0 0.5rem; font-size: 1.3rem; color: var(--text); }
+.not-found a { color: var(--accent-text); }
 
 .month-label {
   min-width: 9.5rem;

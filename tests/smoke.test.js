@@ -116,3 +116,11 @@ test("SITE_META matches index.html (used when navigating back to the feed)", () 
   assert.ok(html.includes(`<meta name="twitter:description" content="${SITE_META.twitterDescription}">`));
   assert.ok(html.includes(`<link rel="canonical" href="${SITE_META.url}">`));
 });
+
+test("unknown addresses render a not-found view; noindex follows the view", () => {
+  const src = read("app.js");
+  assert.match(src, /return \{ view: "notfound", network: null \}/);
+  assert.match(src, /function renderNotFound\(/);
+  assert.match(src, /const indexable = view === "month" && \(!network \|\| SEED_NETWORKS\.includes\(network\)\)/);
+  assert.match(src, /if \(indexable && robots\) robots\.remove\(\)/);
+});

@@ -17,7 +17,10 @@ All notable changes to Upcoming TV Shows are documented here. This project follo
   `#network=Netflix`; old links still work). Each major channel gets its own indexable
   page with its own title and description, listed in `sitemap.xml`. Rarer channels use
   `network/<name>` and are served by `404.html`.
-- The tab title follows the view (feed, Watchlist, channel).
+- The tab title, description, social tags, canonical and `noindex` follow the view (feed,
+  Watchlist, channel), also when navigating inside the app. Channel pages carry their own
+  description in the JSON-LD.
+- An unknown address shows "Page not found" instead of the home feed.
 - Channel lists moved to `networks.js`; `node tools/make-pages.js` regenerates
   `watchlist.html`, `network/*.html`, `404.html` and `sitemap.xml` from `index.html`.
 

@@ -935,7 +935,10 @@ function parseRoute() {
   const rel = routePath().replace(/\/$/, "");
   const m = rel.match(/^network\/([^/]+)$/);
   if (m) return { view: "month", network: networkFromSegment(m[1]) };
-  return { view: /^watchlist(\.html)?$/.test(rel) ? "watchlist" : "month", network: null };
+  if (/^watchlist(\.html)?$/.test(rel)) return { view: "watchlist", network: null };
+  if (rel === "" || rel === "index.html") return { view: "month", network: null };
+  return { view: "notfound", network: null }; // served by 404.html
+
 }
 const networkUrl = (name) => APP_BASE + "network/" + networkSegment(name);
 // Navigate inside the app without a reload, then render the new route.
@@ -969,7 +972,8 @@ function applyRoute() {
 function updateHeadMeta(view, network) {
   const { SITE_META, networkMeta } = window.UpcomingNetworks;
   const m = network ? networkMeta(network) : SITE_META;
-  const title = view === "watchlist" ? "Watchlist — " + SITE_META.title : m.title;
+  const title = view === "watchlist" ? "Watchlist — " + SITE_META.title
+    : view === "notfound" ? "Page not found — " + SITE_META.title : m.title;
   document.title = title;
   const set = (sel, attr, value) => { const n = document.head.querySelector(sel); if (n) n.setAttribute(attr, value); };
   set('meta[name="description"]', "content", m.description);
@@ -979,6 +983,17 @@ function updateHeadMeta(view, network) {
   set('meta[name="twitter:title"]', "content", title);
   set('meta[name="twitter:description"]', "content", m.twitterDescription);
   set('link[rel="canonical"]', "href", m.url);
+  // Only the feed and the major channel pages are meant for search engines; the tag is
+  // added or removed as the view changes, whatever page the visit started on.
+  const indexable = view === "month" && (!network || SEED_NETWORKS.includes(network));
+  let robots = document.head.querySelector('meta[name="robots"]');
+  if (indexable && robots) robots.remove();
+  if (!indexable && !robots) {
+    robots = document.createElement("meta");
+    robots.name = "robots";
+    robots.content = "noindex";
+    document.head.appendChild(robots);
+  }
 }
 
 // The removable "Netflix ✕" pill shown while a transient network filter is active.
@@ -1013,6 +1028,7 @@ function setView(v) {
   updateViewButton();
   window.scrollTo(0, 0);
   if (v === "watchlist") renderWatchlist();
+  else if (v === "notfound") renderNotFound();
   else enterMonthView();
 }
 
@@ -1021,6 +1037,18 @@ function updateViewButton() {
   el.viewBtn.innerHTML = state.view === "watchlist"
     ? "‹ Browse"
     : `★ Watchlist${n ? ` <span class="count">${n}</span>` : ""}`;
+}
+
+function renderNotFound() {
+  el.resultCount.textContent = "";
+  el.grid.innerHTML = `<div class="empty not-found">
+      <h2>Page not found</h2>
+      <p>This address does not match any page of Upcoming TV Shows.</p>
+      <p><a href="${escapeAttr(APP_BASE)}">See upcoming shows</a></p>
+    </div>`;
+  const link = el.grid.querySelector("a");
+  link.addEventListener("click", (e) => { e.preventDefault(); navigate(APP_BASE); });
+  link.focus();
 }
 
 async function renderWatchlist() {

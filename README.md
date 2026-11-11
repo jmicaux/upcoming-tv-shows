@@ -117,7 +117,7 @@ enough):
    own domain (e.g. Resend). Then edit the *Magic Link* email template to include
    `{{ .Token }}` so the 6-digit code appears, and flip `EMAIL_LOGIN` to `true`.
 7. Free-tier projects **pause after about a week without traffic**. The
-   [`keepalive.yml`](.github/workflows/keepalive.yml) workflow pings the API weekly; if the
+   [`keepalive.yml`](.github/workflows/keepalive.yml) workflow pings the API twice a week; if the
    project still gets paused, restore it from the Supabase dashboard. While paused, the app
    shows "Sync unavailable" and keeps working locally.
 

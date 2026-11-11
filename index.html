@@ -75,7 +75,7 @@
   <section class="filters">
     <div class="field dropdown" id="networkDropdown">
       <span class="field-label" id="networkLabel">Networks</span>
-      <button type="button" id="networkBtn" class="dropdown-btn" aria-haspopup="true" aria-expanded="false" aria-labelledby="networkLabel networkBtn">All <span id="networkBtnCount" class="pill"></span> ▾</button>
+      <button type="button" id="networkBtn" class="dropdown-btn" aria-controls="networkPanel" aria-expanded="false" aria-labelledby="networkLabel networkBtn">All <span id="networkBtnCount" class="pill"></span> ▾</button>
       <div id="networkPanel" class="dropdown-panel" hidden>
         <div class="dropdown-actions">
           <input type="search" id="networkSearch" placeholder="Filter list…" aria-label="Filter channel list" autocomplete="off">
@@ -86,7 +86,7 @@
     </div>
     <div class="field dropdown" id="genreDropdown">
       <span class="field-label" id="genreLabel">Genre</span>
-      <button type="button" id="genreBtn" class="dropdown-btn" aria-haspopup="true" aria-expanded="false" aria-labelledby="genreLabel genreBtn">All <span id="genreBtnCount" class="pill"></span> ▾</button>
+      <button type="button" id="genreBtn" class="dropdown-btn" aria-controls="genrePanel" aria-expanded="false" aria-labelledby="genreLabel genreBtn">All <span id="genreBtnCount" class="pill"></span> ▾</button>
       <div id="genrePanel" class="dropdown-panel" hidden>
         <div class="dropdown-actions">
           <input type="search" id="genreSearch" placeholder="Filter list…" aria-label="Filter genre list" autocomplete="off">

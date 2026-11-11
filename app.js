@@ -662,10 +662,12 @@ function renderNetworkList() {
       const checked = state.followed.has(n) ? "checked" : "";
       return `<label><input type="checkbox" value="${escapeAttr(n)}" ${checked}>${escapeHtml(n)}</label>`;
     }).join("");
-    return `<div class="net-group">
+    // One labelled group per country (RGAA 11.5); the All/Clear button names its group.
+    const plain = g.label.replace(/^\S+\s/, "");
+    return `<div class="net-group" role="group" aria-labelledby="net-group-${gi}">
         <div class="net-group-head">
-          <span class="net-group-label">${escapeHtml(g.label)}</span>
-          <button type="button" class="net-group-all" data-group="${gi}">${allOn ? "Clear" : "All"}</button>
+          <span class="net-group-label" id="net-group-${gi}">${escapeHtml(g.label)}</span>
+          <button type="button" class="net-group-all" data-group="${gi}" aria-label="${escapeAttr(`${allOn ? "Clear" : "Select all"} ${plain} channels`)}">${allOn ? "Clear" : "All"}</button>
         </div>${rows}</div>`;
   }).join("");
 
@@ -738,6 +740,7 @@ function updateNetworkButton() {
 /* ---------- Render (month blocks + infinite scroll) ---------- */
 const sentinelEl = document.createElement("div");
 sentinelEl.className = "sentinel";
+sentinelEl.setAttribute("aria-live", "polite"); // "Loading …", "No further scheduling data"
 const scrollObserver = new IntersectionObserver((entries) => {
   if (entries[0].isIntersecting && state.view === "month" && !state.loading && !state.searching &&
       state.blocks.length < AUTO_MONTHS) loadNextMonth();
@@ -1523,7 +1526,7 @@ function renderSettings() {
       <h3 class="settings-h">French channels</h3>
       <p class="settings-note">Add your free <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">TMDB API key</a> to load the French channels (Canal+, Arte, TF1, M6, France 2/3). Stored only in this browser.</p>
       <div class="tmdb-row">
-        <input type="password" id="tmdbKeyInput" class="tmdb-input" placeholder="TMDB API key" value="${escapeAttr(TMDB_KEY)}" autocomplete="off">
+        <input type="password" id="tmdbKeyInput" class="tmdb-input" placeholder="TMDB API key" aria-label="TMDB API key" value="${escapeAttr(TMDB_KEY)}" autocomplete="off">
         <button type="button" class="tmdb-save">Save</button>
       </div>
 
@@ -1794,6 +1797,7 @@ function toast(msg) {
     t = document.createElement("div");
     t.id = "toast";
     t.className = "toast";
+    t.setAttribute("role", "status"); // announced without moving focus (RGAA 7.5)
     document.body.appendChild(t);
   }
   t.textContent = msg;
@@ -1838,6 +1842,21 @@ el.genreClear.addEventListener("click", () => {
   renderAllBlocks();
 });
 el.genrePanel.addEventListener("click", (e) => e.stopPropagation());
+
+// Filter pickers: Escape closes and returns focus to their button; moving focus out of a
+// picker closes it (on mobile it is a sheet over a dimmed page, so focus must not wander
+// behind it).
+for (const [dropdown, panel, btn, setter] of [
+  [el.networkDropdown, el.networkPanel, el.networkBtn, setNetworkPanel],
+  [el.genreDropdown, el.genrePanel, el.genreBtn, setGenrePanel],
+]) {
+  dropdown.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !panel.hidden) { e.stopPropagation(); setter(false); btn.focus(); }
+  });
+  dropdown.addEventListener("focusout", (e) => {
+    if (!panel.hidden && e.relatedTarget && !dropdown.contains(e.relatedTarget)) setter(false);
+  });
+}
 
 // One outside-click closes any open filter dropdown.
 // Channel favicon fallback, done with a capturing delegated listener (error events don't

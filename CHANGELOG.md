@@ -12,11 +12,21 @@ All notable changes to Upcoming TV Shows are documented here. This project follo
   comparison (`npm run test:visual`) for refactoring.
 - `tools/serve.js`: a local server that behaves like GitHub Pages.
 
-### Known bugs (found by the new tests, marked `test.fail()`)
-- Selecting a channel whose source is already loaded (e.g. CBS while HBO is followed)
-  does not show its shows until a reload.
-- A new watch redirect does not update the "Watch on" links of cards already on screen
-  until a reload.
+### Fixed (found by the new tests; each now has a regression test)
+- Following a channel whose source was already loaded (e.g. CBS while HBO is followed)
+  showed nothing until a reload: the app now tracks which channels the nightly snapshot
+  actually supplied, not just which sources.
+- Leaving a channel or country page (✕, Back, Reset) could show an empty or partial feed
+  when the saved selection needed channels that page had not loaded.
+- A new watch redirect, or imported preferences, did not update the "Watch on" links of
+  cards already on screen.
+- The TVmaze request limiter did not space out calls made at the same time (the Watchlist
+  asks for every favorite at once): they all left together, TVmaze answered 429 and shows
+  wrongly read "No upcoming episode". Calls now go through one queue.
+
+### Changed
+- A source-text regex test on `applyPrefs` is replaced by two browser tests that import
+  a real preferences file.
 
 ## 1.29.0 — 2026-11-15
 

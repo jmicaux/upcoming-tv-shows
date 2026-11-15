@@ -30,7 +30,7 @@ const DEFAULT_FOLLOWED = [
 // Schedule fetching (TVmaze sources, TMDB for French channels, nightly snapshot plan)
 // lives in feed-core.js, shared with tools/fetch-schedule.js.
 const {
-  API, TMDB_IMG, TMDB_IMG_ORIG, trimItem, neededSources, fetchScheduleDay, tmdbChannel, planMonth,
+  API, TMDB_IMG, TMDB_IMG_ORIG, trimItem, sourceOf, neededSources, fetchScheduleDay, tmdbChannel, planMonth,
 } = window.FeedCore;
 
 // French channels come from TMDB (far better FR coverage than TVMaze).
@@ -61,7 +61,8 @@ const state = {
   watchFilters: { premieresOnly: false, seriesPremieresOnly: false, hidePast: false }, // the Watchlist's own toggles
   hidePast: false,                  // hide already-aired days in the current month
   view: "month",                    // "month" | "watchlist"
-  loadedSources: new Set(),         // upstream sources already fetched into the loaded blocks
+  loadedSources: new Set(),         // upstream sources fetched live (every channel) into the loaded blocks
+  loadedChannels: new Set(),        // channels read one by one from the nightly snapshot
   favorites: loadObject(FAV_KEY),   // { showId: { id, name } } — lean; details are re-fetchable by id
   showCache: {},                    // showId -> full trimmed show (in-memory hydration, not persisted)
   watchOverrides: loadObject(OVERRIDES_KEY), // { sourceChannel: providerChannel }
@@ -224,19 +225,23 @@ function pruneCache() {
 /* ---------- Fetch ---------- */
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Global throttle: every live TVMaze call is spaced by REQUEST_GAP_MS.
-let lastCallTs = 0;
-async function throttledJson(url) {
-  const wait = REQUEST_GAP_MS - (Date.now() - lastCallTs);
-  if (wait > 0) await sleep(wait);
+// Global throttle: live TVMaze calls go through one queue, REQUEST_GAP_MS apart. A queue
+// (not a shared "last call" timestamp) also holds when calls are made at the same time,
+// e.g. the Watchlist asking for every favorite at once.
+let tvmazeQueue = Promise.resolve();
+function throttledJson(url) {
+  const run = tvmazeQueue.then(() => fetchJsonWithRetry(url));
+  tvmazeQueue = run.catch(() => {}).then(() => sleep(REQUEST_GAP_MS));
+  return run;
+}
+async function fetchJsonWithRetry(url) {
   for (let attempt = 0; attempt < 3; attempt++) {
     const res = await fetch(url);
-    lastCallTs = Date.now();
     if (res.status === 429) { await sleep(2000); continue; }
     if (!res.ok) throw new Error(`TVMaze ${res.status}`);
     return res.json();
   }
-  throw new Error("TVMaze rate limit persistant");
+  throw new Error("TVMaze rate limit persists");
 }
 
 // Rebuild a full show object from the TVmaze /shows/{id} payload — used to rehydrate
@@ -412,7 +417,8 @@ async function loadNextMonth() {
   if (state.loading || state.reachedEnd || state.blocks.length >= MAX_MONTHS) return;
 
   // Only fetch the sources the current selection needs — nothing followed → nothing at all.
-  const sources = neededSources(state.followed);
+  const followed = new Set(state.followed); // the selection this month is loaded for
+  const sources = neededSources(followed);
   if (sources.size === 0) {
     state.reachedEnd = true; // no auto-loading until the selection changes (see toggleNetwork)
     setSentinel("Select at least one channel above to see upcoming shows.");
@@ -431,7 +437,7 @@ async function loadNextMonth() {
   // Channels covered by the nightly snapshot are read from it; the rest stays live.
   let live = sources;
   const monthKey = ymd(month).slice(0, 7);
-  const plan = planMonth(state.followed, await loadSnapshotIndex(), monthKey, Date.now());
+  const plan = planMonth(followed, await loadSnapshotIndex(), monthKey, Date.now());
   if (plan.files.length) {
     const snap = await loadSnapshotFiles(monthKey, plan.files);
     if (snap) { block.items.push(...snap); live = plan.live; rebuildFilterOptions(); renderBlock(block); updateResultCount(); }
@@ -450,7 +456,10 @@ async function loadNextMonth() {
     if (now - lastRender > 250) { lastRender = now; rebuildFilterOptions(); renderBlock(block); }
   }
   if (live.has("FR")) block.items.push(...(await fetchFrMonth(month)));
-  for (const s of sources) state.loadedSources.add(s);
+  // A live source brings all its channels; the snapshot only the followed ones, so another
+  // channel of that source still needs a reload when it is followed later (see needsReload).
+  for (const s of live) state.loadedSources.add(s);
+  for (const n of followed) if (!live.has(sourceOf(n))) state.loadedChannels.add(n);
   block.loading = false;
   rebuildFilterOptions();
   renderBlock(block);
@@ -701,17 +710,27 @@ function toggleGroup(names, on) {
   updateNetworkButton();
   updateActiveNetwork();
   renderNetworkList();
-  const needsFetch = [...neededSources(state.followed)].some((s) => !state.loadedSources.has(s));
-  if (needsFetch) resetFeed(); else renderAllBlocks();
+  if (needsReload()) resetFeed(); else renderAllBlocks();
 }
 
-// Rebuild the feed from scratch (used when the set of needed sources changes). Cached
-// source-days come back instantly; only genuinely new sources hit the network.
-function resetFeed() {
+// True when a followed channel is not covered by the loaded months yet: neither its whole
+// source was fetched live, nor its own file read from the snapshot.
+function needsReload() {
+  return [...state.followed].some((n) => !state.loadedSources.has(sourceOf(n)) && !state.loadedChannels.has(n));
+}
+
+// Forget the loaded months, so the next month view loads them for the current selection.
+function clearLoadedMonths() {
   state.blocks = [];
   state.loadedSources = new Set();
+  state.loadedChannels = new Set();
   state.reachedEnd = false;
   state.emptyStreak = 0;
+}
+// Rebuild the feed from scratch (used when the selection needs channels not loaded yet).
+// Cached source-days come back instantly; only genuinely new sources hit the network.
+function resetFeed() {
+  clearLoadedMonths();
   if (state.view === "month" && !state.searching) enterMonthView();
 }
 
@@ -722,10 +741,9 @@ function toggleNetwork(name, on) {
   dropNetworkRoute();       // user is hand-editing the selection now
   updateNetworkButton();
   updateActiveNetwork();
-  // Following a channel from a not-yet-fetched source needs a reload; otherwise a
+  // Following a channel the loaded months do not cover needs a reload; otherwise a
   // client-side re-filter of the already-loaded blocks is enough.
-  const needsFetch = [...neededSources(state.followed)].some((s) => !state.loadedSources.has(s));
-  if (needsFetch) resetFeed();
+  if (needsReload()) resetFeed();
   else renderAllBlocks();
 }
 
@@ -848,8 +866,18 @@ function renderBlock(block) {
   for (const [key, node] of existing) if (!keep.has(key)) node.remove();
 }
 
-function renderAllBlocks() {
-  for (const b of state.blocks) renderBlock(b);
+// `rebuild` redraws every card: needed when what a card shows changes (its "Watch on" link
+// after a watch redirect); otherwise renderBlock() reuses the cards already on screen.
+function renderAllBlocks({ rebuild = false } = {}) {
+  for (const b of state.blocks) {
+    if (rebuild && b.el) {
+      const grid = b.el.querySelector(".month-grid");
+      grid.classList.remove("is-loading");
+      grid.removeAttribute("aria-hidden");
+      grid.replaceChildren();
+    }
+    renderBlock(b);
+  }
   updateResultCount();
 }
 
@@ -951,6 +979,8 @@ function applyRoute() {
   updateHeadMeta(view, network, country);
   state.followed = network ? new Set([network]) : country ? new Set(country.names) : new Set(loadFollowed());
   for (const n of state.followed) state.known.add(n);
+  // e.g. leaving a channel page: the saved selection may need channels not loaded yet.
+  if (needsReload()) clearLoadedMonths();
   updateNetworkButton();
   updateActiveNetwork();
   renderNetworkList();
@@ -1642,7 +1672,7 @@ function commitSettings() {
   state.watchOverrides = next;
   saveOverrides();
   if (state.view === "watchlist") renderWatchlist();
-  else renderAllBlocks();
+  else renderAllBlocks({ rebuild: true });
 }
 
 /* ---------- Escaping ---------- */
@@ -1745,10 +1775,9 @@ function applyPrefs(data, { silent = false } = {}) {
   renderNetworkList();
   // Channels that come from a source not loaded yet (e.g. a Nordic channel followed on
   // another device) need the feed rebuilt, exactly as toggling them by hand would.
-  const needsFetch = [...neededSources(state.followed)].some((s) => !state.loadedSources.has(s));
   if (state.view === "watchlist") renderWatchlist();
-  else if (needsFetch) resetFeed();
-  else renderAllBlocks();
+  else if (needsReload()) resetFeed();
+  else renderAllBlocks({ rebuild: true }); // imported watch redirects change the cards
   if (!silent) toast("Preferences imported");
 }
 

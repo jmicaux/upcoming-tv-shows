@@ -64,10 +64,9 @@ test("channel picker: a choice persists across reloads; an empty selection shows
   await expect(page.locator("#grid .card")).toHaveCount(0);
 });
 
-// Known bug: a channel whose source is already loaded (CBS, like HBO) but whose snapshot
-// file was not read stays missing until a reload. Remove test.fail() once fixed.
+// Regression: CBS shares HBO's source, which was already loaded, but its snapshot file was
+// not — its shows used to appear only after a reload.
 test("selecting a whole country group follows its channels", async ({ page }) => {
-  test.fail();
   await page.locator("#networkBtn").click();
   await page.getByRole("button", { name: "Select all United States channels" }).click();
   await expect.poll(() => nov(page)).toContain("Eta Hospital");

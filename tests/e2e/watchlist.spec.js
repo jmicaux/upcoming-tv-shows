@@ -68,10 +68,9 @@ test("catalog search finds shows and Escape returns to the feed", async ({ page 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Upcoming TV premieres");
 });
 
-// Known bug: cards already on screen keep their old "Watch on" link (the feed reuses
-// existing card nodes); the redirect only shows after a reload. Remove test.fail() once fixed.
+// Regression: cards already on screen used to keep their old "Watch on" link (the feed
+// reuses card nodes) until a reload.
 test("settings: a watch redirect changes the Watch on links", async ({ page }) => {
-  test.fail();
   await page.getByRole("button", { name: "Settings" }).click();
   const dialog = page.getByRole("dialog", { name: "Settings" });
   await dialog.getByRole("button", { name: "+ Add mapping" }).click();
@@ -88,4 +87,46 @@ test("theme toggle switches and persists", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("data-theme", next);
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", next);
+});
+
+// Regression: the Watchlist asks TVmaze for every favorite at once; the request limiter
+// computed its wait from a shared timestamp, so concurrent calls all left together and
+// TVmaze answered 429 (shows then wrongly read "No upcoming episode").
+test("TVmaze requests are spaced out, even when made at the same time", async ({ page }) => {
+  const sent = [];
+  page.on("request", (r) => { if (/api\.tvmaze\.com\/shows\/\d+/.test(r.url())) sent.push(Date.now()); });
+  for (const name of ["Alpha Saga", "Beta Returns", "Gamma Files"]) {
+    await page.getByRole("button", { name: `Add ${name} to watchlist` }).first().click();
+  }
+  await page.locator("#viewBtn").click();
+  await expect.poll(() => cardTitles(page.locator("#grid"))).toHaveLength(3);
+  expect(sent).toHaveLength(3);
+  const gaps = sent.slice(1).map((t, i) => t - sent[i]);
+  expect(Math.min(...gaps), `gaps between requests: ${gaps.join(", ")} ms`).toBeGreaterThanOrEqual(450);
+});
+
+// Importing a preferences file (the plain file-input path).
+const prefsFile = (prefs) => ({
+  name: "prefs.json", mimeType: "application/json",
+  buffer: Buffer.from(JSON.stringify({ app: "lineup", version: 1, ...prefs })),
+});
+
+test("importing preferences loads newly followed channels and applies watch redirects", async ({ page }) => {
+  page.on("dialog", (d) => d.accept()); // "Replace your current favorites…?"
+  await page.locator("#importFile").setInputFiles(prefsFile({
+    followedNetworks: ["CBS", "HBO"], watchOverrides: { HBO: "Canal+" },
+  }));
+  await expect.poll(() => cardTitles(page.locator("#grid"))).toEqual(["Beta Returns", "Eta Hospital"]);
+  await expect(page.locator(".card", { hasText: "Beta Returns" }).locator(".card-watch")).toContainText("Watch on Canal+");
+});
+
+test("importing preferences on a channel page keeps the page, and saves the selection for later", async ({ page }) => {
+  page.on("dialog", (d) => d.accept());
+  await page.goto("network/hbo");
+  await expect(page.locator(".card", { hasText: "Beta Returns" })).toBeVisible();
+  await page.locator("#importFile").setInputFiles(prefsFile({ followedNetworks: ["CBS"] }));
+  await expect(page.locator("h1.view-title")).toHaveText("Upcoming HBO shows");
+  await expect.poll(() => cardTitles(page.locator("#grid"))).toEqual(["Beta Returns"]);
+  await page.getByRole("button", { name: "Clear HBO filter" }).click();
+  await expect.poll(() => cardTitles(page.locator("#grid"))).toEqual(["Eta Hospital"]);
 });

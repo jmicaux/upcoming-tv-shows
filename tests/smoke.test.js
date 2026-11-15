@@ -33,13 +33,6 @@ test("privacy page exists and exposes no personal email", () => {
   assert.match(html, /delete/i);
 });
 
-test("applyPrefs respects a network/<slug> deep link and refetches new sources", () => {
-  const fn = read("app.js").match(/function applyPrefs[\s\S]*?\n}\n/)[0];
-  assert.match(fn, /parseRoute\(\)\.transient/);
-  assert.match(fn, /neededSources\(state\.followed\)/);
-  assert.match(fn, /try \{[\s\S]*finally \{\s*applyingPrefs = false/);
-});
-
 test("scripts are deferred so a slow CDN cannot block the app", () => {
   const html = read("index.html");
   for (const f of ["supabase-config.js", "sync-core.js", "config.js", "app.js", "auth.js"]) {

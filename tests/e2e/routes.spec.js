@@ -14,7 +14,8 @@ test("a channel page shows that channel only, without touching the saved selecti
   await page.getByRole("button", { name: "Clear CBS filter" }).click();
   await expect(page).toHaveURL(/\/upcoming-tv-shows\/$/);
   await expect(page.locator("h1.view-title")).toHaveText("Upcoming TV premieres");
-  await expect.poll(() => nov(page)).not.toContain("Eta Hospital");
+  // The saved (default) selection comes back in full, though only CBS had been loaded.
+  await expect.poll(() => nov(page)).toEqual(["Gamma Files", "Beta Returns", "Alpha Saga", "Delta Quiz", "Epsilon"]);
 });
 
 test("a country page shows all its channels", async ({ page }) => {

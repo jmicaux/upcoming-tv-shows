@@ -3,7 +3,8 @@ name: Watchdog
 # Watches the scheduled jobs and tells the owner when something is wrong, through a GitHub
 # issue labelled "watchdog" (GitHub notifies by e-mail / app). Checked after every run of
 # the watched workflows and once a day:
-#   - the latest run of a watched workflow failed;
+#   - the latest run of a watched workflow failed, or raised warnings (deprecations like
+#     "Node.js 20 is deprecated"; notices are ignored);
 #   - a watched workflow is disabled (GitHub disables scheduled workflows after 60 days
 #     without a commit);
 #   - the schedule snapshot published on the site is older than MAX_AGE_HOURS (the nightly
@@ -13,7 +14,7 @@ name: Watchdog
 # a commit disable it as well; GitHub e-mails a warning before that happens.
 on:
   workflow_run:
-    workflows: ["Deploy site with schedule snapshot", "Supabase keep-alive"]
+    workflows: ["Deploy site with schedule snapshot", "Supabase keep-alive", "CI"]
     types: [completed]
   schedule:
     - cron: "0 16 * * *" # after the nightly update, which GitHub often starts hours late
@@ -38,7 +39,7 @@ jobs:
           OWNER: ${{ github.repository_owner }}
           SITE_URL: https://jmicaux.github.io/upcoming-tv-shows/
           MAX_AGE_HOURS: 36
-          WATCHED: "pages.yml keepalive.yml"
+          WATCHED: "pages.yml keepalive.yml ci.yml"
         run: |
           set -euo pipefail
           problems=""
@@ -50,13 +51,20 @@ jobs:
               problems+="- **$name** is \`$state\`: re-enable it in the Actions tab ($GITHUB_SERVER_URL/$GH_REPO/actions/workflows/$wf)."$'\n'
             fi
             last=$(gh run list --workflow "$wf" --status completed --limit 1 \
-              --json conclusion,event,url,createdAt --jq '.[0] // empty | "\(.conclusion)\t\(.event)\t\(.createdAt)\t\(.url)"')
+              --json databaseId,conclusion,event,url,createdAt --jq '.[0] // empty | "\(.databaseId)\t\(.conclusion)\t\(.event)\t\(.createdAt)\t\(.url)"')
             if [ -n "$last" ]; then
-              IFS=$'\t' read -r conclusion event created url <<< "$last"
+              IFS=$'\t' read -r run conclusion event created url <<< "$last"
               case "$conclusion" in
                 success|skipped|cancelled|neutral) ;;
                 *) problems+="- **$name**: latest run ($event, $created) ended in \`$conclusion\`: $url"$'\n' ;;
               esac
+              # Warning annotations of that run, once each.
+              warnings=$(for job in $(gh api "repos/$GH_REPO/actions/runs/$run/jobs" --jq '.jobs[].id'); do
+                gh api "repos/$GH_REPO/check-runs/$job/annotations" --jq '.[] | select(.annotation_level == "warning") | .message'
+              done | sort -u)
+              while IFS= read -r w; do
+                [ -n "$w" ] && problems+="- **$name**: warning in the latest run ($url): $w"$'\n'
+              done <<< "$warnings"
             fi
           done
 
@@ -90,7 +98,7 @@ jobs:
               esac
             fi
           elif [ -n "$issue" ]; then
-            gh issue comment "$issue" --body "Back to normal: every watched job succeeded and the snapshot is fresh."
+            gh issue comment "$issue" --body "Back to normal: every watched job succeeded without warnings and the snapshot is fresh."
             gh issue close "$issue"
           else
             echo "All good."

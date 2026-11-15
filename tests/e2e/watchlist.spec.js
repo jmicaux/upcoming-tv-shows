@@ -89,20 +89,34 @@ test("theme toggle switches and persists", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("data-theme", next);
 });
 
-// Regression: the Watchlist asks TVmaze for every favorite at once; the request limiter
-// computed its wait from a shared timestamp, so concurrent calls all left together and
-// TVmaze answered 429 (shows then wrongly read "No upcoming episode").
-test("TVmaze requests are spaced out, even when made at the same time", async ({ page }) => {
-  const sent = [];
-  page.on("request", (r) => { if (/api\.tvmaze\.com\/shows\/\d+/.test(r.url())) sent.push(Date.now()); });
-  for (const name of ["Alpha Saga", "Beta Returns", "Gamma Files"]) {
-    await page.getByRole("button", { name: `Add ${name} to watchlist` }).first().click();
-  }
+// Regression (1.29.1): the Watchlist waited for every favorite before showing anything —
+// with ~50 favorites, half a minute of grey placeholders.
+test("the Watchlist shows each favorite as soon as its details arrive", async ({ page }) => {
+  await page.route(/api\.tvmaze\.com\/shows\/102/, async (route) => {
+    await new Promise((r) => setTimeout(r, 4000)); // Beta answers slowly
+    await route.fallback();
+  });
+  await page.getByRole("button", { name: "Add Alpha Saga to watchlist" }).first().click();
+  await page.getByRole("button", { name: "Add Beta Returns to watchlist" }).first().click();
   await page.locator("#viewBtn").click();
-  await expect.poll(() => cardTitles(page.locator("#grid"))).toHaveLength(3);
-  expect(sent).toHaveLength(3);
-  const gaps = sent.slice(1).map((t, i) => t - sent[i]);
-  expect(Math.min(...gaps), `gaps between requests: ${gaps.join(", ")} ms`).toBeGreaterThanOrEqual(450);
+  await expect(page.locator("#grid .card", { hasText: "Alpha Saga" })).toBeVisible({ timeout: 2000 });
+  await expect(page.locator("#grid .card.skeleton")).toHaveCount(1); // Beta, still loading
+  await expect.poll(() => cardTitles(page.locator("#grid")), { timeout: 8000 }).toEqual(["Beta Returns", "Alpha Saga"]);
+  await expect(page.locator("#grid .card.skeleton")).toHaveCount(0);
+});
+
+// Regression: calls made at the same time (the Watchlist asks for every favorite at once)
+// all left together and TVmaze answered 429. TVmaze allows 20 calls per 10 s: a burst of
+// up to 18 may leave at once, the rest waits for the window to move on.
+test("TVmaze calls stay within the rate limit, bursts included", async ({ page }) => {
+  test.setTimeout(40000);
+  const sent = [];
+  page.on("request", (r) => { if (/api\.tvmaze\.com\/shows\//.test(r.url())) sent.push(Date.now()); });
+  await page.evaluate(() => Promise.all(Array.from({ length: 20 }, () => throttledJson("https://api.tvmaze.com/shows/101"))));
+  expect(sent).toHaveLength(20);
+  const t0 = sent[0];
+  expect(sent[17] - t0, "the first 18 calls leave at once").toBeLessThan(2000);
+  expect(sent[18] - t0, "call 19 waits for the 10 s window").toBeGreaterThanOrEqual(9500);
 });
 
 // Importing a preferences file (the plain file-input path).

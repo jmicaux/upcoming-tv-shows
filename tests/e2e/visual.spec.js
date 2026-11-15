@@ -9,6 +9,8 @@ const VIEWS = [
   { name: "country", path: "country/united-kingdom", ready: ".card" },
   { name: "not-found", path: "no/such/page", ready: ".not-found" },
 ];
+// The version number changes with every release: masked, so a bump is not a "change".
+const opts = (page, extra = {}) => ({ mask: [page.locator("#appVersion")], ...extra });
 const SIZES = [{ name: "desktop", width: 1280, height: 900 }, { name: "phone", width: 390, height: 844 }];
 
 for (const theme of ["light", "dark"]) {
@@ -20,7 +22,7 @@ for (const theme of ["light", "dark"]) {
         await page.goto(view.path);
         await expect(page.locator(view.ready).first()).toBeVisible();
         await page.waitForLoadState("networkidle");
-        await expect(page).toHaveScreenshot(`${view.name}-${size.name}-${theme}.png`, { fullPage: true });
+        await expect(page).toHaveScreenshot(`${view.name}-${size.name}-${theme}.png`, opts(page, { fullPage: true }));
       });
     }
     test(`dialog — ${size.name} — ${theme}`, async ({ page }) => {
@@ -29,7 +31,7 @@ for (const theme of ["light", "dark"]) {
       await page.goto("./");
       await page.locator(".card", { hasText: "Beta Returns" }).getByRole("button", { name: "Beta Returns", exact: true }).click();
       await expect(page.getByRole("dialog", { name: "Beta Returns" })).toBeVisible();
-      await expect(page).toHaveScreenshot(`dialog-${size.name}-${theme}.png`);
+      await expect(page).toHaveScreenshot(`dialog-${size.name}-${theme}.png`, opts(page));
     });
   }
 }

@@ -1,12 +1,14 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.29.1"; // single source of truth — bump on each release
+const APP_VERSION = "1.29.2"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const CACHE_PREFIX = "tvmaze:sched:v4:"; // v4: US + streaming + FR + UK/AU/Nordic flagships
 const FUTURE_TTL_MS = 6 * 60 * 60 * 1000; // 6h for today/future days
-const REQUEST_GAP_MS = 550;               // throttle: ~18 req / 10s, under TVMaze's ~20/10s
+// TVMaze allows ~20 calls per 10 s per IP: stay at 18 (see throttledJson).
+const TVMAZE_WINDOW_MS = 10000;
+const TVMAZE_MAX_PER_WINDOW = 18;
 const FOLLOW_KEY = "tv:followedNetworks";
 const KNOWN_KEY = "tv:knownNetworks";
 
@@ -225,17 +227,27 @@ function pruneCache() {
 /* ---------- Fetch ---------- */
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Global throttle: live TVMaze calls go through one queue, REQUEST_GAP_MS apart. A queue
-// (not a shared "last call" timestamp) also holds when calls are made at the same time,
-// e.g. the Watchlist asking for every favorite at once.
+// Global rate limit for live TVMaze calls: at most TVMAZE_MAX_PER_WINDOW calls start in
+// any TVMAZE_WINDOW_MS. A burst leaves at once (a Watchlist of 18 favorites loads in one
+// go); beyond it, calls wait for the window to move on. Slots are handed out by one queue,
+// so calls made at the same time are counted too (a shared "last call" time was not).
+// performance.now(), not Date.now(): wall-clock changes must not stall the queue.
 let tvmazeQueue = Promise.resolve();
-function throttledJson(url) {
-  const run = tvmazeQueue.then(() => fetchJsonWithRetry(url));
-  tvmazeQueue = run.catch(() => {}).then(() => sleep(REQUEST_GAP_MS));
-  return run;
+const tvmazeCallTimes = []; // start times of the calls in the current window
+function takeTvmazeSlot() {
+  tvmazeQueue = tvmazeQueue.then(async () => {
+    for (;;) {
+      const now = performance.now();
+      while (tvmazeCallTimes.length && now - tvmazeCallTimes[0] >= TVMAZE_WINDOW_MS) tvmazeCallTimes.shift();
+      if (tvmazeCallTimes.length < TVMAZE_MAX_PER_WINDOW) { tvmazeCallTimes.push(now); return; }
+      await sleep(TVMAZE_WINDOW_MS - (now - tvmazeCallTimes[0]) + 5);
+    }
+  });
+  return tvmazeQueue;
 }
-async function fetchJsonWithRetry(url) {
+async function throttledJson(url) {
   for (let attempt = 0; attempt < 3; attempt++) {
+    await takeTvmazeSlot(); // a retry counts as a call too
     const res = await fetch(url);
     if (res.status === 429) { await sleep(2000); continue; }
     if (!res.ok) throw new Error(`TVMaze ${res.status}`);
@@ -910,7 +922,7 @@ function wireCard(c) {
 
 // Shared card wiring for month blocks and the watchlist grid.
 function wireCards(container) {
-  container.querySelectorAll(".card").forEach(wireCard);
+  container.querySelectorAll(".card:not(.skeleton)").forEach(wireCard); // placeholders have no controls
 }
 
 /* ---------- Favorites & Watchlist ---------- */
@@ -1187,39 +1199,48 @@ function watchlistTitleHtml(n, shown = n) {
   return `<h1 class="view-title">Watchlist${count}</h1>`;
 }
 
+// The Watchlist groups favorites by the month of their next episode, which needs one
+// TVmaze call per favorite. It is drawn at once and redrawn as answers arrive (at most
+// every 250 ms): known shows in place, a placeholder card for each one still loading.
+let watchlistRun = 0; // a newer renderWatchlist() supersedes an older one still loading
 async function renderWatchlist() {
+  const run = ++watchlistRun;
   el.resultCount.textContent = "";
   const favs = Object.values(state.favorites);
-
   if (favs.length === 0) {
     el.grid.innerHTML = watchlistTitleHtml(0) + '<p class="empty">No favorites yet. Tap the ☆ on any show to add it to your watchlist.</p>';
     return;
   }
+  const current = () => run === watchlistRun && state.view === "watchlist";
+  let timer = null;
+  const draw = () => {
+    timer = null;
+    if (!current()) return;
+    if (!el.modal.hidden) { timer = setTimeout(draw, 250); return; } // don't swap cards under the dialog
+    drawWatchlist(favs);
+  };
+  const scheduleDraw = () => { if (!timer) timer = setTimeout(draw, 250); };
+  drawWatchlist(favs);
+  const pending = favs.filter((s) => state.nextEp[s.id] === undefined);
+  if (!pending.length) return;
+  await Promise.all(pending.map((s) => ensureNextEpisode(s).then(scheduleDraw)));
+  clearTimeout(timer);
+  draw();
+}
 
-  // Group by the month of each show's next episode → need those dates first.
-  if (favs.some((s) => state.nextEp[s.id] === undefined)) {
-    el.grid.innerHTML = watchlistTitleHtml(favs.length) +
-      '<p class="sr-only" role="status">Loading your watchlist…</p>' +
-      `<section class="month-block"><div class="month-grid is-loading" aria-hidden="true">${skeletonHtml(Math.min(favs.length, 8))}</div></section>`;
-  }
-  await Promise.all(favs.map(ensureNextEpisode));
-  if (state.view !== "watchlist") return; // user navigated away while loading
-
+function drawWatchlist(favs) {
+  const loading = favs.filter((s) => state.nextEp[s.id] === undefined).length;
   // Watchlist toggles: premieres = next episode opens a season (series premieres: the
   // first season); past = nothing upcoming.
   const wf = state.watchFilters;
   const shown = favs.filter((s) => {
     const ep = state.nextEp[s.id];
+    if (ep === undefined) return false; // still loading: counted in `loading`
     if (wf.hidePast && !(ep && ep.airdate)) return false;
     if (wf.premieresOnly && !(ep && ep.number === 1)) return false;
     if (wf.seriesPremieresOnly && !(ep && ep.season === 1 && ep.number === 1)) return false;
     return true;
   });
-  if (!shown.length) {
-    el.grid.innerHTML = watchlistTitleHtml(favs.length) +
-      '<p class="empty">No show in your watchlist matches these filters.</p>';
-    return;
-  }
 
   const groups = new Map(); // monthKey -> { label, sortKey, shows: [] }
   for (const show of shown) {
@@ -1232,9 +1253,8 @@ async function renderWatchlist() {
     }
     groups.get(key).shows.push(show);
   }
-
   const ordered = [...groups.values()].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-  el.grid.innerHTML = watchlistTitleHtml(favs.length, shown.length) + ordered.map((g) => {
+  const sections = ordered.map((g) => {
     const cards = g.shows
       .sort((a, b) => {
         const ea = state.nextEp[a.id], eb = state.nextEp[b.id];
@@ -1244,7 +1264,23 @@ async function renderWatchlist() {
       .map(watchlistCardHtml).join("");
     return `<section class="month-block"><h2 class="month-heading">${escapeHtml(g.label)}</h2><div class="month-grid">${cards}</div></section>`;
   }).join("");
+  const pendingHtml = loading
+    ? `<p class="sr-only" role="status">Loading ${loading} more show${loading > 1 ? "s" : ""}…</p>` +
+      `<section class="month-block"><div class="month-grid is-loading" aria-hidden="true">${skeletonHtml(loading)}</div></section>`
+    : "";
+  const empty = !shown.length && !loading ? '<p class="empty">No show in your watchlist matches these filters.</p>' : "";
+
+  // Redrawing replaces the cards: keep keyboard focus on the same control of the same show.
+  const active = document.activeElement;
+  const focusedCard = active && el.grid.contains(active) && active.closest(".card");
+  const refocus = focusedCard && { id: focusedCard.dataset.showId, cls: active.classList[0] };
+  el.grid.innerHTML = watchlistTitleHtml(favs.length, shown.length + loading) + sections + pendingHtml + empty;
   wireCards(el.grid);
+  if (refocus) {
+    const card = el.grid.querySelector(`.card[data-show-id="${CSS.escape(refocus.id)}"]`);
+    const target = card && (refocus.cls ? card.querySelector("." + CSS.escape(refocus.cls)) : card);
+    if (target) target.focus();
+  }
 }
 
 function watchlistCardHtml(fav) {

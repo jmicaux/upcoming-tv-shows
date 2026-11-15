@@ -3,6 +3,19 @@
 All notable changes to Upcoming TV Shows are documented here. This project follows
 [semver](https://semver.org/).
 
+## 1.29.2 — 2026-11-16
+
+### Fixed
+- **The Watchlist stayed grey for half a minute** with many favorites (regression in
+  1.29.1): it waited for every show before drawing anything, and the new request limiter
+  spaced every TVmaze call 550 ms apart. It now draws each show as soon as its details
+  arrive (a placeholder for the others, keyboard focus kept), and the limiter lets a burst
+  of 18 calls leave at once, within TVmaze's 20 calls per 10 s. With 40 favorites: first
+  shows after 1 s instead of 30 s, no 429.
+
+### Changed
+- Screenshot comparison masks the version number, so a version bump is not a change.
+
 ## 1.29.1 — 2026-11-15
 
 ### Added

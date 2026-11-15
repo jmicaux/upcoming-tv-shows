@@ -15,15 +15,15 @@ test("index.html wires accounts", () => {
   assert.match(html, /id="accountBtn"/);
   assert.match(html, /script-src 'self' https:\/\/cloud\.umami\.is https:\/\/cdn\.jsdelivr\.net/);
   assert.match(html, /supabase-js@2\.\d+\.\d+\/dist\/umd\/supabase\.js" integrity="sha384-/);
-  assert.match(html, /sync-core\.js\?v=1\.28\.5/);
-  assert.match(html, /auth\.js\?v=1\.28\.5/);
+  assert.match(html, /sync-core\.js\?v=1\.29\.0/);
+  assert.match(html, /auth\.js\?v=1\.29\.0/);
 });
 
 test("release 1.26.0 is consistent", () => {
-  assert.match(read("app.js"), /const APP_VERSION = "1\.28\.5"/);
-  assert.match(read("index.html"), /styles\.css\?v=1\.28\.5/);
-  assert.match(read("README.md"), /version-1\.28\.5-blue/);
-  assert.match(read("CHANGELOG.md"), /^## 1\.28\.5 — \d{4}-\d{2}-\d{2}/m);
+  assert.match(read("app.js"), /const APP_VERSION = "1\.29\.0"/);
+  assert.match(read("index.html"), /styles\.css\?v=1\.29\.0/);
+  assert.match(read("README.md"), /version-1\.29\.0-blue/);
+  assert.match(read("CHANGELOG.md"), /^## 1\.29\.0 — \d{4}-\d{2}-\d{2}/m);
 });
 
 test("privacy page exists and exposes no personal email", () => {
@@ -35,7 +35,7 @@ test("privacy page exists and exposes no personal email", () => {
 
 test("applyPrefs respects a network/<slug> deep link and refetches new sources", () => {
   const fn = read("app.js").match(/function applyPrefs[\s\S]*?\n}\n/)[0];
-  assert.match(fn, /parseRoute\(\)\.network/);
+  assert.match(fn, /parseRoute\(\)\.transient/);
   assert.match(fn, /neededSources\(state\.followed\)/);
   assert.match(fn, /try \{[\s\S]*finally \{\s*applyingPrefs = false/);
 });
@@ -118,7 +118,7 @@ test("SITE_META matches index.html (used when navigating back to the feed)", () 
 
 test("unknown addresses render a not-found view; noindex follows the view", () => {
   const src = read("app.js");
-  assert.match(src, /return \{ view: "notfound", network: null \}/);
+  assert.match(src, /return \{ view: "notfound", network: null, country: null, transient: false \}/);
   assert.match(src, /function renderNotFound\(/);
   assert.match(src, /const indexable = view === "month" && \(!network \|\| SEED_NETWORKS\.includes\(network\)\)/);
   assert.match(src, /if \(indexable && robots\) robots\.remove\(\)/);
@@ -158,4 +158,21 @@ test("static pages: skip link, header, footer up to date (run node tools/make-pa
     assert.match(html, /<main class="page" id="content"/, rel);
     assert.match(html, /<footer class="site-footer">[\s\S]*Upcoming shows by channel/, rel);
   }
+});
+
+test("country pages: one per country, indexable, routed by the app", () => {
+  const N = require("../networks.js");
+  const files = require("../tools/make-pages.js").build(read("index.html"));
+  assert.equal(Object.keys(files).filter((f) => f.startsWith("country/")).length, N.COUNTRIES.length);
+  const us = files["country/united-states.html"];
+  assert.match(us, /<title>Upcoming TV shows in the United States/);
+  assert.match(us, /canonical" href="https:\/\/jmicaux\.github\.io\/upcoming-tv-shows\/country\/united-states"/);
+  assert.match(us, /<h1 id="prerender-title">Upcoming TV shows in the United States<\/h1>/);
+  assert.match(us, /href="network\/cbs"/);
+  assert.doesNotMatch(us, /noindex/);
+  assert.match(files["sitemap.xml"], /country\/france</);
+  assert.match(files["index.html"], /<h3><a href="country\/united-kingdom">United Kingdom<\/a><\/h3>/);
+  assert.equal(N.countryFromSlug("iceland").names.length, N.IS_NETWORKS.length);
+  assert.equal(N.countryFromSlug("streaming"), null);
+  assert.match(read("app.js"), /countryFromSlug\(c\[1\]\)/);
 });

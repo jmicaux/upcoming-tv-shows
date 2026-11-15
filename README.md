@@ -6,7 +6,7 @@ Australia and the Nordics**, plus French channels (**Canal+**, **Arte**, TF1, M6
 follow only the ones you care about, and filter by genre. A static site with no framework
 and no npm dependencies; an optional account keeps your settings on every device.
 
-[![CI](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml/badge.svg)](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml) ![version](https://img.shields.io/badge/version-1.28.5-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![static](https://img.shields.io/badge/site-static-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
+[![CI](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml/badge.svg)](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml) ![version](https://img.shields.io/badge/version-1.29.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![static](https://img.shields.io/badge/site-static-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
 
 **🔗 Live preview: [jmicaux.github.io/upcoming-tv-shows](https://jmicaux.github.io/upcoming-tv-shows/)**
 
@@ -30,8 +30,11 @@ If you enjoy this app, you can support it:
 - **French channels** Canal+, Arte, TF1, M6 and France 2/3, sourced from TMDB for reliable FR coverage.
 - **Pick-and-choose channels** — check the networks/platforms you follow; your selection
   is saved in the browser and applies across every month. An empty selection shows nothing.
-- **Genre filter**, **title search** and a **Premieres only** toggle (season & series
-  premieres), all combinable, with a one-click **Reset filters**.
+- **Genre filter**, **title search**, a **Premieres only** toggle (season & series
+  premieres) and a **Series premieres only** toggle (brand-new shows), all combinable,
+  with a one-click **Reset filters**.
+- **A page per country** (`/country/united-kingdom`, `/country/france`…) and per channel
+  (`/network/netflix`…), shareable and indexable.
 - **"Watch on <platform>" links** on every card and in the detail view — jump straight to
   the platform's search (or JustWatch as a fallback) to start watching. Optional **watch
   settings** (⚙) let you remap a channel to a provider you already subscribe to (e.g. a show
@@ -65,6 +68,23 @@ python -m http.server 8000
 ```
 
 Any static server works (`npx serve`, VS Code Live Server, etc.).
+
+### Hosting on your own server
+
+`node tools/build-dist.js` assembles `dist/`: only the files the site needs (pages, scripts,
+styles, generated channel and country pages, sitemap). Add `--data data/schedule` to bake
+the upcoming shows into the pages and ship the schedule snapshot (get one with
+`node tools/fetch-schedule.js data/schedule 3`, or reuse the published one with
+`node tools/pull-snapshot.js https://jmicaux.github.io/upcoming-tv-shows/ data/schedule`).
+The GitHub Pages workflow deploys the same `dist/`. Upload its content; the server must:
+
+- serve `/network/netflix` from `network/netflix.html` (extensionless URLs, as GitHub
+  Pages does), same for `/country/…` and `/watchlist`;
+- answer unknown addresses with `404.html`.
+
+The pages assume the site lives at `/upcoming-tv-shows/` (the `<base>` of `404.html`, the
+canonical URLs and the sitemap): change `SITE_URL` in `networks.js` and the canonical link
+in `index.html` to host it elsewhere.
 
 ### Enabling the French channels (optional)
 
@@ -212,7 +232,7 @@ The `?v=` query forces browsers to re-download the CSS/JS after a deploy instead
 a stale cached copy.
 
 Then add a `CHANGELOG.md` entry and publish a GitHub release for the new tag, e.g.
-`gh release create v1.28.5 --target main --title "Upcoming TV Shows 1.28.5" --notes-file notes.md`.
+`gh release create v1.29.0 --target main --title "Upcoming TV Shows 1.29.0" --notes-file notes.md`.
 
 ## Quality
 

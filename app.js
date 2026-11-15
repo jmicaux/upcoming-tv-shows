@@ -1,7 +1,7 @@
 "use strict";
 
 /* ---------- Version ---------- */
-const APP_VERSION = "1.28.5"; // single source of truth — bump on each release
+const APP_VERSION = "1.29.0"; // single source of truth — bump on each release
 
 /* ---------- Config ---------- */
 const CACHE_PREFIX = "tvmaze:sched:v4:"; // v4: US + streaming + FR + UK/AU/Nordic flagships
@@ -57,7 +57,8 @@ const state = {
   genres: new Set(),                // selected genres (empty = all); a show matches any
   availableGenres: new Set(),       // genres present in the loaded feed
   premieresOnly: true,
-  watchFilters: { premieresOnly: false, hidePast: false }, // the Watchlist's own toggles
+  seriesPremieresOnly: false,       // only brand-new shows (S1E1)
+  watchFilters: { premieresOnly: false, seriesPremieresOnly: false, hidePast: false }, // the Watchlist's own toggles
   hidePast: false,                  // hide already-aired days in the current month
   view: "month",                    // "month" | "watchlist"
   loadedSources: new Set(),         // upstream sources already fetched into the loaded blocks
@@ -116,6 +117,7 @@ const el = {
   genreSearch: document.getElementById("genreSearch"),
   genreClear: document.getElementById("genreClear"),
   premieresOnly: document.getElementById("premieresOnly"),
+  seriesPremieresOnly: document.getElementById("seriesPremieresOnly"),
   hidePast: document.getElementById("hidePast"),
   search: document.getElementById("search"),
   searchInput: document.getElementById("searchInput"),
@@ -531,7 +533,7 @@ function exitSearch() {
   if (!state.searching) return;
   state.searching = false;
   state.searchShows = {};
-  updateBreadcrumb(crumbFor(state.view, parseRoute().network));
+  { const r = parseRoute(); updateBreadcrumb(crumbFor(state.view, r.network, r.country)); }
   enterMonthView();
 }
 
@@ -564,6 +566,7 @@ function visibleItemsIn(items) {
   if (state.followed.size === 0) return []; // nothing selected → show nothing
   return items.filter((it) => {
     if (state.premieresOnly && it.number !== 1) return false;
+    if (state.seriesPremieresOnly && !(it.season === 1 && it.number === 1)) return false;
     if (state.hidePast && isPastDate(it.airdate)) return false;
     if (!it.show.channel || !state.followed.has(it.show.channel.name)) return false;
     if (state.genres.size && !it.show.genres.some((g) => state.genres.has(g))) return false;
@@ -758,13 +761,14 @@ function setSentinel(text) { sentinelEl.textContent = text; }
 // matching the one baked into the generated page of that address.
 const viewTitleEl = document.createElement("h1");
 viewTitleEl.className = "view-title";
-function feedTitle(network) {
-  return network ? `Upcoming ${window.UpcomingNetworks.displayName(network)} shows` : "Upcoming TV premieres";
+function feedTitle({ network, country }) {
+  if (network) return `Upcoming ${window.UpcomingNetworks.displayName(network)} shows`;
+  return country ? `Upcoming TV shows in ${country.inName}` : "Upcoming TV premieres";
 }
 
 function enterMonthView() {
   el.grid.innerHTML = "";
-  viewTitleEl.textContent = feedTitle(parseRoute().network);
+  viewTitleEl.textContent = feedTitle(parseRoute());
   el.grid.appendChild(viewTitleEl);
   el.grid.appendChild(sentinelEl);
   for (const b of state.blocks) { b.el = createBlockEl(b); renderBlock(b); }
@@ -907,6 +911,7 @@ function toggleFav(id, showObj) {
 //   <base>                  the month feed
 //   <base>watchlist         the Watchlist (watchlist.html)
 //   <base>network/<slug>    a one-channel feed (network/<slug>.html, or 404.html for rare channels)
+//   <base>country/<slug>    every channel of one country (country/<slug>.html)
 // Generated pages carry <base href> pointing at the app root, so this works at any depth.
 const APP_BASE = new URL(".", document.baseURI).pathname;
 function routePath() {
@@ -916,11 +921,13 @@ function routePath() {
 function parseRoute() {
   const rel = routePath().replace(/\/$/, "");
   const m = rel.match(/^network\/([^/]+)$/);
-  if (m) return { view: "month", network: networkFromSegment(m[1]) };
-  if (/^watchlist(\.html)?$/.test(rel)) return { view: "watchlist", network: null };
-  if (rel === "" || rel === "index.html") return { view: "month", network: null };
-  return { view: "notfound", network: null }; // served by 404.html
-
+  if (m) return { view: "month", network: networkFromSegment(m[1]), country: null, transient: true };
+  const c = rel.match(/^country\/([^/]+)$/);
+  const country = c && window.UpcomingNetworks.countryFromSlug(c[1]);
+  if (country) return { view: "month", network: null, country, transient: true };
+  if (/^watchlist(\.html)?$/.test(rel)) return { view: "watchlist", network: null, country: null, transient: false };
+  if (rel === "" || rel === "index.html") return { view: "month", network: null, country: null, transient: false };
+  return { view: "notfound", network: null, country: null, transient: false }; // served by 404.html
 }
 const networkUrl = (name) => APP_BASE + "network/" + networkSegment(name);
 // Navigate inside the app without a reload, then render the new route.
@@ -937,13 +944,13 @@ else if (location.hash.startsWith("#network=")) {
   history.replaceState(null, "", networkUrl(name));
 }
 
-// A network in the URL filters the feed transiently — it reflects the link, it does not
-// overwrite the user's saved channel selection (that returns on a plain reload).
+// A network or country in the URL filters the feed transiently — it reflects the link, it
+// does not overwrite the user's saved channel selection (that returns on a plain reload).
 function applyRoute() {
-  const { view, network } = parseRoute();
-  updateHeadMeta(view, network);
-  state.followed = network ? new Set([network]) : new Set(loadFollowed());
-  if (network) state.known.add(network);
+  const { view, network, country } = parseRoute();
+  updateHeadMeta(view, network, country);
+  state.followed = network ? new Set([network]) : country ? new Set(country.names) : new Set(loadFollowed());
+  for (const n of state.followed) state.known.add(n);
   updateNetworkButton();
   updateActiveNetwork();
   renderNetworkList();
@@ -959,8 +966,9 @@ function updateBreadcrumb(current) {
   nav.hidden = !current;
   nav.innerHTML = current ? window.UpcomingNetworks.breadcrumbHtml(current, APP_BASE) : "";
 }
-function crumbFor(view, network) {
+function crumbFor(view, network, country) {
   if (network) return window.UpcomingNetworks.displayName(network);
+  if (country) return country.name;
   return view === "watchlist" ? "Watchlist" : view === "notfound" ? "Page not found" : "";
 }
 // The brand and the breadcrumb's Home link go home without reloading the app.
@@ -972,10 +980,10 @@ document.addEventListener("click", (e) => {
   navigate(APP_BASE);
 });
 
-function updateHeadMeta(view, network) {
-  updateBreadcrumb(crumbFor(view, network));
-  const { SITE_META, networkMeta } = window.UpcomingNetworks;
-  const m = network ? networkMeta(network) : SITE_META;
+function updateHeadMeta(view, network, country) {
+  updateBreadcrumb(crumbFor(view, network, country));
+  const { SITE_META, networkMeta, countryMeta } = window.UpcomingNetworks;
+  const m = network ? networkMeta(network) : country ? countryMeta(country) : SITE_META;
   const title = view === "watchlist" ? "Watchlist — " + SITE_META.title
     : view === "notfound" ? "Page not found — " + SITE_META.title : m.title;
   document.title = title;
@@ -987,7 +995,7 @@ function updateHeadMeta(view, network) {
   set('meta[name="twitter:title"]', "content", title);
   set('meta[name="twitter:description"]', "content", m.twitterDescription);
   set('link[rel="canonical"]', "href", m.url);
-  // Only the feed and the major channel pages are meant for search engines; the tag is
+  // Only the feed, the country and the major channel pages are meant for search engines; the tag is
   // added or removed as the view changes, whatever page the visit started on.
   const indexable = view === "month" && (!network || SEED_NETWORKS.includes(network));
   let robots = document.head.querySelector('meta[name="robots"]');
@@ -1000,22 +1008,23 @@ function updateHeadMeta(view, network) {
   }
 }
 
-// The removable "Netflix ✕" pill shown while a transient network filter is active.
+// The removable "Netflix ✕" pill shown while a transient network or country filter is active.
 function updateActiveNetwork() {
-  const { network } = parseRoute();
-  if (network) {
+  const { network, country } = parseRoute();
+  const label = network || (country && country.name);
+  if (label) {
     el.clearNetwork.hidden = false;
-    el.clearNetwork.innerHTML = `${escapeHtml(network)} <span aria-hidden="true">✕</span>`;
-    el.clearNetwork.setAttribute("aria-label", `Clear ${network} filter`);
+    el.clearNetwork.innerHTML = `${escapeHtml(label)} <span aria-hidden="true">✕</span>`;
+    el.clearNetwork.setAttribute("aria-label", `Clear ${label} filter`);
   } else {
     el.clearNetwork.hidden = true;
   }
 }
 
-// Silently leave a network/<slug> address (used when the user edits the selection by hand,
-// so the URL doesn't misrepresent it) without firing a route change.
+// Silently leave a network/<slug> or country/<slug> address (used when the user edits the
+// selection by hand, so the URL doesn't misrepresent it) without firing a route change.
 function dropNetworkRoute() {
-  if (parseRoute().network) history.replaceState(null, "", APP_BASE);
+  if (parseRoute().transient) history.replaceState(null, "", APP_BASE);
 }
 
 function setView(v) {
@@ -1032,6 +1041,7 @@ function setView(v) {
   // The two toggles are shared by both views but each view keeps its own values.
   const f = toggleState();
   el.premieresOnly.checked = f.premieresOnly;
+  el.seriesPremieresOnly.checked = f.seriesPremieresOnly;
   el.hidePast.checked = f.hidePast;
   updateFiltersCount();
   updateViewButton();
@@ -1103,7 +1113,7 @@ if (tabbar) {
     if (tab === "search") { openSearchFromTab(); return; }
     collapseSearch();
     if (tab === "watchlist") navigate(APP_BASE + "watchlist");
-    else if (state.view !== "month" || parseRoute().network) navigate(APP_BASE);
+    else if (state.view !== "month" || parseRoute().transient) navigate(APP_BASE);
     else window.scrollTo({ top: 0, behavior: "smooth" }); // tapping the current tab scrolls to top
     updateTabbar();
   });
@@ -1165,12 +1175,14 @@ async function renderWatchlist() {
   await Promise.all(favs.map(ensureNextEpisode));
   if (state.view !== "watchlist") return; // user navigated away while loading
 
-  // Watchlist toggles: premieres = next episode opens a season; past = nothing upcoming.
+  // Watchlist toggles: premieres = next episode opens a season (series premieres: the
+  // first season); past = nothing upcoming.
   const wf = state.watchFilters;
   const shown = favs.filter((s) => {
     const ep = state.nextEp[s.id];
     if (wf.hidePast && !(ep && ep.airdate)) return false;
     if (wf.premieresOnly && !(ep && ep.number === 1)) return false;
+    if (wf.seriesPremieresOnly && !(ep && ep.season === 1 && ep.number === 1)) return false;
     return true;
   });
   if (!shown.length) {
@@ -1701,9 +1713,9 @@ function applyPrefs(data, { silent = false } = {}) {
     saveSet(KNOWN_KEY, state.known);
   }
   if (Array.isArray(data.followedNetworks)) {
-    // A shared network/<slug> link filters the feed transiently; keep it on screen and only
+    // A shared network/ or country/<slug> link filters the feed transiently; keep it on screen and only
     // save the selection for when the link is cleared.
-    if (parseRoute().network) saveSet(FOLLOW_KEY, new Set(data.followedNetworks));
+    if (parseRoute().transient) saveSet(FOLLOW_KEY, new Set(data.followedNetworks));
     else { state.followed = new Set(data.followedNetworks); saveSet(FOLLOW_KEY, state.followed); }
     emitPrefsChanged();
     data.followedNetworks.forEach((n) => state.known.add(n));
@@ -1910,7 +1922,7 @@ const filtersEl = document.getElementById("filters");
 const filtersToggle = document.getElementById("filtersToggle");
 function updateFiltersCount() {
   const f = toggleState();
-  const n = (state.view === "watchlist" ? 0 : state.genres.size) + (f.premieresOnly ? 1 : 0) + (f.hidePast ? 1 : 0);
+  const n = (state.view === "watchlist" ? 0 : state.genres.size) + (f.premieresOnly ? 1 : 0) + (f.seriesPremieresOnly ? 1 : 0) + (f.hidePast ? 1 : 0);
   const pill = document.getElementById("filtersCount");
   pill.textContent = n ? String(n) : "";
   pill.classList.toggle("show", n > 0);
@@ -1938,7 +1950,7 @@ filtersEl.addEventListener("keydown", (e) => {
 filtersEl.addEventListener("click", (e) => e.stopPropagation());
 document.addEventListener("click", () => { if (filtersEl.classList.contains("is-open")) setFiltersSheet(false); });
 
-// "Premieres only" / "Hide past" apply to the feed, or to the Watchlist with its own values.
+// "Premieres only" / "Series premieres only" / "Hide past" apply to the feed, or to the Watchlist with its own values.
 function toggleState() { return state.view === "watchlist" ? state.watchFilters : state; }
 function onToggle(key, value) {
   toggleState()[key] = value;
@@ -1946,6 +1958,7 @@ function onToggle(key, value) {
   if (state.view === "watchlist") renderWatchlist(); else renderAllBlocks();
 }
 el.premieresOnly.addEventListener("change", (e) => onToggle("premieresOnly", e.target.checked));
+el.seriesPremieresOnly.addEventListener("change", (e) => onToggle("seriesPremieresOnly", e.target.checked));
 el.hidePast.addEventListener("change", (e) => onToggle("hidePast", e.target.checked));
 el.searchInput.addEventListener("input", (e) => onSearchInput(e.target.value));
 el.searchClear.addEventListener("click", () => { clearSearch(); el.searchInput.focus(); });
@@ -1983,16 +1996,18 @@ function resetFilters() {
   state.search = "";
   state.genres.clear();
   state.premieresOnly = true;
+  state.seriesPremieresOnly = false;
   state.hidePast = false;
   el.searchInput.value = "";
   el.searchClear.hidden = true;
   el.premieresOnly.checked = true;
+  el.seriesPremieresOnly.checked = false;
   el.hidePast.checked = false;
   renderGenreList();
   collapseSearch();
   // If a transient network filter is active, exit it and restore the saved selection —
   // applyRoute() re-renders with the search/genre/premieres we just reset above.
-  if (parseRoute().network) { navigate(APP_BASE); return; }
+  if (parseRoute().transient) { navigate(APP_BASE); return; }
   renderAllBlocks();
 }
 
@@ -2000,9 +2015,9 @@ el.viewBtn.addEventListener("click", () => {
   navigate(state.view === "watchlist" ? APP_BASE : APP_BASE + "watchlist");
 });
 window.addEventListener("hashchange", applyRoute);
-// Footer channel links are plain links (crawlable); in the app they navigate in place.
+// Footer channel and country links are plain links (crawlable); in the app they navigate in place.
 document.querySelector(".site-footer")?.addEventListener("click", (e) => {
-  const a = e.target.closest('a[href^="network/"]');
+  const a = e.target.closest('a[href^="network/"], a[href^="country/"]');
   if (!a || e.ctrlKey || e.metaKey || e.shiftKey || e.button) return;
   e.preventDefault();
   navigate(APP_BASE + a.getAttribute("href"));

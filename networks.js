@@ -48,18 +48,26 @@
 
 // Grouped view for the channel picker (label + the channels that belong to each group),
   // so the user can select/clear a whole country at once.
+  // Country groups also get a page of their own at country/<slug> (`country` = slug).
   const NETWORK_GROUPS = [
-    { label: "🇺🇸 United States", names: US_BROADCAST },
+    { label: "🇺🇸 United States", names: US_BROADCAST, country: "united-states" },
     { label: "📺 Streaming", names: STREAMING_NETWORKS },
-    { label: "🇫🇷 France", names: FR_NETWORKS },
-    { label: "🇬🇧 United Kingdom", names: UK_NETWORKS },
-    { label: "🇦🇺 Australia", names: AU_NETWORKS },
-    { label: "🇸🇪 Sweden", names: SE_NETWORKS },
-    { label: "🇳🇴 Norway", names: NO_NETWORKS },
-    { label: "🇩🇰 Denmark", names: DK_NETWORKS },
-    { label: "🇫🇮 Finland", names: FI_NETWORKS },
-    { label: "🇮🇸 Iceland", names: IS_NETWORKS },
+    { label: "🇫🇷 France", names: FR_NETWORKS, country: "france" },
+    { label: "🇬🇧 United Kingdom", names: UK_NETWORKS, country: "united-kingdom" },
+    { label: "🇦🇺 Australia", names: AU_NETWORKS, country: "australia" },
+    { label: "🇸🇪 Sweden", names: SE_NETWORKS, country: "sweden" },
+    { label: "🇳🇴 Norway", names: NO_NETWORKS, country: "norway" },
+    { label: "🇩🇰 Denmark", names: DK_NETWORKS, country: "denmark" },
+    { label: "🇫🇮 Finland", names: FI_NETWORKS, country: "finland" },
+    { label: "🇮🇸 Iceland", names: IS_NETWORKS, country: "iceland" },
   ];
+  // One entry per country page: { slug, name (no flag), inName ("the United States"), names (its channels) }.
+  const COUNTRIES = NETWORK_GROUPS.filter((g) => g.country)
+    .map((g) => {
+      const name = g.label.replace(/^\S+\s/, ""); // drop the flag emoji
+      return { slug: g.country, name, inName: (/^United /.test(name) ? "the " : "") + name, names: [...new Set(g.names)] };
+    });
+  const countryFromSlug = (slug) => COUNTRIES.find((c) => c.slug === String(slug).replace(/\.html$/, "")) || null;
 
   // URL segment for a channel: a readable slug for the seed channels (served by a generated
   // page), the encoded name for any other channel (served by 404.html).
@@ -104,6 +112,16 @@
     };
   }
 
+  // Title, description and URL of a country page (all its channels at once).
+  function countryMeta(c) {
+    const description = `New and returning TV series on the main channels in ${c.inName} (${c.names.slice(0, 3).map(displayName).join(", ")} and more), month by month: premiere dates, seasons and episodes. Free, no account needed.`;
+    return {
+      title: `Upcoming TV shows in ${c.inName} — Upcoming TV Shows`,
+      description, twitterDescription: description,
+      url: SITE_URL + "country/" + c.slug,
+    };
+  }
+
   // "Page not found" content, shared by the app (not-found view) and the generated
   // 404.html (readable without JavaScript). `base` prefixes the links ("" when the page
   // has a <base href>); `search` adds a search button (app only).
@@ -137,7 +155,7 @@
 
   const api = {
     UK_NETWORKS, AU_NETWORKS, SE_NETWORKS, NO_NETWORKS, DK_NETWORKS, FI_NETWORKS, IS_NETWORKS, COUNTRY_NETWORKS, NORDIC_NETWORKS, FLAGSHIP_RE, US_BROADCAST, STREAMING_NETWORKS, FR_NETWORKS, SEED_NETWORKS,
-    networkSlug, networkSegment, networkFromSegment, SITE_META, networkMeta, NETWORK_GROUPS, notFoundHtml, breadcrumbHtml, displayName,
+    networkSlug, networkSegment, networkFromSegment, SITE_META, networkMeta, NETWORK_GROUPS, COUNTRIES, countryFromSlug, countryMeta, notFoundHtml, breadcrumbHtml, displayName,
   };
   root.UpcomingNetworks = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;

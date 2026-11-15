@@ -3,9 +3,10 @@
 //                              to every channel page); with data, also "Next premieres"
 //   watchlist.html          → <site>/watchlist            (noindex: personal view)
 //   network/<slug>.html     → <site>/network/<slug>       (one per seed channel, indexable)
+//   country/<slug>.html     → <site>/country/<slug>       (one per country: all its channels)
 //   404.html                → any other address, e.g. a rare channel (noindex)
 //   sitemap.xml             → the feed, About and the channel pages, for search engines
-// Run after editing index.html or the channel lists in networks.js:
+// Run after editing index.html or the channel or country lists in networks.js:
 //   node tools/make-pages.js
 // With a nightly snapshot (tools/fetch-schedule.js), pages also get the upcoming shows as
 // plain HTML, readable without JavaScript (the app replaces it once it runs):
@@ -14,7 +15,7 @@
 // script is idempotent: running it again (with or without data) rewrites them in place.
 const fs = require("node:fs");
 const path = require("node:path");
-const { SEED_NETWORKS, NETWORK_GROUPS, networkSlug, networkMeta, notFoundHtml, breadcrumbHtml, displayName } = require("../networks.js");
+const { SEED_NETWORKS, NETWORK_GROUPS, COUNTRIES, networkSlug, networkMeta, countryMeta, notFoundHtml, breadcrumbHtml, displayName } = require("../networks.js");
 const root = path.join(__dirname, "..");
 
 const NOTE = "<!-- Generated from index.html by tools/make-pages.js — do not edit by hand. -->";
@@ -77,8 +78,9 @@ const updatedLine = (data) =>
 function footerHtml() {
   const groups = NETWORK_GROUPS.map((g) => {
     const links = [...new Set(g.names)].map((n) => `<li><a href="network/${networkSlug(n)}">${esc(displayName(n))}</a></li>`).join("");
-    const label = g.label.replace(/^\S+\s/, ""); // drop the flag emoji
-    return `<div class="footer-group"><h3>${esc(label)}</h3><ul>${links}</ul></div>`;
+    const label = esc(g.label.replace(/^\S+\s/, "")); // drop the flag emoji
+    const heading = g.country ? `<a href="country/${g.country}">${label}</a>` : label;
+    return `<div class="footer-group"><h3>${heading}</h3><ul>${links}</ul></div>`;
   }).join("");
   return `
     <nav class="footer-channels" aria-labelledby="footer-channels-title">
@@ -140,20 +142,72 @@ function networkPage(indexHtml, name, data) {
   const desc = items && items.length
     ? `${firstPerShow(items).length} new and returning ${displayName(name)} series scheduled${next ? `; next premiere: ${next.show.name} (${fmtDay(next.airdate)})` : ""}. Premiere dates, seasons and episodes, updated daily.`
     : m.description;
+  const html = pageHead(indexHtml, { title: m.title, desc, url: m.url, crumb: displayName(name), noindex: !hasUpcoming(name, data) });
+  return withCrumb(region(html, "prerender", networkHtml(name, data)), displayName(name));
+}
+
+/* ---------- Country pages ---------- */
+// Upcoming items of every channel of a country, merged and sorted; null without data or
+// when none of its channels is in the snapshot (e.g. France without a TMDB key).
+function countryItems(c, data) {
+  if (!data || !c.names.some((n) => data.index.channels[n])) return null;
+  return c.names.flatMap((n) => channelItems(n, data) || [])
+    .sort((a, b) => a.airdate.localeCompare(b.airdate) || a.show.name.localeCompare(b.show.name));
+}
+// Country page body: h1, a factual opening sentence, links to its channels, then the
+// list by month (each row names its channel).
+function countryHtml(c, data) {
+  const h1 = `<h1 id="prerender-title">Upcoming TV shows in ${esc(c.inName)}</h1>`;
+  const channels = `<h2>Channels</h2>\n      <ul class="inline-links">${c.names.map((n) => `<li><a href="network/${networkSlug(n)}">${esc(displayName(n))}</a></li>`).join("")}</ul>`;
+  const items = countryItems(c, data);
+  if (!items) {
+    return `\n    <section class="prerender" aria-labelledby="prerender-title">\n      ${h1}\n      <p class="prerender-intro">New and returning series on ${c.names.length} channels in ${esc(c.inName)}, month by month: premiere dates, seasons and episodes.</p>\n      ${channels}\n    </section>\n  `;
+  }
+  const shows = firstPerShow(items);
+  const next = items.find((it) => it.number === 1);
+  const months = [];
+  for (const monthKey of data.index.months) {
+    const rows = firstPerShow(items.filter((it) => it.airdate.startsWith(monthKey))).slice(0, MAX_PER_MONTH).map((it) => {
+      const code = epCode(it), tag = premiereTag(it), chan = it.show.channel.name;
+      return `<li><time datetime="${esc(it.airdate)}">${esc(fmtDay(it.airdate))}</time> · <strong>${esc(it.show.name)}</strong>${code ? " · " + esc(code) : ""} · <a href="network/${networkSlug(chan)}">${esc(displayName(chan))}</a>${tag ? " — " + esc(tag) : ""}</li>`;
+    });
+    if (rows.length) months.push(`<h2>${esc(fmtMonth(monthKey))}</h2>\n      <ul>\n        ${rows.join("\n        ")}\n      </ul>`);
+  }
+  const lastMonth = fmtMonth(data.index.months[data.index.months.length - 1]);
+  const intro = shows.length
+    ? `${shows.length} new and returning series are scheduled on ${c.names.length} channels in ${esc(c.inName)} from ${esc(fmtLong(data.today))} through the end of ${esc(lastMonth)}.` +
+      (next ? ` Next premiere: <strong>${esc(next.show.name)}</strong> on ${esc(displayName(next.show.channel.name))} (${esc(premiereTag(next))}, ${esc(fmtLong(next.airdate))}).` : "")
+    : `No upcoming episodes are listed yet for channels in ${esc(c.inName)} for the next months.`;
+  return `\n    <section class="prerender" aria-labelledby="prerender-title">\n      ${h1}\n      <p class="prerender-intro">${intro}</p>\n      ${channels}\n      ${months.join("\n      ")}\n      ${updatedLine(data)}\n    </section>\n  `;
+}
+const countryHasUpcoming = (c, data) => { const it = countryItems(c, data); return !it || it.length > 0; };
+
+// Head of a derived page: title, descriptions, canonical, JSON-LD and breadcrumb.
+function pageHead(indexHtml, { title, desc, url, crumb, noindex }) {
   const json = (v) => JSON.stringify(v).slice(1, -1); // string body, safe inside "…" in JSON-LD
-  let html = derive(indexHtml, { base: "../", noindex: !hasUpcoming(name, data) });
-  html = swap(html, /(<title>)[^<]*(<\/title>)/, esc(m.title));
+  let html = derive(indexHtml, { base: "../", noindex });
+  html = swap(html, /(<title>)[^<]*(<\/title>)/, esc(title));
   html = swap(html, /(<meta name="description" content=")[^"]*(">)/, esc(desc));
-  html = swap(html, /(<link rel="canonical" href=")[^"]*(">)/, esc(m.url));
-  html = swap(html, /(<meta property="og:url" content=")[^"]*(">)/, esc(m.url));
-  html = swap(html, /(<meta property="og:title" content=")[^"]*(">)/, esc(m.title));
+  html = swap(html, /(<link rel="canonical" href=")[^"]*(">)/, esc(url));
+  html = swap(html, /(<meta property="og:url" content=")[^"]*(">)/, esc(url));
+  html = swap(html, /(<meta property="og:title" content=")[^"]*(">)/, esc(title));
   html = swap(html, /(<meta property="og:description" content=")[^"]*(">)/, esc(desc));
-  html = swap(html, /(<meta name="twitter:title" content=")[^"]*(">)/, esc(m.title));
+  html = swap(html, /(<meta name="twitter:title" content=")[^"]*(">)/, esc(title));
   html = swap(html, /(<meta name="twitter:description" content=")[^"]*(">)/, esc(desc));
   // Structured data: same description as the page, plus its own address.
-  html = swap(html, /("description": ")[^"]*(",)/, json(desc) + '",\n    "url": "' + json(m.url));
-  html = html.replace("</head>", crumbJsonLd(siteUrl(indexHtml), displayName(name), m.url) + "\n</head>");
-  return withCrumb(region(html, "prerender", networkHtml(name, data)), displayName(name));
+  html = swap(html, /("description": ")[^"]*(",)/, json(desc) + '",\n    "url": "' + json(url));
+  return html.replace("</head>", crumbJsonLd(siteUrl(indexHtml), crumb, url) + "\n</head>");
+}
+
+function countryPage(indexHtml, c, data) {
+  const m = countryMeta(c);
+  const items = countryItems(c, data);
+  const next = items && items.find((it) => it.number === 1);
+  const desc = items && items.length
+    ? `${firstPerShow(items).length} new and returning series scheduled on ${c.names.length} channels in ${c.inName}${next ? `; next premiere: ${next.show.name} on ${displayName(next.show.channel.name)} (${fmtDay(next.airdate)})` : ""}. Premiere dates, seasons and episodes, updated daily.`
+    : m.description;
+  const html = pageHead(indexHtml, { title: m.title, desc, url: m.url, crumb: c.name, noindex: !countryHasUpcoming(c, data) });
+  return withCrumb(region(html, "prerender", countryHtml(c, data)), c.name);
 }
 
 // Index with its regions filled; dateModified added to the JSON-LD when data is present.
@@ -193,9 +247,11 @@ function build(indexHtml, data) {
     seen.set(slug, name);
     files[`network/${slug}.html`] = networkPage(index, name, data);
   }
+  for (const c of COUNTRIES) files[`country/${c.slug}.html`] = countryPage(index, c, data);
   const site = siteUrl(index);
+  const countries = COUNTRIES.filter((c) => countryHasUpcoming(c, data)).map((c) => site + "country/" + c.slug);
   const indexable = [...seen].filter(([, name]) => hasUpcoming(name, data)).map(([slug]) => site + "network/" + slug);
-  const urls = [site, site + "about.html", site + "accessibility.html", ...indexable];
+  const urls = [site, site + "about.html", site + "accessibility.html", ...countries, ...indexable];
   files["sitemap.xml"] = '<?xml version="1.0" encoding="UTF-8"?>\n' +
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
     urls.map((u) => `  <url><loc>${esc(u)}</loc></url>`).join("\n") + "\n</urlset>\n";
@@ -223,9 +279,11 @@ if (require.main === module) {
   const i = process.argv.indexOf("--data");
   const data = i > -1 ? loadData(path.resolve(process.argv[i + 1])) : null;
   const files = build(fs.readFileSync(path.join(root, "index.html"), "utf8"), data);
-  const dir = path.join(root, "network");
-  fs.rmSync(dir, { recursive: true, force: true }); // drop pages of removed channels
-  fs.mkdirSync(dir);
+  for (const sub of ["network", "country"]) {
+    const dir = path.join(root, sub);
+    fs.rmSync(dir, { recursive: true, force: true }); // drop pages of removed channels
+    fs.mkdirSync(dir);
+  }
   for (const [rel, html] of Object.entries(files)) fs.writeFileSync(path.join(root, rel), html);
   for (const rel of STATIC_PAGES) {
     const file = path.join(root, rel);

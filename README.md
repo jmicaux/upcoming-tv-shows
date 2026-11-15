@@ -6,7 +6,7 @@ Australia and the Nordics**, plus French channels (**Canal+**, **Arte**, TF1, M6
 follow only the ones you care about, and filter by genre. A static site with no framework
 and no npm dependencies; an optional account keeps your settings on every device.
 
-[![CI](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml/badge.svg)](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml) ![version](https://img.shields.io/badge/version-1.29.0-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![static](https://img.shields.io/badge/site-static-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
+[![CI](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml/badge.svg)](https://github.com/jmicaux/upcoming-tv-shows/actions/workflows/ci.yml) ![version](https://img.shields.io/badge/version-1.29.1-blue) ![vanilla](https://img.shields.io/badge/stack-vanilla_JS-f7df1e) ![static](https://img.shields.io/badge/site-static-brightgreen) ![data](https://img.shields.io/badge/data-TVMaze_+_TMDB-3b82f6)
 
 **🔗 Live preview: [jmicaux.github.io/upcoming-tv-shows](https://jmicaux.github.io/upcoming-tv-shows/)**
 
@@ -264,7 +264,7 @@ The `?v=` query forces browsers to re-download the CSS/JS after a deploy instead
 a stale cached copy.
 
 Then add a `CHANGELOG.md` entry and publish a GitHub release for the new tag, e.g.
-`gh release create v1.29.0 --target main --title "Upcoming TV Shows 1.29.0" --notes-file notes.md`.
+`gh release create v1.29.1 --target main --title "Upcoming TV Shows 1.29.1" --notes-file notes.md`.
 
 ## Quality
 

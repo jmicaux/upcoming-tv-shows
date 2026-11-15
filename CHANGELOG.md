@@ -3,7 +3,7 @@
 All notable changes to Upcoming TV Shows are documented here. This project follows
 [semver](https://semver.org/).
 
-## Unreleased
+## 1.29.1 — 2026-11-15
 
 ### Added
 - **End-to-end tests** (Playwright, `tests/e2e/`): feed and filters, channel and country

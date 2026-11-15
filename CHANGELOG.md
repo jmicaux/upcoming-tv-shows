@@ -3,6 +3,21 @@
 All notable changes to Upcoming TV Shows are documented here. This project follows
 [semver](https://semver.org/).
 
+## Unreleased
+
+### Added
+- **End-to-end tests** (Playwright, `tests/e2e/`): feed and filters, channel and country
+  pages, not-found, Watchlist, show dialog, search, settings, theme, phone layout — with a
+  frozen date and fixture data, no live network; run in CI. Plus a local screenshot
+  comparison (`npm run test:visual`) for refactoring.
+- `tools/serve.js`: a local server that behaves like GitHub Pages.
+
+### Known bugs (found by the new tests, marked `test.fail()`)
+- Selecting a channel whose source is already loaded (e.g. CBS while HBO is followed)
+  does not show its shows until a reload.
+- A new watch redirect does not update the "Watch on" links of cards already on screen
+  until a reload.
+
 ## 1.29.0 — 2026-11-15
 
 ### Added

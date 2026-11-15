@@ -136,6 +136,11 @@ tv-us-upcoming/
 ├── config.example.js   # template for your TMDB key
 ├── config.js           # your real key (git-ignored, create from the example)
 ├── tests/              # node --test unit tests (run in CI)
+├── tests/e2e/          # Playwright: the app in a real browser, fixed date, fixture data
+├── playwright.config.js
+├── package.json        # dev tooling only (Playwright); nothing ships to the browser
+├── tools/serve.js      # local server that behaves like GitHub Pages
+├── tools/build-dist.js # dist/: only what a server needs
 ├── tools/make-pages.js # fills index.html's generated regions and builds the pages below
 ├── tools/fetch-schedule.js # nightly schedule snapshot → data/schedule/
 ├── tools/pull-snapshot.js  # code deploys: reuse the published snapshot
@@ -144,6 +149,7 @@ tv-us-upcoming/
 Generated, not committed (built by the deploy workflow, or locally with the tools):
 ├── watchlist.html      # <site>/watchlist
 ├── network/*.html      # <site>/network/<slug>, one per major channel
+├── country/*.html      # <site>/country/<slug>, one per country
 ├── 404.html            # any other address (rare channels)
 ├── sitemap.xml         # feed, About and channel pages
 └── data/schedule/      # nightly snapshot: one JSON file per channel and month
@@ -171,9 +177,29 @@ the Supabase keep-alive and CI, and once a day, it opens an issue labelled `watc
 the published snapshot is older than 36 h. It comments on new problems and closes the
 issue once everything is back to normal.
 
-No npm dependencies: the app runs in the browser as is, and the deploy only runs the two
-small Node scripts above. The only runtime dependency is a pinned `supabase-js` loaded
+No runtime npm dependency: the app runs in the browser as is, and the deploy only runs
+the small Node scripts above. `package.json` holds development tooling only (Playwright). The only runtime dependency is a pinned `supabase-js` loaded
 from jsDelivr with Subresource Integrity.
+
+## Tests
+
+```bash
+npm install                      # once: Playwright (dev only)
+npx playwright install chromium  # once: the test browser
+npm run test:unit                # pure modules (node --test)
+npm run test:e2e                 # the app in a real browser, desktop + phone
+npm run test:visual              # screenshot comparison, before/after a refactor
+```
+
+The end-to-end tests freeze the date, replace the schedule snapshot with a small fixture
+and answer every external request locally (`tests/e2e/fixtures.js`): they never touch
+TVmaze or TMDB, so they are deterministic and run offline. Any uncaught page error fails
+a test. CI runs the unit and end-to-end tests on every push. `test:visual` is a local
+refactoring aid: its first run records reference screenshots (light and dark, desktop and
+phone) in a git-ignored folder, and later runs fail on any visible change.
+
+A test marked `test.fail()` documents a known bug: it passes while the bug exists and
+fails once it is fixed, as a reminder to remove the mark.
 
 ## Data sources
 

@@ -33,7 +33,7 @@ jobs:
 
       - name: Check JS syntax
         run: |
-          find . -name '*.js' -not -path './.git/*' -print0 \
+          find . -name '*.js' -not -path './.git/*' -not -path './node_modules/*' -print0 \
             | xargs -0 -r -n1 node --check
 
       - name: Run unit tests
@@ -44,3 +44,24 @@ jobs:
 
       - name: Validate HTML
         run: npx --yes html-validate '**/*.html'
+
+  # The app in a real browser (tests/e2e): fixed date, fixture schedule, no live network.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run end-to-end tests (desktop + phone)
+        run: npx playwright test --project=desktop --project=mobile
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

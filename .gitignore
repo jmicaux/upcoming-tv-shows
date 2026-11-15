@@ -45,3 +45,9 @@ docs/superpowers/
 
 # Maintainer-only notes (Supabase / OAuth setup), kept local
 /docs/private/
+
+# Dev tooling (package.json) and end-to-end test output
+/node_modules/
+/test-results/
+/playwright-report/
+/tests/e2e/__screenshots__/

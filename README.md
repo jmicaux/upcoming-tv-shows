@@ -165,6 +165,12 @@ for what it does not cover. Setup: **Settings → Pages → Source: GitHub Actio
 `TMDB_KEY` repository secret to include the French channels. Without a snapshot (local
 development, or a failed night) the app simply fetches everything live, as before.
 
+`.github/workflows/watchdog.yml` keeps an eye on it: after each run of the nightly update
+and of the Supabase keep-alive, and once a day, it opens an issue labelled `watchdog`
+(GitHub then notifies the owner) when a run failed, a scheduled workflow was disabled, or
+the published snapshot is older than 36 h. It comments on new problems and closes the
+issue once everything is back to normal.
+
 No npm dependencies: the app runs in the browser as is, and the deploy only runs the two
 small Node scripts above. The only runtime dependency is a pinned `supabase-js` loaded
 from jsDelivr with Subresource Integrity.

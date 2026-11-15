@@ -1,0 +1,97 @@
+name: Watchdog
+
+# Watches the scheduled jobs and tells the owner when something is wrong, through a GitHub
+# issue labelled "watchdog" (GitHub notifies by e-mail / app). Checked after every run of
+# the watched workflows and once a day:
+#   - the latest run of a watched workflow failed;
+#   - a watched workflow is disabled (GitHub disables scheduled workflows after 60 days
+#     without a commit);
+#   - the schedule snapshot published on the site is older than MAX_AGE_HOURS (the nightly
+#     update did not run, or did not deploy).
+# The issue gets a comment for each new problem and is closed once everything is back to
+# normal. Limitation: this workflow's own daily check is scheduled too, so 60 days without
+# a commit disable it as well; GitHub e-mails a warning before that happens.
+on:
+  workflow_run:
+    workflows: ["Deploy site with schedule snapshot", "Supabase keep-alive"]
+    types: [completed]
+  schedule:
+    - cron: "0 16 * * *" # after the nightly update, which GitHub often starts hours late
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  issues: write
+
+concurrency:
+  group: watchdog
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the scheduled jobs and report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          SITE_URL: https://jmicaux.github.io/upcoming-tv-shows/
+          MAX_AGE_HOURS: 36
+          WATCHED: "pages.yml keepalive.yml"
+        run: |
+          set -euo pipefail
+          problems=""
+
+          for wf in $WATCHED; do
+            info=$(gh api "repos/$GH_REPO/actions/workflows/$wf" --jq '"\(.name)\t\(.state)"')
+            name=${info%%$'\t'*}; state=${info##*$'\t'}
+            if [ "$state" != "active" ]; then
+              problems+="- **$name** is \`$state\`: re-enable it in the Actions tab ($GITHUB_SERVER_URL/$GH_REPO/actions/workflows/$wf)."$'\n'
+            fi
+            last=$(gh run list --workflow "$wf" --status completed --limit 1 \
+              --json conclusion,event,url,createdAt --jq '.[0] // empty | "\(.conclusion)\t\(.event)\t\(.createdAt)\t\(.url)"')
+            if [ -n "$last" ]; then
+              IFS=$'\t' read -r conclusion event created url <<< "$last"
+              case "$conclusion" in
+                success|skipped|cancelled|neutral) ;;
+                *) problems+="- **$name**: latest run ($event, $created) ended in \`$conclusion\`: $url"$'\n' ;;
+              esac
+            fi
+          done
+
+          if index=$(curl -fsS --retry 3 --retry-delay 10 "${SITE_URL}data/schedule/index.json"); then
+            generated=$(jq -r .generatedAt <<< "$index")
+            age=$(( ( $(date -u +%s) - $(date -u -d "$generated" +%s) ) / 3600 ))
+            if [ "$age" -gt "$MAX_AGE_HOURS" ]; then
+              problems+="- The schedule snapshot on the site is older than $MAX_AGE_HOURS h (generated $generated): the nightly update did not run or did not deploy."$'\n'
+            fi
+          else
+            problems+="- The schedule snapshot is unreachable: ${SITE_URL}data/schedule/index.json"$'\n'
+          fi
+
+          gh label create watchdog --color B60205 --description "Opened by the Watchdog workflow" 2>/dev/null || true
+          issue=$(gh issue list --label watchdog --state open --limit 1 --json number --jq '.[0].number // empty')
+
+          if [ -n "$problems" ]; then
+            echo "::warning::Problems found"; printf '%s' "$problems"
+            # A hidden fingerprint of the problem list: comment only when it changes, not on
+            # every daily check of the same problem.
+            mark="<!-- watchdog:$(printf '%s' "$problems" | sha256sum | cut -c1-16) -->"
+            msg="$problems"$'\n'"Checked by $GITHUB_SERVER_URL/$GH_REPO/actions/runs/$GITHUB_RUN_ID"$'\n'"$mark"
+            if [ -z "$issue" ]; then
+              gh issue create --label watchdog --title "Watchdog: a scheduled job needs attention" \
+                --body "@$OWNER something is wrong with the scheduled jobs:"$'\n\n'"$msg"
+            else
+              previous=$(gh issue view "$issue" --json body,comments --jq '([.body] + [.comments[].body]) | last')
+              case "$previous" in
+                *"$mark"*) echo "Already reported." ;;
+                *) gh issue comment "$issue" --body "$msg" ;;
+              esac
+            fi
+          elif [ -n "$issue" ]; then
+            gh issue comment "$issue" --body "Back to normal: every watched job succeeded and the snapshot is fresh."
+            gh issue close "$issue"
+          else
+            echo "All good."
+          fi

@@ -37,7 +37,7 @@ jobs:
             | xargs -0 -r -n1 node --check
 
       - name: Run unit tests
-        run: node --test tests/
+        run: node --test tests/*.test.js
 
       - name: Build the generated pages
         run: node tools/make-pages.js
